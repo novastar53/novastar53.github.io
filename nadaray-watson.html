@@ -11,7 +11,7 @@
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
@@ -313,7 +313,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/acb69e1e260d0ddec91a3bbfd365cd11dfb71ba6c956d4adc9351c07af4bc62e.png" src="_images/acb69e1e260d0ddec91a3bbfd365cd11dfb71ba6c956d4adc9351c07af4bc62e.png" />
+<img alt="_images/df6935343b39edfc96d401d99f5b8455e9f0630f2881955fe51408379c965a8b.png" src="_images/df6935343b39edfc96d401d99f5b8455e9f0630f2881955fe51408379c965a8b.png" />
 </div>
 </div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
@@ -352,7 +352,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/48f00c369083a4c48f57d10a0160a25f55c5922261b84136620cd7217ceb94d1.png" src="_images/48f00c369083a4c48f57d10a0160a25f55c5922261b84136620cd7217ceb94d1.png" />
+<img alt="_images/81a9627d0f4a8bc82b4a75cca86c385d71eb00b6d340c7734af744947221a7cc.png" src="_images/81a9627d0f4a8bc82b4a75cca86c385d71eb00b6d340c7734af744947221a7cc.png" />
 </div>
 </div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
@@ -369,13 +369,15 @@ For our experiment, we will use a Gaussian kernel.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">manim</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">config</span><span class="o">.</span><span class="n">media_width</span> <span class="o">=</span><span class="s2">&quot;90%&quot;</span>
+<span class="n">config</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="s2">&quot;ERROR&quot;</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">manim</span> -qm -v WARNING MyScene
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">manim</span> -qm MyScene
 
 class MyScene(Scene):
     def construct(self):
@@ -408,7 +410,7 @@ class MyScene(Scene):
 </div><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 0: Transform(VDict({&#39;line_graph&#39;: VGroup()})):   0%|                                                                                                             | 0/30 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 0: Transform(VDict({&#39;line_graph&#39;: VGroup()})):  10%|██████████                                                                                           | 3/30 [00:00&lt;00:00, 29.35it/s]
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 0: Transform(VDict({&#39;line_graph&#39;: VGroup()})):  23%|███████████████████████▌                                                                             | 7/30 [00:00&lt;00:00, 67.79it/s]
 </pre></div>
 </div>
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                                  
@@ -426,7 +428,7 @@ class MyScene(Scene):
 <div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
-<div class="output text_html"><video src="media/jupyter/MyScene@2024-09-25@06-35-43.mp4" controls autoplay loop style="max-width: 60%;"  >
+<div class="output text_html"><video src="media/jupyter/MyScene@2024-09-25@06-47-53.mp4" controls autoplay loop style="max-width: 90%;"  >
       Your browser does not support the <code>video</code> element.
     </video></div></div>
 </div>
