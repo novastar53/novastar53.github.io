@@ -11,5 +11,5 @@ dependencies = [
     "manim-slides[sphinx-directive]>=5.1.7",
     "torch>=2.4.1",
     "matplotlib>=3.9.2",
-    "manim>=0.18.1",
+    "manim>=0.18.1"
 ]
