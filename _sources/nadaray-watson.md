@@ -13,15 +13,19 @@ Intuitively, this means that data-points closer to $ x $ should contribute more 
 The function $ f(x, x_i) $ is called a kernel. Commonly used kernels include:
 
 Gaussian 
+
 $$ 
 f(x,x_i) = exp(-\frac{||x-x_i||^2}{h}) 
 $$
 
 Boxcar 
+
 $$
 f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1 
 $$
+
 Epanechikov 
+
 $$
 f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
 $$ 
