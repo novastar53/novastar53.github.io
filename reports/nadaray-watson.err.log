@@ -18,38 +18,39 @@ Traceback (most recent call last):
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-import math
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
+%%manim -qm -v WARNING MyScene
+.. manim:: MyScene
+
+class MyScene(Scene):
+    def construct(self):
+
+        ax = Axes(x_range=[0,10,1], y_range=[0,10,1], axis_config={"include_numbers": True})
+
+        f1 = ax.plot_line_graph(x_gt, y_pred_0_1, add_vertex_dots=False)
+        f2 = ax.plot_line_graph(x_gt, y_pred_0_5, add_vertex_dots=False)
+        f3 = ax.plot_line_graph(x_gt, y_pred_1_5, add_vertex_dots=False)
+
+        self.add(ax)
+        for x,y in zip(x_train, y_train):
+            dot = Dot(ax.c2p(x,y))
+            self.add(dot)
+        
+
+        self.play(Transform(f1, f2))
+        self.remove(f1)
+        self.add(f2)
+        self.play(Transform(f2, f3))
+
+        self.wait()
 
 
-def wavyline(x, k=2):
-    return k*torch.sin(x) + x
 
-n = 40
-x_train, _ = torch.sort(torch.rand(n)*10)
-y_train = wavyline(x_train) + torch.randn(n)
-
-x_gt = torch.arange(0,10,0.1)
-y_gt = wavyline(x_gt)
-
-plt.plot(x_train,y_train, 'o', alpha=0.5)
-plt.plot(x_gt, y_gt, '--')
-plt.legend(['Raw/Noisy measurements', 'Data source or process'])
-plt.show()
 
 ------------------
 
+----- stderr -----
+UsageError: Cell magic `%%manim` not found.
+------------------
 
-[0;31m---------------------------------------------------------------------------[0m
-[0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
-Cell [0;32mIn[1], line 4[0m
-[1;32m      2[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
-[1;32m      3[0m [38;5;28;01mimport[39;00m [38;5;21;01mtorch[39;00m
-[0;32m----> 4[0m [38;5;28;01mimport[39;00m [38;5;21;01mmatplotlib[39;00m[38;5;21;01m.[39;00m[38;5;21;01mpyplot[39;00m [38;5;28;01mas[39;00m [38;5;21;01mplt[39;00m
-[1;32m      7[0m [38;5;28;01mdef[39;00m [38;5;21mwavyline[39m(x, k[38;5;241m=[39m[38;5;241m2[39m):
-[1;32m      8[0m     [38;5;28;01mreturn[39;00m k[38;5;241m*[39mtorch[38;5;241m.[39msin(x) [38;5;241m+[39m x
 
-[0;31mModuleNotFoundError[0m: No module named 'matplotlib'
 

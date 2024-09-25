@@ -307,18 +307,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">4</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">import</span> <span class="nn">torch</span>
-<span class="ne">----&gt; </span><span class="mi">4</span> <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="k">def</span> <span class="nf">wavyline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span>     <span class="k">return</span> <span class="n">k</span><span class="o">*</span><span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">x</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;matplotlib&#39;
-</pre></div>
-</div>
+<img alt="_images/cea0a698d90b18534d5c66eb0b7acf2e3a8730d479c9ab05d655351948a19a70.png" src="_images/cea0a698d90b18534d5c66eb0b7acf2e3a8730d479c9ab05d655351948a19a70.png" />
 </div>
 </div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
@@ -354,7 +343,7 @@ $$</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/7693a2bc514d5af59fa7c1888bf142864b863764d70ce3bb55a2391884b10b5e.png" src="_images/7693a2bc514d5af59fa7c1888bf142864b863764d70ce3bb55a2391884b10b5e.png" />
+<img alt="_images/6926a73390ff63dd50ccf9c74adfaf1608f0f61b40bf46a5c38a0a1d2b2f6d19.png" src="_images/6926a73390ff63dd50ccf9c74adfaf1608f0f61b40bf46a5c38a0a1d2b2f6d19.png" />
 </div>
 </div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
@@ -399,15 +388,10 @@ class MyScene(Scene):
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
-
-</pre>
-</div><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                              
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>UsageError: Cell magic `%%manim` not found.
 </pre></div>
 </div>
-<div class="output text_html"><video src="media/jupyter/MyScene@2024-09-23@20-54-05.mp4" controls autoplay loop style="max-width: 60%;"  >
-      Your browser does not support the <code>video</code> element.
-    </video></div></div>
+</div>
 </div>
 </section>
 </section>
