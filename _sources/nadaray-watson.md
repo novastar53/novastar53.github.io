@@ -68,12 +68,10 @@ As you can see, we have generated 40 noisy datapoints for this curve.
 
 ## Now, let's run the regression on our training data
 Using our Gaussian kernel function, we can estimate the curve from the data with a weighted average of the kernel at different points.
-$$
 
+$$
 \hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}
-
 $$
-
 
 ```python
 def gaussian(x, h=1):
