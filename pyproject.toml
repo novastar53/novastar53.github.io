@@ -1,5 +1,5 @@
 [project]
-name = "Starburst Blog"
+name = "Starburst-Blog"
 version = "0.1.0"
 description = "An AI Blog"
 readme = "README.md"
