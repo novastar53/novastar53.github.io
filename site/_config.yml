@@ -8,7 +8,12 @@ description: A blog exploring AI and Machine Learning
 
 sphinx:
   config:
+    project: 'Sphinx Data Science blog'
+    author: 'Vikram Pawar'
+    copyright: '2024 Vikram Pawar'
     html_theme: furo
+    html_theme_options:
+      keywords: AI, ML, Data, Data Science, Blog, Vikram, Pawar, novastar53, Transformers, Deep Learning
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
