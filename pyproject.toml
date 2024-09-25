@@ -1,7 +1,7 @@
 [project]
-name = "vikrampawar-com"
+name = "Starburst Blog"
 version = "0.1.0"
-description = "Add your description here"
+description = "An AI Blog"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
