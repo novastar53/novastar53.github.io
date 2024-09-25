@@ -1,2 +1,2 @@
-# vikrampawar.com
-Personal Site
+# Novastar Blog
+Just another ML Blog
