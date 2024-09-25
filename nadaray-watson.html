@@ -404,18 +404,17 @@ Intuitively, this means that data-points closer to <span class="math notranslate
 <br />
 The function <span class="math notranslate nohighlight">\( f(x, x_i) \)</span> is called a kernel. Commonly used kernels include:</p>
 <p>Gaussian
-$$</p>
-<p>f(x,x_i) = exp(-\frac{||x-x_i||^2}{h})
-$$</p>
+$<span class="math notranslate nohighlight">\( 
+f(x,x_i) = exp(-\frac{||x-x_i||^2}{h}) 
+\)</span>$</p>
 <p>Boxcar
-$$</p>
-<p>f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1</p>
-<div class="math notranslate nohighlight">
-\[
+$<span class="math notranslate nohighlight">\(
+f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1 
+\)</span><span class="math notranslate nohighlight">\(
 Epanechikov 
-\]</div>
-<p>f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
-$$</p>
+\)</span><span class="math notranslate nohighlight">\(
+f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
+\)</span>$</p>
 <p>We usually include a parameter <span class="math notranslate nohighlight">\(h\)</span> that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
 result. <br />
 For our experiment, we will use a Gaussian kernel.</p>
