@@ -261,22 +261,28 @@ The idea here is that the contribution of each data-point or feature <span class
 Intuitively, this means that data-points closer to <span class="math notranslate nohighlight">\( x \)</span> should contribute more to our estimate, while ones that are farther away should contribute less. <br />
 <br />
 The function <span class="math notranslate nohighlight">\( f(x, x_i) \)</span> is called a kernel. Commonly used kernels include:</p>
-<p>Gaussian
-$$</p>
-<p>f(x,x_i) = exp(-\frac{||x-x_i||^2}{h})
-$$</p>
-<p>Boxcar
-$$</p>
-<p>f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1</p>
+<p>Gaussian</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[ 
+f(x,x_i) = exp(-\frac{||x-x_i||^2}{h}) 
+\]</div>
+</div>
+<p>Boxcar</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-Epanechikov
+f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1 
 \]</div>
 </div>
-<p>f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
-$<span class="math notranslate nohighlight">\(
-We usually include a parameter \)</span>h$ that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
+<p>Epanechikov</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
+\]</div>
+</div>
+<p>We usually include a parameter <span class="math notranslate nohighlight">\(h\)</span> that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
 result. <br />
 For our experiment, we will use a Gaussian kernel.</p>
 <section id="let-s-start-by-generating-the-data">
@@ -307,17 +313,20 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/cea0a698d90b18534d5c66eb0b7acf2e3a8730d479c9ab05d655351948a19a70.png" src="_images/cea0a698d90b18534d5c66eb0b7acf2e3a8730d479c9ab05d655351948a19a70.png" />
+<img alt="_images/03a901667ed15c8d9558ff999ca103ce7e5d4c175360f15562b69756f77aefd5.png" src="_images/03a901667ed15c8d9558ff999ca103ce7e5d4c175360f15562b69756f77aefd5.png" />
 </div>
 </div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
 </section>
 <section id="now-let-s-run-the-regression-on-our-training-data">
 <h2>Now, let’s run the regression on our training data<a class="headerlink" href="#now-let-s-run-the-regression-on-our-training-data" title="Link to this heading">¶</a></h2>
-<p>Using our Gaussian kernel function, we can estimate the curve from the data with a weighted average of the kernel at different points.
-$$</p>
-<p>\hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}</p>
-<p>$$</p>
+<p>Using our Gaussian kernel function, we can estimate the curve from the data with a weighted average of the kernel at different points.</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[
+\hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}
+\]</div>
+</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
@@ -343,7 +352,7 @@ $$</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/6926a73390ff63dd50ccf9c74adfaf1608f0f61b40bf46a5c38a0a1d2b2f6d19.png" src="_images/6926a73390ff63dd50ccf9c74adfaf1608f0f61b40bf46a5c38a0a1d2b2f6d19.png" />
+<img alt="_images/60b829dec1d4963b4ee1d22e0df076bbf3670b6c9fe013831ef395ea742a8c19.png" src="_images/60b829dec1d4963b4ee1d22e0df076bbf3670b6c9fe013831ef395ea742a8c19.png" />
 </div>
 </div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
@@ -357,11 +366,28 @@ $$</p>
 </div>
 </div>
 </div>
-<p><video src="./media/videos/ml-basics//720p30/MyScene.mp4" controls></video></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">manim</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/pydub/utils.py:300: SyntaxWarning: invalid escape sequence &#39;\(&#39;
+  m = re.match(&#39;([su]([0-9]{1,2})p?) \(([0-9]{1,2}) bit\)$&#39;, token)
+/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/pydub/utils.py:301: SyntaxWarning: invalid escape sequence &#39;\(&#39;
+  m2 = re.match(&#39;([su]([0-9]{1,2})p?)( \(default\))?$&#39;, token)
+/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/pydub/utils.py:310: SyntaxWarning: invalid escape sequence &#39;\(&#39;
+  elif re.match(&#39;(flt)p?( \(default\))?$&#39;, token):
+/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/pydub/utils.py:314: SyntaxWarning: invalid escape sequence &#39;\(&#39;
+  elif re.match(&#39;(dbl)p?( \(default\))?$&#39;, token):
+</pre></div>
+</div>
+</div>
+</div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">manim</span> -qm -v WARNING MyScene
-.. manim:: MyScene
 
 class MyScene(Scene):
     def construct(self):
@@ -388,10 +414,33 @@ class MyScene(Scene):
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>UsageError: Cell magic `%%manim` not found.
+<div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
+
+</pre>
+</div><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 0: Transform(VDict({&#39;line_graph&#39;: VGroup()})):   0%|                                                                                                             | 0/30 [00:00&lt;?, ?it/s]
 </pre></div>
 </div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 0: Transform(VDict({&#39;line_graph&#39;: VGroup()})):  33%|█████████████████████████████████▎                                                                  | 10/30 [00:00&lt;00:00, 98.87it/s]
+</pre></div>
 </div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                                  
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Animation 1: Transform(VDict({&#39;line_graph&#39;: VGroup()})):   0%|                                                                                                             | 0/30 [00:00&lt;?, ?it/s]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                                                                                                                                  
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="output text_html"><video src="media/jupyter/MyScene@2024-09-25@05-57-35.mp4" controls autoplay loop style="max-width: 60%;"  >
+      Your browser does not support the <code>video</code> element.
+    </video></div></div>
 </div>
 </section>
 </section>
