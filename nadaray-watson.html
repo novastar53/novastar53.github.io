@@ -228,7 +228,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="_sources/nadaray-watson.md" title="View this page">
+  <a class="muted-link" href="_sources/nadaray-watson.ipynb" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -261,33 +261,29 @@ The idea here is that the contribution of each data-point or feature <span class
 Intuitively, this means that data-points closer to <span class="math notranslate nohighlight">\( x \)</span> should contribute more to our estimate, while ones that are farther away should contribute less. <br />
 <br />
 The function <span class="math notranslate nohighlight">\( f(x, x_i) \)</span> is called a kernel. Commonly used kernels include:</p>
-<p>Gaussian</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[ 
-f(x,x_i) = exp(-\frac{||x-x_i||^2}{h}) 
-\]</div>
-</div>
-<p>Boxcar</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[
-f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1 
-\]</div>
-</div>
-<p>Epanechikov</p>
+<p>Gaussian
+$$</p>
+<p>f(x,x_i) = exp(-\frac{||x-x_i||^2}{h})
+$$</p>
+<p>Boxcar
+$$</p>
+<p>f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[
-f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
+Epanechikov
 \]</div>
 </div>
-<p>We usually include a parameter <span class="math notranslate nohighlight">\(h\)</span> that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
+<p>f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
+$<span class="math notranslate nohighlight">\(
+We usually include a parameter \)</span>h$ that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
 result. <br />
 For our experiment, we will use a Gaussian kernel.</p>
 <section id="let-s-start-by-generating-the-data">
 <h2>Let’s start by generating the data.<a class="headerlink" href="#let-s-start-by-generating-the-data" title="Link to this heading">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -307,22 +303,35 @@ For our experiment, we will use a Gaussian kernel.</p>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_gt</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s1">&#39;Raw/Noisy measurements&#39;</span><span class="p">,</span> <span class="s1">&#39;Data source or process&#39;</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
 </pre></div>
 </div>
-<p><img alt="png" src="_images/nadaray-watson_3_0.png" /></p>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="kn">import</span> <span class="nn">math</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="ne">----&gt; </span><span class="mi">3</span> <span class="kn">import</span> <span class="nn">torch</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="k">def</span> <span class="nf">wavyline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+
+<span class="ne">ModuleNotFoundError</span>: No module named &#39;torch&#39;
+</pre></div>
+</div>
+</div>
+</div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
 </section>
 <section id="now-let-s-run-the-regression-on-our-training-data">
 <h2>Now, let’s run the regression on our training data<a class="headerlink" href="#now-let-s-run-the-regression-on-our-training-data" title="Link to this heading">¶</a></h2>
-<p>Using our Gaussian kernel function, we can estimate the curve from the data with a weighted average of the kernel at different points.</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[
-\hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}
-\]</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<p>Using our Gaussian kernel function, we can estimate the curve from the data with a weighted average of the kernel at different points.
+$$</p>
+<p>\hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}</p>
+<p>$$</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">h</span><span class="p">))</span>
 
 
@@ -341,53 +350,65 @@ For our experiment, we will use a Gaussian kernel.</p>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s1">&#39;Raw/Noisy measurements&#39;</span><span class="p">,</span> <span class="s1">&#39;Data source or process&#39;</span><span class="p">,</span> <span class="s1">&#39;Prediction&#39;</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
 </pre></div>
 </div>
-<p><img alt="png" src="_images/nadaray-watson_5_0.png" /></p>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/7693a2bc514d5af59fa7c1888bf142864b863764d70ce3bb55a2391884b10b5e.png" src="_images/7693a2bc514d5af59fa7c1888bf142864b863764d70ce3bb55a2391884b10b5e.png" />
+</div>
+</div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
 <p>We can experiment with different values of smoothing constant <span class="math notranslate nohighlight">\( h \)</span>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">y_pred_0_1</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y_pred_0_1</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="n">y_pred_0_5</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 <span class="n">y_pred_1_5</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+</div>
 <p><video src="./media/videos/ml-basics//720p30/MyScene.mp4" controls></video></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="n">manim</span> <span class="o">-</span><span class="n">qm</span> <span class="o">-</span><span class="n">v</span> <span class="n">WARNING</span> <span class="n">MyScene</span>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="k">manim</span> -qm -v WARNING MyScene
+.. manim:: MyScene
 
-<span class="k">class</span> <span class="nc">MyScene</span><span class="p">(</span><span class="n">Scene</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+class MyScene(Scene):
+    def construct(self):
 
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">Axes</span><span class="p">(</span><span class="n">x_range</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_range</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;include_numbers&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        ax = Axes(x_range=[0,10,1], y_range=[0,10,1], axis_config={&quot;include_numbers&quot;: True})
 
-        <span class="n">f1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_line_graph</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_pred_0_1</span><span class="p">,</span> <span class="n">add_vertex_dots</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">f2</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_line_graph</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_pred_0_5</span><span class="p">,</span> <span class="n">add_vertex_dots</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">f3</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot_line_graph</span><span class="p">(</span><span class="n">x_gt</span><span class="p">,</span> <span class="n">y_pred_1_5</span><span class="p">,</span> <span class="n">add_vertex_dots</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        f1 = ax.plot_line_graph(x_gt, y_pred_0_1, add_vertex_dots=False)
+        f2 = ax.plot_line_graph(x_gt, y_pred_0_5, add_vertex_dots=False)
+        f3 = ax.plot_line_graph(x_gt, y_pred_1_5, add_vertex_dots=False)
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">):</span>
-            <span class="n">dot</span> <span class="o">=</span> <span class="n">Dot</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">c2p</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dot</span><span class="p">)</span>
+        self.add(ax)
+        for x,y in zip(x_train, y_train):
+            dot = Dot(ax.c2p(x,y))
+            self.add(dot)
         
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">Transform</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f2</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="n">Transform</span><span class="p">(</span><span class="n">f2</span><span class="p">,</span> <span class="n">f3</span><span class="p">))</span>
+        self.play(Transform(f1, f2))
+        self.remove(f1)
+        self.add(f2)
+        self.play(Transform(f2, f3))
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
-
-
-
-
+        self.wait()
 </pre></div>
 </div>
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
 
 </pre>
-<video src="media/jupyter/MyScene@2024-09-23@20-54-05.mp4" controls autoplay loop style="max-width: 60%;"  >
+</div><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>                                                                                              
+</pre></div>
+</div>
+<div class="output text_html"><video src="media/jupyter/MyScene@2024-09-23@20-54-05.mp4" controls autoplay loop style="max-width: 60%;"  >
       Your browser does not support the <code>video</code> element.
-    </video>
+    </video></div></div>
+</div>
 </section>
 </section>
 
