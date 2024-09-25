@@ -1,9 +1,14 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: Starburst AI Blog
+title: Data Science Blog
 author: Vikram Pawar
-logo: logo.png
+logo: starburst-transparent.png
+description: A blog exploring AI and Machine Learning
+
+sphinx:
+  config:
+    html_theme: furo
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html

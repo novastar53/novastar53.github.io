@@ -29,8 +29,8 @@ deploy: build
 
 
 clean: 
+	. $(VENV) && jupyter-book clean -a site/
 	rm -rf $(VENV_ROOT)
-	rm -rf dist
 
 .PHONY: all venv init build deploy clean
 
