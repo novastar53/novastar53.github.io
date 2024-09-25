@@ -22,15 +22,15 @@ init:
 	. $(VENV) && uv sync
 
 build: 
+	export PATH=$(PATH):/Library/TeX/texbin/latex
 	. $(VENV) && jupyter-book build site/
+	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir 
 
 deploy: build
 	. $(VENV) && cd site && ghp-import -n -p -f _build/html
 
-
 clean: 
 	. $(VENV) && jupyter-book clean -a site/
-	rm -rf $(VENV_ROOT)
 
 .PHONY: all venv init build deploy clean
 

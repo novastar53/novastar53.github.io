@@ -8,17 +8,19 @@ description: A blog exploring AI and Machine Learning
 
 sphinx:
   config:
-    project: 'Sphinx Data Science blog'
+    project: 'Starburst Data Science blog'
     author: 'Vikram Pawar'
-    copyright: '2024 Vikram Pawar'
+    copyright: '2024 Vikram Pawar novastar53.github.io'
     html_theme: furo
-    html_theme_options:
-      keywords: AI, ML, Data, Data Science, Blog, Vikram, Pawar, novastar53, Transformers, Deep Learning
+    nb_execution_show_tb: true
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: force
+  execute_notebooks: auto
+  timeout: 100
+  allow_errors: true
+
 
 # Define the name of the latex output file for PDF builds
 latex:
