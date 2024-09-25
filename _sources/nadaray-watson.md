@@ -13,22 +13,23 @@ Intuitively, this means that data-points closer to $ x $ should contribute more 
 The function $ f(x, x_i) $ is called a kernel. Commonly used kernels include:
 
 
-Gaussian
+Gaussian 
 $$ 
 
 f(x,x_i) = exp(-\frac{||x-x_i||^2}{h}) 
 $$
 
-Boxcar
+Boxcar 
 $$
 
 f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1 
 
 $$
-Epanechikov
+Epanechikov 
 $$
 f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
-$$
+$$ 
+
 We usually include a parameter $h$ that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the 
 result. \
 For our experiment, we will use a Gaussian kernel.

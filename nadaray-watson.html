@@ -62,7 +62,6 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'nadaray-watson';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Markdown Files" href="markdown.html" />
     <link rel="prev" title="Welcome to your Jupyter Book" href="intro.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -183,9 +182,6 @@
         </ul>
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Nadaraya-Watson Regression / Kernel Regression</a></li>
-<li class="toctree-l1"><a class="reference internal" href="markdown.html">Markdown Files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="notebooks.html">Content with notebooks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="markdown-notebooks.html">Notebooks with MyST Markdown</a></li>
 </ul>
 
     </div>
@@ -416,11 +412,11 @@ $$</p>
 <p>f(x,x_i) = 1 \text{  if   } \frac{||x-x_i||}{h} \leq 1</p>
 <div class="math notranslate nohighlight">
 \[
-Epanechikov
+Epanechikov 
 \]</div>
 <p>f(x,x_i) =  max(0, 1- \frac{||x-x_i||}{h})
-$<span class="math notranslate nohighlight">\(
-We usually include a parameter \)</span>h$ that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
+$$</p>
+<p>We usually include a parameter <span class="math notranslate nohighlight">\(h\)</span> that controls the smoothness of the estimated function. Intuitively, this is a way of controlling how much a single data point can influence the
 result. <br />
 For our experiment, we will use a Gaussian kernel.</p>
 <section id="let-s-start-by-generating-the-data">
@@ -564,15 +560,6 @@ $$</p>
         <p class="prev-next-subtitle">previous</p>
         <p class="prev-next-title">Welcome to your Jupyter Book</p>
       </div>
-    </a>
-    <a class="right-next"
-       href="markdown.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Markdown Files</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
