@@ -4,4 +4,5 @@
 format: jb-article
 root: intro
 sections:
-- file: nadaray-watson
+- file: 09-jax-mnist-fc-batchnorm.ipynb
+- file: nadaraya-watson-kernel-regression

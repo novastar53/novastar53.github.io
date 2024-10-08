@@ -1,4 +1,0 @@
-# This file is used internally by FFMPEG.
-file 'file:/Users/vikram/dev/vikrampawar.com/site/media/videos/site/720p30/partial_movie_files/MyScene/2016333726_2745740887_598436621.mp4'
-file 'file:/Users/vikram/dev/vikrampawar.com/site/media/videos/site/720p30/partial_movie_files/MyScene/543634251_1039113630_598436621.mp4'
-file 'file:/Users/vikram/dev/vikrampawar.com/site/media/videos/site/720p30/partial_movie_files/MyScene/543634251_1704852926_2334546783.mp4'

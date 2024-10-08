@@ -8,6 +8,7 @@
 
 VENV_ROOT := .venv
 VENV := $(VENV_ROOT)/bin/activate
+PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION := python
 
 ################################################################################
 # Targets
