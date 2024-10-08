@@ -68,7 +68,7 @@ Finally, we will try to understand how and why batch normalization works.</p>
 \[
 \hat{x}^{(i)} = \frac{x^{(i) -\mu_{B}^{(i)}}}{\sqrt{(\sigma_B^{(i)})^2 + \epsilon}}
 \]</div>
-<p>The layer has two learnable parameters, <span class="math notranslate nohighlight">\(\gamma\)</span> and <span class="math notranslate nohighlight">\(\beta\)</span>, which are then used to scale and shift the normalized features.</p>
+<p>The layer has two learnable parameters, <span class="math notranslate nohighlight">\(\gamma\)</span> and <span class="math notranslate nohighlight">\(\beta\)</span>, which are then used to scale and shift the normalized features. This enables the next layer to receive a stable distribution for its inputs.</p>
 <div class="math notranslate nohighlight">
 \[
 \hat{x}^{(i)} = \gamma^{(i)} . \hat{x}^{(i)} + \beta^{(i)}
