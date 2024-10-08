@@ -464,20 +464,6 @@ The candidate is a modified version of the baseline with an additional batch nor
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">line</span> <span class="mi">8</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="kn">import</span> <span class="nn">operator</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
-<span class="ne">----&gt; </span><span class="mi">8</span> <span class="kn">from</span> <span class="nn">flax</span> <span class="kn">import</span> <span class="n">linen</span> <span class="k">as</span> <span class="n">nn</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span> <span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">train_state</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="kn">import</span> <span class="nn">optax</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;flax&#39;
-</pre></div>
-</div>
-</div>
 </div>
 <p>Let’s count the parameters and plot the initial distributions for the parameter values</p>
 <div class="cell docutils container">
@@ -535,18 +521,13 @@ The candidate is a modified version of the baseline with an additional batch nor
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">10</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span>             <span class="n">num_params</span> <span class="o">+=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span>     <span class="k">return</span> <span class="n">num_params</span>
-<span class="ne">---&gt; </span><span class="mi">10</span> <span class="n">num_baseline_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">baseline_params</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">num_candidate_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">candidate_params</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of baseline parameters: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_params&#39; is not defined
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of baseline parameters: 242762
+Baseline P/S ratio: 4.0460
+Number of candidate parameters: 243658
+Candidate P/S ratio: 4.0610
 </pre></div>
 </div>
+<img alt="_images/0af88d83d239b8bbff1f0c8dac7ce32567305e3be5c4365ef677bff03c2629da.png" src="_images/0af88d83d239b8bbff1f0c8dac7ce32567305e3be5c4365ef677bff03c2629da.png" />
 </div>
 </div>
 <p>The candidate model has a few more paramters for the batch normalization layers and the two models have comparable numbers of parameters.</p>
@@ -626,14 +607,67 @@ The candidate is a modified version of the baseline with an additional batch nor
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="kn">import</span> <span class="nn">optax</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">train_state</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;optax&#39;
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1367, Test Accuracy: 0.1449
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Train Accuracy: 0.9649, Test Accuracy: 0.9570
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 2, Train Accuracy: 0.9816, Test Accuracy: 0.9724
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 3, Train Accuracy: 0.9851, Test Accuracy: 0.9690
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 4, Train Accuracy: 0.9875, Test Accuracy: 0.9746
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 5, Train Accuracy: 0.9884, Test Accuracy: 0.9735
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 6, Train Accuracy: 0.9884, Test Accuracy: 0.9777
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 7, Train Accuracy: 0.9918, Test Accuracy: 0.9774
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 8, Train Accuracy: 0.9939, Test Accuracy: 0.9782
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 9, Train Accuracy: 0.9945, Test Accuracy: 0.9786
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 10, Train Accuracy: 0.9895, Test Accuracy: 0.9737
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 11, Train Accuracy: 0.9961, Test Accuracy: 0.9806
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 12, Train Accuracy: 0.9939, Test Accuracy: 0.9772
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 13, Train Accuracy: 0.9964, Test Accuracy: 0.9794
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 14, Train Accuracy: 0.9958, Test Accuracy: 0.9777
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 15, Train Accuracy: 0.9966, Test Accuracy: 0.9796
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 16, Train Accuracy: 0.9925, Test Accuracy: 0.9740
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 17, Train Accuracy: 0.9974, Test Accuracy: 0.9802
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 18, Train Accuracy: 0.9955, Test Accuracy: 0.9797
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 19, Train Accuracy: 0.9962, Test Accuracy: 0.9797
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 20, Train Accuracy: 0.9985, Test Accuracy: 0.9800
 </pre></div>
 </div>
 </div>
@@ -722,14 +756,67 @@ The candidate is a modified version of the baseline with an additional batch nor
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="kn">import</span> <span class="nn">optax</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">train_state</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;optax&#39;
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1367, Test Accuracy: 0.1449
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Train Accuracy: 0.9757, Test Accuracy: 0.9707
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 2, Train Accuracy: 0.9841, Test Accuracy: 0.9758
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 3, Train Accuracy: 0.9879, Test Accuracy: 0.9744
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 4, Train Accuracy: 0.9917, Test Accuracy: 0.9802
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 5, Train Accuracy: 0.9938, Test Accuracy: 0.9806
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 6, Train Accuracy: 0.9931, Test Accuracy: 0.9800
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 7, Train Accuracy: 0.9957, Test Accuracy: 0.9818
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 8, Train Accuracy: 0.9960, Test Accuracy: 0.9810
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 9, Train Accuracy: 0.9970, Test Accuracy: 0.9834
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 10, Train Accuracy: 0.9972, Test Accuracy: 0.9822
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 11, Train Accuracy: 0.9976, Test Accuracy: 0.9819
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 12, Train Accuracy: 0.9977, Test Accuracy: 0.9816
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 13, Train Accuracy: 0.9981, Test Accuracy: 0.9829
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 14, Train Accuracy: 0.9980, Test Accuracy: 0.9819
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 15, Train Accuracy: 0.9973, Test Accuracy: 0.9813
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 16, Train Accuracy: 0.9983, Test Accuracy: 0.9818
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 17, Train Accuracy: 0.9988, Test Accuracy: 0.9828
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 18, Train Accuracy: 0.9983, Test Accuracy: 0.9825
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 19, Train Accuracy: 0.9992, Test Accuracy: 0.9817
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 20, Train Accuracy: 0.9983, Test Accuracy: 0.9818
 </pre></div>
 </div>
 </div>
@@ -769,17 +856,10 @@ The candidate is a modified version of the baseline with an additional batch nor
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span> <span class="n">line</span> <span class="mi">24</span>
-<span class="g g-Whitespace">     </span><span class="mi">18</span>         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;Candidate&quot;</span><span class="p">])</span>
-<span class="g g-Whitespace">     </span><span class="mi">22</span> <span class="c1">#plt.legend([&quot;Baseline&quot;, &quot;Candidate&quot;])</span>
-<span class="ne">---&gt; </span><span class="mi">24</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">baseline_outputs_history</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;FuncAnimation&#39; is not defined
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.animation.FuncAnimation at 0x385bfddf0&gt;
 </pre></div>
 </div>
-<img alt="_images/7f3d5feea3c1c5f6771ac5a47ea39989f655a4fe25aedcf84e6a8a60497db025.png" src="_images/7f3d5feea3c1c5f6771ac5a47ea39989f655a4fe25aedcf84e6a8a60497db025.png" />
+<img alt="_images/2c8fde6644cf1210c163f4b572c0f9b6904f8dafe0ce368385a1afcf347603e1.png" src="_images/2c8fde6644cf1210c163f4b572c0f9b6904f8dafe0ce368385a1afcf347603e1.png" />
 </div>
 </div>
 <p>Notice that both the baseline and candidate activation are identical at the start of training. However, as the training progresses, after each epoch, the baseline model activations tend to shift and spread out. This is called internal covariate shift. Notice however how stable the outputs for the candidate layers are.</p>
@@ -831,19 +911,7 @@ The candidate is a modified version of the baseline with an additional batch nor
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span> <span class="n">line</span> <span class="mi">13</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">candidate_output_stds</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-<span class="ne">---&gt; </span><span class="mi">13</span>     <span class="n">baseline_o1</span> <span class="o">=</span> <span class="n">baseline_outputs_history</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">layer_name</span><span class="p">][:,</span> <span class="n">output_idx</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span>     <span class="n">baseline_m1</span> <span class="o">=</span> <span class="n">baseline_o1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="g g-Whitespace">     </span><span class="mi">15</span>     <span class="n">baseline_output_means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">baseline_m1</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_outputs_history&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/56f294a9a5066b07a950229e242e131c3f3e31c00f1667c1f1dfdd35c09776be.png" src="_images/56f294a9a5066b07a950229e242e131c3f3e31c00f1667c1f1dfdd35c09776be.png" />
+<img alt="_images/16127af3d13855c944b8f743ef4b485cde516c0ef3e79f6ba4f820c0061001d9.png" src="_images/16127af3d13855c944b8f743ef4b485cde516c0ef3e79f6ba4f820c0061001d9.png" />
 </div>
 </div>
 <p>Notice how the output means for the Candidate model remain stable and consistent over time. Similarly, note the lower standard deviations for the Candidate outputs.</p>
@@ -893,18 +961,7 @@ First, let’s choose a single parameter and track the gradient update values.</
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">line</span> <span class="mi">7</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">param_i</span> <span class="o">=</span> <span class="mi">60</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">param_j</span> <span class="o">=</span> <span class="mi">10</span> 
-<span class="ne">----&gt; </span><span class="mi">7</span> <span class="n">layer_shape</span> <span class="o">=</span> <span class="n">baseline_params</span><span class="p">[</span><span class="n">LAYER</span><span class="p">][</span><span class="n">PARAM</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span> <span class="n">baseline_grads</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">baseline_grads_all</span> <span class="o">=</span> <span class="p">[]</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_params&#39; is not defined
-</pre></div>
-</div>
+<img alt="_images/1fcd5bdc6cddad4083c760bb3076a2bf7eb5ad5ad5663d7a565fc93036f325a8.png" src="_images/1fcd5bdc6cddad4083c760bb3076a2bf7eb5ad5ad5663d7a565fc93036f325a8.png" />
 </div>
 </div>
 <p>Notice that the candidate’s gradient updates are a lot smoother than the baseline model’s. Next, let’s plot the mean and standard deviations for all gradient updates across iterations.</p>
@@ -920,16 +977,7 @@ First, let’s choose a single parameter and track the gradient update values.</
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">11</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_grad_stds</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_grad_stds</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Gradient Updates Standard Deviation&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_grad_stds&#39; is not defined
-</pre></div>
-</div>
+<img alt="_images/137e240f51b110633b62808406b1d44ef7e7b8157a89b300bbc2ba060cfea8c1.png" src="_images/137e240f51b110633b62808406b1d44ef7e7b8157a89b300bbc2ba060cfea8c1.png" />
 </div>
 </div>
 <p>The candidate’s gradient updates tend to have smaller standard deviations, especially early in the training.</p>
@@ -945,16 +993,7 @@ First, let’s choose a single parameter and track the gradient update values.</
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">12</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_grad_means</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_grad_means</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Mean Gradient Updates&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_grad_means&#39; is not defined
-</pre></div>
-</div>
+<img alt="_images/91c83cbfd5413b0b7fcb2959dd6494193e01bd0a8ee814ce6b68c308c7e50721.png" src="_images/91c83cbfd5413b0b7fcb2959dd6494193e01bd0a8ee814ce6b68c308c7e50721.png" />
 </div>
 </div>
 <p>The mean gradient updates for the candidates tend to be smaller as well, leading to a smoother loss surface and faster convergence.</p>
