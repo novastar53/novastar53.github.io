@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
@@ -354,7 +354,7 @@ Candidate P/S ratio: 4.0610
 <img alt="_images/0af88d83d239b8bbff1f0c8dac7ce32567305e3be5c4365ef677bff03c2629da.png" src="_images/0af88d83d239b8bbff1f0c8dac7ce32567305e3be5c4365ef677bff03c2629da.png" />
 </div>
 </div>
-<p>The candidate model has a few more paramters for the batch normalization layers and the two models have comparable numbers of parameters.</p>
+<p>The candidate model has a few more paramters for the batch normalization layers.</p>
 </section>
 <section id="let-s-train-the-baseline-model">
 <h2>Let’s train the baseline model.<a class="headerlink" href="#let-s-train-the-baseline-model" title="Link to this heading">¶</a></h2>
@@ -402,7 +402,7 @@ Candidate P/S ratio: 4.0610
 
     <span class="n">train_accuracy</span><span class="p">,</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">)</span>
     <span class="n">test_accuracy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
-    <span class="c1">#print(f&#39;Epoch 0, Train Accuracy: {train_accuracy:0.4f}, Test Accuracy: {test_accuracy:.4f}&#39;)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch 0, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">params_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">ts</span><span class="o">.</span><span class="n">params</span><span class="p">]</span>
     <span class="n">outputs_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="p">]</span>
     <span class="n">grads_history</span> <span class="o">=</span> <span class="p">[]</span>
@@ -422,7 +422,8 @@ Candidate P/S ratio: 4.0610
                 <span class="n">grads_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grads</span><span class="p">)</span>
         <span class="n">train_accuracy</span><span class="p">,</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">)</span>
         <span class="n">test_accuracy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
-        <span class="c1">#print(f&#39;Epoch {epoch + 1}, Train Accuracy: {train_accuracy:0.4f}, Test Accuracy: {test_accuracy:.4f}&#39;)</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">params_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
         <span class="n">outputs_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
 
@@ -434,6 +435,21 @@ Candidate P/S ratio: 4.0610
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1367, Test Accuracy: 0.1449
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Train Accuracy: 0.9649, Test Accuracy: 0.9570
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 6, Train Accuracy: 0.9884, Test Accuracy: 0.9777
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 11, Train Accuracy: 0.9961, Test Accuracy: 0.9806
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 16, Train Accuracy: 0.9925, Test Accuracy: 0.9740
+</pre></div>
+</div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 20, Train Accuracy: 0.9985, Test Accuracy: 0.9800
 </pre></div>
 </div>
@@ -488,7 +504,7 @@ Candidate P/S ratio: 4.0610
 
     <span class="n">train_accuracy</span><span class="p">,</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">)</span>
     <span class="n">test_accuracy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
-    <span class="c1">#print(f&#39;Epoch 0, Train Accuracy: {train_accuracy:0.4f}, Test Accuracy: {test_accuracy:.4f}&#39;)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch 0, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
     <span class="n">params_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">ts</span><span class="o">.</span><span class="n">params</span><span class="p">]</span>
     <span class="n">batch_stats_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">batch_stats</span><span class="p">]</span>
     <span class="n">outputs_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="p">]</span>
@@ -510,7 +526,8 @@ Candidate P/S ratio: 4.0610
 
         <span class="n">train_accuracy</span><span class="p">,</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">)</span>
         <span class="n">test_accuracy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
-        <span class="c1">#print(f&#39;Epoch {epoch + 1}, Train Accuracy: {train_accuracy:0.4f}, Test Accuracy: {test_accuracy:.4f}&#39;)</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">params_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
         <span class="n">batch_stats_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">batch_stats</span><span class="p">)</span>
         <span class="n">outputs_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
@@ -524,6 +541,21 @@ Candidate P/S ratio: 4.0610
 </div>
 </div>
 <div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1367, Test Accuracy: 0.1449
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Train Accuracy: 0.9757, Test Accuracy: 0.9707
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 6, Train Accuracy: 0.9931, Test Accuracy: 0.9800
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 11, Train Accuracy: 0.9976, Test Accuracy: 0.9819
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 16, Train Accuracy: 0.9983, Test Accuracy: 0.9818
+</pre></div>
+</div>
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 20, Train Accuracy: 0.9983, Test Accuracy: 0.9818
 </pre></div>
 </div>
@@ -565,20 +597,14 @@ Candidate P/S ratio: 4.0610
 
 
 <span class="n">ani</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">baseline_outputs_history</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="c1"># Embed the animation as HTML5 with custom dimensions</span>
-<span class="n">HTML</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">&lt;video width=&quot;1200&quot; controls&gt;</span>
-<span class="s2">  &lt;source src=</span><span class="si">{</span><span class="n">ani</span><span class="o">.</span><span class="n">to_html5_video</span><span class="p">()</span><span class="si">}</span>
-<span class="s2">&lt;/video&gt;</span>
-<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+<span class="n">HTML</span><span class="p">(</span><span class="n">ani</span><span class="o">.</span><span class="n">to_html5_video</span><span class="p">())</span>
 </pre></div>
 </div>
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output text_html">
-<video width="1200" controls>
-  <source src=<video width="1200" height="300" controls autoplay>
+<div class="output text_html"><video width="1200" height="300" controls autoplay>
   <source type="video/mp4" src="data:video/mp4;base64,AAAAIGZ0eXBNNFYgAAACAE00ViBpc29taXNvMmF2YzEAAAAIZnJlZQAA04JtZGF0AAACrQYF//+p
 3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NCByMzEwOCAzMWUxOWY5IC0gSC4yNjQvTVBF
 Ry00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMyAtIGh0dHA6Ly93d3cudmlkZW9sYW4u
@@ -1551,10 +1577,7 @@ AAAAbWRpcmFwcGwAAAAAAAAAAAAAAAAsaWxzdAAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2
 MS4xLjEwMA==
 ">
   Your browser does not support the video tag.
-</video>
-</video>
-</div><img alt="_images/141073962e30b4190f77db02b345407513401b7b1aa5797b4c3b5c802a0576a4.png" src="_images/141073962e30b4190f77db02b345407513401b7b1aa5797b4c3b5c802a0576a4.png" />
-</div>
+</video></div></div>
 </div>
 <p>Notice that both the baseline and candidate activation are identical at the start of training. However, as the training progresses, after each epoch, the baseline model activations tend to shift and spread out. This is called internal covariate shift. Notice however how stable the outputs for the candidate layers are.</p>
 </section>
