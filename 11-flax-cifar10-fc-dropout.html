@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
@@ -98,61 +98,8 @@
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR:absl:Descriptors cannot be created directly.
-If this call came from a _pb2.py file, your generated code is out of date and must be regenerated with protoc &gt;= 3.19.0.
-If you cannot immediately regenerate your protos, some other possible workarounds are:
- 1. Downgrade the protobuf package to 3.20.x or lower.
- 2. Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python (but this will use pure-Python parsing and will be much slower).
-
-More information: https://developers.google.com/protocol-buffers/docs/news/2022-05-06#python-updates
-Traceback (most recent call last):
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/__init__.py&quot;, line 79, in &lt;module&gt;
-    from tensorflow_datasets import rlds  # pylint: disable=g-bad-import-order
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/__init__.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.rlds import envlogger_reader
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/envlogger_reader.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.core.utils.lazy_imports_utils import tree
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/__init__.py&quot;, line 22, in &lt;module&gt;
-    from tensorflow_datasets.core import community
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/__init__.py&quot;, line 19, in &lt;module&gt;
-    from tensorflow_datasets.core.community.huggingface_wrapper import mock_builtin_to_use_gfile
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/huggingface_wrapper.py&quot;, line 31, in &lt;module&gt;
-    from tensorflow_datasets.core import dataset_builder
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_builder.py&quot;, line 35, in &lt;module&gt;
-    from tensorflow_datasets.core import dataset_info
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_info.py&quot;, line 52, in &lt;module&gt;
-    from tensorflow_datasets.core import splits as splits_lib
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/splits.py&quot;, line 34, in &lt;module&gt;
-    from tensorflow_datasets.core import proto as proto_lib
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/__init__.py&quot;, line 18, in &lt;module&gt;
-    from tensorflow_datasets.core.proto import dataset_info_generated_pb2 as dataset_info_pb2  # pylint: disable=line-too-long
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/dataset_info_generated_pb2.py&quot;, line 32, in &lt;module&gt;
-    from tensorflow_metadata.proto.v0 import schema_pb2 as tensorflow__metadata_dot_proto_dot_v0_dot_schema__pb2
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/v0/schema_pb2.py&quot;, line 32, in &lt;module&gt;
-    _descriptor.EnumValueDescriptor(
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/google/protobuf/descriptor.py&quot;, line 789, in __new__
-    _message.Message._CheckCalledFromGeneratedFile()
-TypeError: Descriptors cannot be created directly.
-If this call came from a _pb2.py file, your generated code is out of date and must be regenerated with protoc &gt;= 3.19.0.
-If you cannot immediately regenerate your protos, some other possible workarounds are:
- 1. Downgrade the protobuf package to 3.20.x or lower.
- 2. Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python (but this will use pure-Python parsing and will be much slower).
-
-More information: https://developers.google.com/protocol-buffers/docs/news/2022-05-06#python-updates
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">5</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span> <span class="nn">jax</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
-<span class="ne">----&gt; </span><span class="mi">5</span> <span class="n">train_tf</span><span class="p">,</span> <span class="n">test_tf</span> <span class="o">=</span> <span class="n">tfds</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;cifar10&#39;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">as_supervised</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">raw_train_images</span><span class="p">,</span> <span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">raw_train_images</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">raw_train_images</span><span class="p">)</span>
-
-<span class="ne">AttributeError</span>: module &#39;tensorflow_datasets&#39; has no attribute &#39;load&#39;
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training Set Size 50000
+Test Set Size 10000
 </pre></div>
 </div>
 </div>
@@ -197,19 +144,7 @@ More information: https://developers.google.com/protocol-buffers/docs/news/2022-
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">line</span> <span class="mi">13</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span> <span class="n">row_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span><span class="n">row_size</span><span class="p">))</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">RANDOM_KEY</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">13</span> <span class="n">idxs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="p">(</span><span class="n">num_examples</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">raw_train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="n">exs</span> <span class="o">=</span> <span class="n">raw_train_images</span><span class="p">[</span><span class="n">idxs</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_examples</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">/</span><span class="mf">255.0</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_examples</span><span class="p">):</span>
-
-<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/a18c9921a5eb511227e66433155cdd72433294ab5618ee2414a4fac12272d0a4.png" src="_images/a18c9921a5eb511227e66433155cdd72433294ab5618ee2414a4fac12272d0a4.png" />
+<img alt="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" src="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" />
 </div>
 </div>
 <p>Let’s now preprocess the dataset and look at the input feature distrubition.</p>
@@ -252,19 +187,7 @@ More information: https://developers.google.com/protocol-buffers/docs/news/2022-
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="c1"># First, let&#39;s plot the histogram for the unnormalized dataset</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
-<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">raw_train_images</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Unnormalized Input Feature Distribution&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Feature Values&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/c029a7249cadaf1bc81b9350245cc1f132b422306993c9256dd38e4879125fad.png" src="_images/c029a7249cadaf1bc81b9350245cc1f132b422306993c9256dd38e4879125fad.png" />
+<img alt="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" src="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" />
 </div>
 </div>
 </section>
@@ -460,20 +383,12 @@ The candidate is just the baseline with an additional dropout layer after each R
 </details>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of baseline parameters: 831210
+Baseline P/S ratio: 16.6242
+Number of candidate parameters: 831210
+Candidate P/S ratio: 16.6242
 </pre></div>
 </div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">14</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">num_candidate_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">candidate_params</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of baseline parameters: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">14</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline P/S ratio: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">15</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of candidate parameters: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Candidate P/S ratio: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;train_images&#39; is not defined
-</pre></div>
-</div>
+<img alt="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" src="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" />
 </div>
 </div>
 <p>As you can see, both models have the same number of parameters as well as initial distributions. Hence, we can safely assume that any performance improvement seen by the candidate model will be due to dropout.</p>
