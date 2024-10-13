@@ -1,0 +1,44 @@
+Traceback (most recent call last):
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 782, in _async_poll_for_reply
+    msg = await ensure_async(self.kc.shell_channel.get_msg(timeout=new_timeout))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 198, in ensure_async
+    result = await obj
+             ^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jupyter_client/channels.py", line 313, in get_msg
+    raise Empty
+_queue.Empty
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+    executenb(
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 1314, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 709, in async_execute
+    await self.async_execute_cell(
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 1005, in async_execute_cell
+    exec_reply = await self.task_poll_for_reply
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 806, in _async_poll_for_reply
+    error_on_timeout_execute_reply = await self._async_handle_timeout(timeout, cell)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/nbclient/client.py", line 856, in _async_handle_timeout
+    raise CellTimeoutError.error_from_timeout_and_cell(
+nbclient.exceptions.CellTimeoutError: A cell timed out while it was being executed, after 100 seconds.
+The message was: Cell execution timed out.
+Here is a preview of the cell contents:
+-------------------
+['# Create a train state', 'tx = optax.adam(learning_rate=LR)', 'baseline_ts = train_state.TrainState.create(apply_fn=baseline_model.apply, params=baseline_params, tx=tx)', '', 'def compute_loss(params, batch_stats, apply_fn, images, labels, train):']
+...
+['    return train_accuracy_history, test_accuracy_history', '', 'baseline_train_accuracy_history, baseline_test_accuracy_history = train_and_evaluate(rng, baseline_model, baseline_ts, baseline_batch_stats, train_images, train_labels, test_images, test_labels)', '', "print(f'Epoch {num_epochs}, Train Accuracy: {baseline_train_accuracy_history[-1]:0.4f}, Test Accuracy: {baseline_test_accuracy_history[-1]:.4f}')"]
+-------------------
+
