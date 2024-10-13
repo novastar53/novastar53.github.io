@@ -98,8 +98,61 @@
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training Set Size 50000
-Test Set Size 10000
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR:absl:Descriptors cannot be created directly.
+If this call came from a _pb2.py file, your generated code is out of date and must be regenerated with protoc &gt;= 3.19.0.
+If you cannot immediately regenerate your protos, some other possible workarounds are:
+ 1. Downgrade the protobuf package to 3.20.x or lower.
+ 2. Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python (but this will use pure-Python parsing and will be much slower).
+
+More information: https://developers.google.com/protocol-buffers/docs/news/2022-05-06#python-updates
+Traceback (most recent call last):
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/__init__.py&quot;, line 79, in &lt;module&gt;
+    from tensorflow_datasets import rlds  # pylint: disable=g-bad-import-order
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/__init__.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.rlds import envlogger_reader
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/envlogger_reader.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core.utils.lazy_imports_utils import tree
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/__init__.py&quot;, line 22, in &lt;module&gt;
+    from tensorflow_datasets.core import community
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/__init__.py&quot;, line 19, in &lt;module&gt;
+    from tensorflow_datasets.core.community.huggingface_wrapper import mock_builtin_to_use_gfile
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/huggingface_wrapper.py&quot;, line 31, in &lt;module&gt;
+    from tensorflow_datasets.core import dataset_builder
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_builder.py&quot;, line 35, in &lt;module&gt;
+    from tensorflow_datasets.core import dataset_info
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_info.py&quot;, line 52, in &lt;module&gt;
+    from tensorflow_datasets.core import splits as splits_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/splits.py&quot;, line 34, in &lt;module&gt;
+    from tensorflow_datasets.core import proto as proto_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/__init__.py&quot;, line 18, in &lt;module&gt;
+    from tensorflow_datasets.core.proto import dataset_info_generated_pb2 as dataset_info_pb2  # pylint: disable=line-too-long
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/dataset_info_generated_pb2.py&quot;, line 32, in &lt;module&gt;
+    from tensorflow_metadata.proto.v0 import schema_pb2 as tensorflow__metadata_dot_proto_dot_v0_dot_schema__pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/v0/schema_pb2.py&quot;, line 32, in &lt;module&gt;
+    _descriptor.EnumValueDescriptor(
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/google/protobuf/descriptor.py&quot;, line 789, in __new__
+    _message.Message._CheckCalledFromGeneratedFile()
+TypeError: Descriptors cannot be created directly.
+If this call came from a _pb2.py file, your generated code is out of date and must be regenerated with protoc &gt;= 3.19.0.
+If you cannot immediately regenerate your protos, some other possible workarounds are:
+ 1. Downgrade the protobuf package to 3.20.x or lower.
+ 2. Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python (but this will use pure-Python parsing and will be much slower).
+
+More information: https://developers.google.com/protocol-buffers/docs/news/2022-05-06#python-updates
+</pre></div>
+</div>
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">5</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span> <span class="nn">jax</span>
+<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="ne">----&gt; </span><span class="mi">5</span> <span class="n">train_tf</span><span class="p">,</span> <span class="n">test_tf</span> <span class="o">=</span> <span class="n">tfds</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;cifar10&#39;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">as_supervised</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">raw_train_images</span><span class="p">,</span> <span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">raw_train_images</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">raw_train_images</span><span class="p">)</span>
+
+<span class="ne">AttributeError</span>: module &#39;tensorflow_datasets&#39; has no attribute &#39;load&#39;
 </pre></div>
 </div>
 </div>
@@ -144,7 +197,19 @@ Test Set Size 10000
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" src="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">line</span> <span class="mi">13</span>
+<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span> <span class="n">row_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span><span class="n">row_size</span><span class="p">))</span>
+<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">RANDOM_KEY</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">13</span> <span class="n">idxs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="p">(</span><span class="n">num_examples</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">raw_train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="n">exs</span> <span class="o">=</span> <span class="n">raw_train_images</span><span class="p">[</span><span class="n">idxs</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_examples</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">/</span><span class="mf">255.0</span>
+<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_examples</span><span class="p">):</span>
+
+<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
+</pre></div>
+</div>
+<img alt="_images/a18c9921a5eb511227e66433155cdd72433294ab5618ee2414a4fac12272d0a4.png" src="_images/a18c9921a5eb511227e66433155cdd72433294ab5618ee2414a4fac12272d0a4.png" />
 </div>
 </div>
 <p>Let’s now preprocess the dataset and look at the input feature distrubition.</p>
@@ -187,7 +252,19 @@ Test Set Size 10000
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" src="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="c1"># First, let&#39;s plot the histogram for the unnormalized dataset</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">raw_train_images</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Unnormalized Input Feature Distribution&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Feature Values&quot;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
+</pre></div>
+</div>
+<img alt="_images/c029a7249cadaf1bc81b9350245cc1f132b422306993c9256dd38e4879125fad.png" src="_images/c029a7249cadaf1bc81b9350245cc1f132b422306993c9256dd38e4879125fad.png" />
 </div>
 </div>
 </section>
@@ -377,12 +454,20 @@ The candidate is just the baseline with an additional dropout layer after each R
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of baseline parameters: 831210
-Baseline P/S ratio: 16.6242
-Number of candidate parameters: 831210
-Candidate P/S ratio: 16.6242
 </pre></div>
 </div>
-<img alt="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" src="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">14</span>
+<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">num_candidate_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">candidate_params</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of baseline parameters: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">14</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline P/S ratio: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">15</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of candidate parameters: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Candidate P/S ratio: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;train_images&#39; is not defined
+</pre></div>
+</div>
 </div>
 </div>
 <p>As you can see, both models have the same number of parameters as well as initial distributions. Hence, we can safely assume that any performance improvement seen by the candidate model will be due to dropout.</p>
@@ -404,14 +489,21 @@ Candidate P/S ratio: 16.6242
     <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_temp_dir</span><span class="p">,</span> <span class="s2">&quot;model_outputs&quot;</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="c1"># Save outputs to disk using pickle</span>
+<span class="k">def</span> <span class="nf">save_accuracy_to_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">tmpdir</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">tmpdir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">_accuracy.npy&#39;</span>
+        <span class="n">jnp</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">load_accuracy_from_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">tmpdir</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">):</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">tmpdir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">_accuracy.npy&#39;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
 <span class="k">def</span> <span class="nf">save_outputs_to_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">tmpdir</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">tmpdir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">_outputs_epoch_</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">.npy&#39;</span>
         <span class="n">jnp</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">outputs</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
 
 
-<span class="c1"># Load outputs from disk using pickle</span>
 <span class="k">def</span> <span class="nf">load_outputs_from_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">tmpdir</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">):</span>
     <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">tmpdir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">_outputs_epoch_</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s1">.npy&#39;</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
@@ -529,11 +621,12 @@ Candidate P/S ratio: 16.6242
         <span class="n">train_outputs</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">test_outputs</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">return</span> <span class="n">train_accuracy_history</span><span class="p">,</span> <span class="n">test_accuracy_history</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">num_epochs</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-<span class="n">baseline_train_accuracy_history</span><span class="p">,</span> <span class="n">baseline_test_accuracy_history</span> <span class="o">=</span> <span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">baseline_model</span><span class="p">,</span> <span class="n">baseline_ts</span><span class="p">,</span> <span class="n">baseline_batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
+    <span class="n">save_accuracy_to_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">train_accuracy_history</span><span class="p">)</span>
+    <span class="n">save_accuracy_to_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">test_accuracy_history</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">num_epochs</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">baseline_train_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">baseline_test_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">baseline_model</span><span class="p">,</span> <span class="n">baseline_ts</span><span class="p">,</span> <span class="n">baseline_batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -616,11 +709,12 @@ Epoch 200, Train Accuracy: 0.9939, Test Accuracy: 0.5356
         <span class="n">train_accuracy_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_accuracy</span><span class="p">)</span>
         <span class="n">test_accuracy_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_accuracy</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">train_accuracy_history</span><span class="p">,</span> <span class="n">test_accuracy_history</span>
+    <span class="n">save_accuracy_to_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">train_accuracy_history</span><span class="p">)</span>
+    <span class="n">save_accuracy_to_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">test_accuracy_history</span><span class="p">)</span>
 
-<span class="n">candidate_train_accuracy_history</span><span class="p">,</span> <span class="n">candidate_test_accuracy_history</span> <span class="o">=</span> <span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">candidate_model</span><span class="p">,</span> <span class="n">candidate_ts</span><span class="p">,</span> <span class="n">candidate_batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">num_epochs</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">num_epochs</span><span class="si">}</span><span class="s1">, Train Accuracy: </span><span class="si">{</span><span class="n">candidate_train_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">0.4f</span><span class="si">}</span><span class="s1">, Test Accuracy: </span><span class="si">{</span><span class="n">candidate_test_accuracy_history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">candidate_model</span><span class="p">,</span> <span class="n">candidate_ts</span><span class="p">,</span> <span class="n">candidate_batch_stats</span><span class="p">,</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -645,6 +739,11 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
 
+<span class="n">baseline_train_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="n">baseline_test_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="n">candidate_train_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="n">candidate_test_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">)</span>
+
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_train_accuracy_history</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_train_accuracy_history</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Train Accuracy&quot;</span><span class="p">)</span>
@@ -667,18 +766,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
-<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_train_accuracy_history</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_train_accuracy_history</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Train Accuracy&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;baseline_train_accuracy_history&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/c5f9ba5a3e7bb7ae97bdd937bf5eee8903b80aced4f1a550e9e372f83bbcbb40.png" src="_images/c5f9ba5a3e7bb7ae97bdd937bf5eee8903b80aced4f1a550e9e372f83bbcbb40.png" />
+<img alt="_images/99dae77278eaea8dfc09dc6a7563d54c4a3fcff2d12eb3191212dd1224e2a14b.png" src="_images/99dae77278eaea8dfc09dc6a7563d54c4a3fcff2d12eb3191212dd1224e2a14b.png" />
 </div>
 </div>
 <p>As you can see, the candidate model with the dropout layers performs better than the baseline. It also takes longer to converge than the baseline.</p>
@@ -709,15 +797,6 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
         <span class="n">baseline_outputs</span> <span class="o">=</span>  <span class="n">load_outputs_from_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span>
         <span class="n">baseline_datapoints</span> <span class="o">=</span> <span class="n">baseline_outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="c1">#if dead_neuron_mask is None:</span>
-        <span class="c1">#    dead_neuron_mask = (baseline_outputs &lt;= 0)</span>
-        <span class="c1">#dead_neuron_mask = (baseline_outputs &lt;= 0) &amp; dead_neuron_mask</span>
-
-        <span class="c1">#dead_neurons = baseline_outputs[dead_neuron_mask]</span>
-        <span class="c1">#num_dead_neurons = dead_neurons.flatten().shape[0]</span>
-        <span class="c1">#mean_dead_neurons = num_dead_neurons/baseline_datapoints</span>
-        <span class="c1">#baseline_dead_neuron_counts.append(mean_dead_neurons)</span>
-
         <span class="n">active_baseline_outputs</span> <span class="o">=</span> <span class="n">baseline_outputs</span><span class="p">[</span><span class="n">baseline_outputs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">bcount</span> <span class="o">=</span> <span class="n">active_baseline_outputs</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">baseline_datapoints</span>
         <span class="n">baseline_activation_counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bcount</span><span class="p">)</span>
@@ -730,33 +809,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
 
     <span class="n">baseline_test_activation_counts</span><span class="p">,</span> <span class="n">baseline_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="c1">#baseline_train_activation_counts, baseline_train_dead_neuron_counts = get_activation_stats(&quot;Baseline&quot;, &quot;train&quot;, f&quot;Relu_{layer}&quot;)</span>
     <span class="n">candidate_test_activation_counts</span><span class="p">,</span> <span class="n">candidate_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Dropout_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
-    <span class="c1">#candidate_train_activation_counts, candidate_train_dead_neuron_counts = get_activation_stats(&quot;Candidate&quot;, &quot;train&quot;, f&quot;Dropout_{layer}&quot;) </span>
-
-    <span class="c1">#row = 2*layer</span>
-    <span class="c1">#ax[row,0].plot(baseline_train_dead_neuron_counts)</span>
-    <span class="c1">#ax[row,0].plot(candidate_train_dead_neuron_counts)</span>
-    <span class="c1">#ax[row,0].set_title(f&quot;Layer Dense_{layer} Dead Neuron Counts (Train)&quot;)</span>
-    <span class="c1">#ax[row,0].set_xlabel(&quot;Epoch&quot;)</span>
-    <span class="c1">#ax[row,0].set_ylabel(&quot;Dead Neurons on the Train Set&quot;)</span>
-    <span class="c1">#ax[row,0].legend([&quot;Baseline&quot;, &quot;Candidate (Dropout)&quot;])</span>
-
-    <span class="c1">#ax[row,1].plot(baseline_test_dead_neuron_counts)</span>
-    <span class="c1">#ax[row,1].plot(candidate_test_dead_neuron_counts)</span>
-    <span class="c1">#ax[row,1].set_title(f&quot;Layer Dense_{layer} Dead Neuron Counts (Test)&quot;)</span>
-    <span class="c1">#ax[row,1].set_xlabel(&quot;Epoch&quot;)</span>
-    <span class="c1">#ax[row,1].set_ylabel(&quot;Dead Neurons on the Test Set&quot;)</span>
-    <span class="c1">#ax[row,1].legend([&quot;Baseline&quot;, &quot;Candidate (Dropout)&quot;])</span>
-
-    <span class="c1">#row = 2*layer+1</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="n">layer</span>
-    <span class="c1">#ax[row,0].plot(baseline_train_activation_counts)</span>
-    <span class="c1">#ax[row,0].plot(candidate_train_activation_counts)</span>
-    <span class="c1">#ax[row,0].set_title(f&quot;Layer Dense_{layer} Activation Counts (Train)&quot;)</span>
-    <span class="c1">#ax[row,0].set_xlabel(&quot;Epoch&quot;)</span>
-    <span class="c1">#ax[row,0].set_ylabel(&quot;Activations on the Train Set&quot;)</span>
-    <span class="c1">#ax[row,0].legend([&quot;Baseline&quot;, &quot;Candidate (Dropout)&quot;])</span>
 
     <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_test_activation_counts</span><span class="p">)</span>
     <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_test_activation_counts</span><span class="p">)</span>
@@ -772,7 +825,19 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/0a5f839d766b1159160c83259f49d23a11f408fde6a2f374ae9cf601261a7c52.png" src="_images/0a5f839d766b1159160c83259f49d23a11f408fde6a2f374ae9cf601261a7c52.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">line</span> <span class="mi">23</span>
+<span class="g g-Whitespace">     </span><span class="mi">20</span> <span class="n">baseline_test_activation_counts</span><span class="p">,</span> <span class="n">baseline_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">21</span> <span class="n">candidate_test_activation_counts</span><span class="p">,</span> <span class="n">candidate_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Dropout_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
+<span class="ne">---&gt; </span><span class="mi">23</span> <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_test_activation_counts</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">24</span> <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_test_activation_counts</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">25</span> <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Layer Dense_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2"> Activation Counts (Test)&quot;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;row&#39; is not defined
+</pre></div>
+</div>
+<img alt="_images/08053054be3bf753f669d2d12d2ae6014ff379b2b817a8514069e189bb3a5586.png" src="_images/08053054be3bf753f669d2d12d2ae6014ff379b2b817a8514069e189bb3a5586.png" />
 </div>
 </div>
 <p>Notice that both the baseline and candidate models have similar numbers of activated neurons at the start of training. However, as training progresses, the candidate model tends to have fewer activations per training example. Dropout thus encourages sparse representations, which, as we saw in the results, also tend to be more robust to changes in the inputs (i.e. regularization).</p>
@@ -826,7 +891,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/e8309d1e3a75dd913bd97517faa49e64c3d55eb467959cdc922717ae4f6b1fea.png" src="_images/e8309d1e3a75dd913bd97517faa49e64c3d55eb467959cdc922717ae4f6b1fea.png" />
+<img alt="_images/62f25f288dc7f7085bb4912b45b9946b41893366a920d440ae1a4fef618c8a08.png" src="_images/62f25f288dc7f7085bb4912b45b9946b41893366a920d440ae1a4fef618c8a08.png" />
 </div>
 </div>
 <p>Notice that both the mean and standard deviation of the baseline activations increase as training progressses. However, the candidate activation statistics tend to stabilize and even decrease.</p>
@@ -887,7 +952,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </section>
 <section id="ensembling">
 <h3>Ensembling<a class="headerlink" href="#ensembling" title="Link to this heading">¶</a></h3>
-<p>Dropout can thus be seen as a way of creating an ensemble of models with shared weights. Mathematically, a single neural network with dropout is an ensemble of <span class="math notranslate nohighlight">\(2^n\)</span> models, where <span class="math notranslate nohighlight">\(n\)</span> is the number of neurons. In the light of this, we can explain the fewer and sparser activations as smaller sub-networks specializing in recognizing specific types of examples.</p>
+<p>Dropout can also be seen as a way of creating an ensemble of models with shared weights. Mathematically, a single neural network with dropout is an ensemble of <span class="math notranslate nohighlight">\(2^n\)</span> models, where <span class="math notranslate nohighlight">\(n\)</span> is the number of neurons. In the light of this, we can explain the fewer and sparser activations as smaller sub-networks specializing in recognizing specific types of examples.</p>
 </section>
 <section id="references">
 <h3>References:<a class="headerlink" href="#references" title="Link to this heading">¶</a></h3>
