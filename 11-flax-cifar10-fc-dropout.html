@@ -196,7 +196,7 @@ Test Set Size 10000
 <h2>Let’s Define the Models<a class="headerlink" href="#let-s-define-the-models" title="Link to this heading">¶</a></h2>
 <p>Our baseline model is a fully-connected network with ReLU activations. The output layer has 10 classes to generate logits for our class probabilities.
 The candidate is just the baseline with an additional dropout layer after each ReLU activation (except the final layer).</p>
-<p>The dropout layer is placed after the ReLU activation because we want to only deactivate those neurons that actively participate in classifying an example. Deactivating neurons with zero or negative values will not serve this purpose. In fact, it may lead to ‘dead neurons’ which never activate.</p>
+<p>The dropout layer is placed after the ReLU activation because we want to only remove those neurons that participate in classifying an example. Removing neurons with zero or negative values will not serve this purpose. In fact, it may lead to ‘dead neurons’ which never activate.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
