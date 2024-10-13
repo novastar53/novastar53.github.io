@@ -37,8 +37,8 @@ nbclient.exceptions.CellTimeoutError: A cell timed out while it was being execut
 The message was: Cell execution timed out.
 Here is a preview of the cell contents:
 -------------------
-['# Create a train state', 'tx = optax.adam(learning_rate=LR)', 'baseline_ts = train_state.TrainState.create(apply_fn=baseline_model.apply, params=baseline_params, tx=tx)', '', 'def compute_loss(params, batch_stats, apply_fn, images, labels, train):']
+['def get_activation_stats(model, phase, layer):', '    baseline_activation_counts = []', '    baseline_dead_neuron_counts = []', '    dead_neuron_mask = None', '    for i in range(num_epochs):']
 ...
-['    return train_accuracy_history, test_accuracy_history', '', 'baseline_train_accuracy_history, baseline_test_accuracy_history = train_and_evaluate(rng, baseline_model, baseline_ts, baseline_batch_stats, train_images, train_labels, test_images, test_labels)', '', "print(f'Epoch {num_epochs}, Train Accuracy: {baseline_train_accuracy_history[-1]:0.4f}, Test Accuracy: {baseline_test_accuracy_history[-1]:.4f}')"]
+['    ax[row].set_ylabel("Activations on the Test Set")', '    ax[row].legend(["Baseline", "Candidate (Dropout)"])', '', '', 'plt.show()']
 -------------------
 
