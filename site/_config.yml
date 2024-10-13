@@ -13,12 +13,14 @@ sphinx:
     copyright: '2024 Vikram Pawar novastar53.github.io'
     html_theme: alabaster 
     nb_execution_show_tb: true
+    nb_execution_timeout: 1*60*60
+    nbsphnix_timeout: 1*60*60
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: auto
-  timeout: 100
+  timeout: 1*60*60
   allow_errors: true
 
 

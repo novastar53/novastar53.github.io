@@ -4,5 +4,6 @@
 format: jb-article
 root: intro
 sections:
+- file: 11-flax-cifar10-fc-dropout.ipynb
 - file: 09-jax-mnist-fc-batchnorm.ipynb
 - file: nadaraya-watson-kernel-regression
