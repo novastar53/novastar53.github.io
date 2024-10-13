@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
@@ -750,7 +750,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </div>
 <p>Notice that both the baseline and candidate models have similar numbers of activated neurons at the start of training. However, as training progresses, the candidate model tends to have fewer activations per training example. Dropout thus encourages sparse representations, which, as we saw in the results, also tend to be more robust to changes in the inputs (i.e. regularization).</p>
-<p>In the baseline model, a neuron tends to co-adapt to other specific neurons, which leads to overfitting. By using dropout, a neuron cannot necessarily depend on other units and has to individually learn a more robust functiion.</p>
+<p>In the baseline model, a neuron tends to co-adapt to other specific neurons, which leads to overfitting. By using dropout, a neuron cannot necessarily depend on other units and has to individually learn a more robust function.</p>
 <p>Next, let’s look at the activation statistics.</p>
 <div class="cell tag_hide-input docutils container">
 <details class="hide above-input">
@@ -861,7 +861,8 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </section>
 <section id="ensembling">
 <h3>Ensembling<a class="headerlink" href="#ensembling" title="Link to this heading">¶</a></h3>
-<p>Dropout can also be seen as a way of creating an ensemble of models with shared weights. Mathematically, a single neural network with dropout is an ensemble of <span class="math notranslate nohighlight">\(2^n\)</span> models, where <span class="math notranslate nohighlight">\(n\)</span> is the number of neurons. In the light of this, we can explain the fewer and sparser activations as smaller sub-networks specializing in recognizing specific types of examples.</p>
+<p>Dropout can also be seen as a way of creating an ensemble of models with shared weights. Mathematically, a single neural network with dropout is an ensemble of <span class="math notranslate nohighlight">\(2^n\)</span> models, where <span class="math notranslate nohighlight">\(n\)</span> is the number of neurons. Each model in this ensemble is selected for a training step with a probability of <span class="math notranslate nohighlight">\((1-p)^k\)</span>, where <span class="math notranslate nohighlight">\(k\)</span> is the size of the model.</p>
+<p>In the light of this, we can explain the fewer and sparser activations as smaller sub-networks specializing in recognizing specific types of examples.</p>
 </section>
 <section id="references">
 <h3>References:<a class="headerlink" href="#references" title="Link to this heading">¶</a></h3>
