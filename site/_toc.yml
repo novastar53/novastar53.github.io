@@ -4,6 +4,6 @@
 format: jb-article
 root: intro
 sections:
-- file: 11-flax-cifar10-fc-dropout
-- file: 09-jax-mnist-fc-batchnorm
+- file: how-dropout-works
+- file: how-batchnorm-works
 - file: nadaraya-watson-kernel-regression
