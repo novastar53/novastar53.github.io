@@ -121,13 +121,14 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <img alt="_images/88785c0c95b20561bd3a8ebe8fee77c0e7b4b791cf3eb99240cb79bd12bf283a.png" src="_images/88785c0c95b20561bd3a8ebe8fee77c0e7b4b791cf3eb99240cb79bd12bf283a.png" />
 </div>
 </div>
-<p>The above 10x10 matrix was generated using the Vaswani et. al. (2017) method. It represents positional encodings for sentence length of 3 and embedding length of 10.</p>
+<p>The above 12x10 matrix was generated using the Vaswani et. al. (2017) method. It represents positional encodings for sentence length of 12 and embedding length of 10. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
+<p>Also, notice that all the values are nicely bounded in the range [-1,1] thanks to the choice of sinusoidal functions. This is crucial for deep neural networks since it prevents the exploding gradient problem.</p>
 </section>
 <section id="how-the-model-learns-to-calculate-distances-between-tokens">
 <h2>How the Model Learns to Calculate Distances Between Tokens<a class="headerlink" href="#how-the-model-learns-to-calculate-distances-between-tokens" title="Link to this heading">¶</a></h2>
 <p>Let’s start by looking at adjacent pairs of embeddings - every <span class="math notranslate nohighlight">\((sin(\theta), cos(\theta))\)</span> pair can uniquely represent an angle between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>. Hence, you can use a <a class="reference external" href="https://blog.timodenk.com/linear-relationships-in-the-transformers-positional-encoding/">rotation matrix</a> to calculate the angular difference at the same index positions.</p>
 <p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(emb_t \approx emb_{t+2\pi}\)</span>.</p>
-<p>The solution to this is an ancient idea - place value - which is also the basis for the number system. Notice that the sine and cosine frequencies decay for larger indices. The rightmost index pair has a frequency of  <span class="math notranslate nohighlight">\(\frac{1}{embedding\_length}\)</span>, which is nearly zero for large embedding_length.</p>
+<p>The solution to this is an ancient idea - place value - which is also the basis for the number system. We noticed above that the sine and cosine frequencies decay for larger indices. The rightmost index pair has a frequency of  <span class="math notranslate nohighlight">\(\frac{1}{embedding\_length}\)</span>, which is nearly zero for large embedding_length.</p>
 <p>In the decimal system, place value is calculated using <span class="math notranslate nohighlight">\(\sum_pn_p*b^p\)</span>, where n is the face value, b is the base and p is the position. for example,</p>
 <div class="math notranslate nohighlight">
 \[
@@ -193,10 +194,10 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
         <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">get_embedding_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Get a color from the colormap based on the normalized angle</span>
-        <span class="n">color</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">theta</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="c1">#color = cmap(1 - theta / jnp.pi)</span>
 
         <span class="c1"># Draw the clock with a single hand</span>
-        <span class="n">draw_radian_clock</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+        <span class="n">draw_radian_clock</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="s2">&quot;#fc0303&quot;</span><span class="p">)</span>
 
 
 <span class="c1"># Set a single x-axis label for the entire grid</span>
@@ -211,7 +212,7 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/c56bbd8ba9762fbe668e518053d838a89807d05d61ebba34dce60aecf20678e9.png" src="_images/c56bbd8ba9762fbe668e518053d838a89807d05d61ebba34dce60aecf20678e9.png" />
+<img alt="_images/3ee59a401726f87b8a48792c8d43aaccafbc2fd46b7241eb5e4af2325e86f80f.png" src="_images/3ee59a401726f87b8a48792c8d43aaccafbc2fd46b7241eb5e4af2325e86f80f.png" />
 </div>
 </div>
 </section>
