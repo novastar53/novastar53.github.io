@@ -127,18 +127,18 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <section id="how-the-model-learns-to-calculate-distances-between-tokens">
 <h2>How the Model Learns to Calculate Distances Between Tokens<a class="headerlink" href="#how-the-model-learns-to-calculate-distances-between-tokens" title="Link to this heading">¶</a></h2>
 <p>Let’s start by looking at adjacent pairs of embeddings - every <span class="math notranslate nohighlight">\((sin(\theta), cos(\theta))\)</span> pair can uniquely represent an angle between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>. Hence, you can use a <a class="reference external" href="https://blog.timodenk.com/linear-relationships-in-the-transformers-positional-encoding/">rotation matrix</a> to calculate the angular difference at the same index positions.</p>
-<p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(emb_t \approx emb_{t+2\pi}\)</span>.</p>
+<p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(emb_t \approx emb_{\left\lfloor t+2\pi \right\rfloor}\)</span>.</p>
 <p>The solution to this is an ancient idea - place value - which is also the basis for the number system. We noticed above that the sine and cosine frequencies decay for larger indices. The rightmost index pair has a frequency of  <span class="math notranslate nohighlight">\(\frac{1}{embedding\_length}\)</span>, which is nearly zero for large embedding_length.</p>
 <p>In the decimal system, place value is calculated using <span class="math notranslate nohighlight">\(\sum_pn_p*b^p\)</span>, where n is the face value, b is the base and p is the position. for example,</p>
 <div class="math notranslate nohighlight">
 \[
 9876 = 9*10^3 + 8*10^2 + 7*10^1 + 6*10^0
 \]</div>
-<p>The model can similarly retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(emb_t) = t\)</span>. It is also possible for the model to learn a function <span class="math notranslate nohighlight">\(f(emb_t, emb_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
+<p>The model can similarly retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(emb_t) = t\)</span>. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(emb_t, emb_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
 </section>
 <section id="the-clock-faces-analogy">
 <h2>The Clock-Faces Analogy<a class="headerlink" href="#the-clock-faces-analogy" title="Link to this heading">¶</a></h2>
-<p>Each dimension-pair can be visualized as a hand on a clock face. The clocks get “slower” as you move from left to right.</p>
+<p>Each dimension-pair can be visualized as a hand on a clock face. The clocks get “slower” as you move from left to right. A single row of clocks encodes the position of an embedding in a sequence.</p>
 <div class="cell tag_hide-input docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
