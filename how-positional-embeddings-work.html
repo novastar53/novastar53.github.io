@@ -64,18 +64,24 @@ This provides a great performance boost as parallel operations always do. One ke
 \[ \begin{align}\begin{aligned}\begin{split}
 p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{10000^{2j/d}})
 \end{aligned}\end{align} \]</div>
-<p>Where <span class="math notranslate nohighlight">\(i\)</span> is the token position and <span class="math notranslate nohighlight">\(2j, 2j+1\)</span> are adjacent embedding indices and <span class="math notranslate nohighlight">\(d\)</span> is the embedding size. At first glance, this seems a bit strange. Why use sine and cosine? Why use different functions for adjacent positions? Why make sine and cosine frequencies decay for larger dimensions?</p>
+<p>Where <span class="math notranslate nohighlight">\(i\)</span> is the token position and <span class="math notranslate nohighlight">\(2j, 2j+1\)</span> are adjacent embedding indices and <span class="math notranslate nohighlight">\(d\)</span> is the embedding size.</p>
+<p>The position embeddings are then simply added to the word embeddings before the forward pass.</p>
+<div class="math notranslate nohighlight">
+\[
+w^{\prime}_t = w_t + p_t
+\]</div>
+<p>At first glance, this seems a bit strange. Why use sine and cosine? Why make sine and cosine frequencies smaller for larger indices?</p>
 <p>I’ll try to answer some of these questions.</p>
 <section id="first-let-s-generate-some-sample-embeddings">
 <h2>First, let’s generate some sample embeddings<a class="headerlink" href="#first-let-s-generate-some-sample-embeddings" title="Link to this heading">¶</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sequence_length</span> <span class="o">=</span> <span class="mi">12</span> 
-<span class="n">embedding_length</span> <span class="o">=</span> <span class="mi">10</span> 
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sequence_length</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="n">embedding_length</span> <span class="o">=</span> <span class="mi">9</span>
 
 <span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
 
-<span class="k">def</span> <span class="nf">get_embedding_value</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">pos</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
 
     <span class="n">x</span> <span class="o">=</span> <span class="n">t</span> <span class="o">/</span> <span class="p">(</span><span class="mf">100.0</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="o">/</span><span class="n">embedding_length</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">%</span><span class="k">2</span> == 0, jnp.sin(x), jnp.cos(x))
@@ -83,7 +89,7 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <span class="n">embeddings</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">sequence_length</span><span class="p">,</span> <span class="n">embedding_length</span><span class="p">])</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embedding_length</span><span class="p">):</span>
-        <span class="n">e</span> <span class="o">=</span> <span class="n">get_embedding_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">pos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
         <span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -102,14 +108,18 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
 
 <span class="n">pastel_cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;pastel_blue&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="s1">&#39;#a3c1da&#39;</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">pastel_cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span>
+
+
+<span class="n">cax</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">pastel_cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<span class="n">axes</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">embeddings</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">embeddings</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
 
 
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -118,7 +128,7 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/88785c0c95b20561bd3a8ebe8fee77c0e7b4b791cf3eb99240cb79bd12bf283a.png" src="_images/88785c0c95b20561bd3a8ebe8fee77c0e7b4b791cf3eb99240cb79bd12bf283a.png" />
+<img alt="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" src="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" />
 </div>
 </div>
 <p>The above 12x10 matrix was generated using the Vaswani et. al. (2017) method. It represents positional encodings for sentence length of 12 and embedding length of 10. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
@@ -127,14 +137,14 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <section id="how-the-model-learns-to-calculate-distances-between-tokens">
 <h2>How the Model Learns to Calculate Distances Between Tokens<a class="headerlink" href="#how-the-model-learns-to-calculate-distances-between-tokens" title="Link to this heading">¶</a></h2>
 <p>Let’s start by looking at adjacent pairs of embeddings - every <span class="math notranslate nohighlight">\((sin(\theta), cos(\theta))\)</span> pair can uniquely represent an angle between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>. Hence, you can use a <a class="reference external" href="https://blog.timodenk.com/linear-relationships-in-the-transformers-positional-encoding/">rotation matrix</a> to calculate the angular difference at the same index positions.</p>
-<p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(emb_t \approx emb_{\left\lfloor t+2\pi \right\rfloor}\)</span>.</p>
+<p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(p_t \approx p_{\left\lfloor t+2\pi \right\rfloor}\)</span>.</p>
 <p>The solution to this is an ancient idea - place value - which is also the basis for the number system. We noticed above that the sine and cosine frequencies decay for larger indices. The rightmost index pair has a frequency of  <span class="math notranslate nohighlight">\(\frac{1}{embedding\_length}\)</span>, which is nearly zero for large embedding_length.</p>
 <p>In the decimal system, place value is calculated using <span class="math notranslate nohighlight">\(\sum_pn_p*b^p\)</span>, where n is the face value, b is the base and p is the position. for example,</p>
 <div class="math notranslate nohighlight">
 \[
 9876 = 9*10^3 + 8*10^2 + 7*10^1 + 6*10^0
 \]</div>
-<p>The model can similarly retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(emb_t) = t\)</span>. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(emb_t, emb_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
+<p>The model can similarly retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span>. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
 </section>
 <section id="the-clock-faces-analogy">
 <h2>The Clock-Faces Analogy<a class="headerlink" href="#the-clock-faces-analogy" title="Link to this heading">¶</a></h2>
@@ -190,8 +200,8 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rows</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cols</span><span class="p">):</span>
         <span class="c1"># Compute the angle in radians for this clock (normalized between 0 and 2π)</span>
-        <span class="n">theta</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">get_embedding_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="p">)</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">get_embedding_value</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">theta</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">pos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Get a color from the colormap based on the normalized angle</span>
         <span class="c1">#color = cmap(1 - theta / jnp.pi)</span>
@@ -212,7 +222,205 @@ p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/3ee59a401726f87b8a48792c8d43aaccafbc2fd46b7241eb5e4af2325e86f80f.png" src="_images/3ee59a401726f87b8a48792c8d43aaccafbc2fd46b7241eb5e4af2325e86f80f.png" />
+<img alt="_images/912f3cf604dc3f02571fc1a89e2e6a1c45a1093d22e76c2dd73d9ac4306aa48a.png" src="_images/912f3cf604dc3f02571fc1a89e2e6a1c45a1093d22e76c2dd73d9ac4306aa48a.png" />
+</div>
+</div>
+</section>
+<section id="so-does-this-work">
+<h2>So Does This Work?<a class="headerlink" href="#so-does-this-work" title="Link to this heading">¶</a></h2>
+<p>To find out, let’s train a neural network to calculate the distance <span class="math notranslate nohighlight">\(k\)</span> between pairs of embeddings.</p>
+<p>First, let’s generate some sample word embeddings</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">generate_embeddings</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">,</span> <span class="n">embedding_length</span><span class="p">),</span> <span class="n">min_val</span><span class="o">=-</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">max_val</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+    <span class="n">embeddings</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">minval</span><span class="o">=</span><span class="n">min_val</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="n">max_val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">embeddings</span>
+
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">generate_embeddings</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Next, let’s generate the positional embeddings</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+
+<span class="k">def</span> <span class="nf">generate_pos_embeddings</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">,</span> <span class="n">embedding_length</span><span class="p">)):</span>
+
+    <span class="n">embeddings</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">at</span><span class="p">[(</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">)]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pos</span><span class="p">(</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">embeddings</span>
+
+<span class="n">pos_embeddings</span> <span class="o">=</span> <span class="n">generate_pos_embeddings</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">flax</span> <span class="kn">import</span> <span class="n">linen</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">train_state</span>
+<span class="kn">import</span> <span class="nn">optax</span>
+
+<span class="c1"># Model</span>
+<span class="k">class</span> <span class="nc">PosDiffPredictor</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> 
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">128</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">embedding_length</span><span class="o">-</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+<span class="c1"># Loss function: cross-entropy</span>
+<span class="k">def</span> <span class="nf">cross_entropy_loss</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">one_hot</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="n">embedding_length</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1">#print(logits, one_hot)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">softmax_cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">loss</span>
+
+<span class="c1"># Accuracy calculation</span>
+<span class="k">def</span> <span class="nf">compute_accuracy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">predictions</span> <span class="o">==</span> <span class="n">labels</span><span class="p">)</span>
+
+<span class="c1"># Training step</span>
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">batch</span><span class="p">):</span>
+    <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">batch</span>
+
+    <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_fn</span><span class="p">({</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">},</span> <span class="n">inputs</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">cross_entropy_loss</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span>
+
+    <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
+    <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">grad_fn</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="n">loss</span>
+
+<span class="c1"># Initialize the training state</span>
+<span class="k">def</span> <span class="nf">initialize_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">input_shape</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">input_shape</span><span class="p">))[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">train_state</span><span class="o">.</span><span class="n">TrainState</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">apply_fn</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">tx</span><span class="o">=</span><span class="n">tx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">def</span> <span class="nf">generate_dataset</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+
+    <span class="n">i_values</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="p">(</span><span class="mi">10000</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">j_values</span> <span class="o">=</span> <span class="n">i_values</span> <span class="o">+</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">10000</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span> <span class="o">-</span> <span class="n">i_values</span><span class="p">)</span>
+    <span class="n">j_values</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">j_values</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+
+    <span class="n">emb_i</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">i_values</span><span class="p">,:]</span>
+    <span class="n">emb_j</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">j_values</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">j_values</span> <span class="o">-</span> <span class="n">i_values</span>
+
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">emb_i</span><span class="p">,</span> <span class="n">emb_j</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">diff</span>
+
+
+<span class="c1"># Training loop for 10 epochs</span>
+<span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">num_epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">):</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+        <span class="c1"># Shuffle data for each epoch</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">epoch</span><span class="p">),</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">perm</span><span class="p">],</span> <span class="n">targets</span><span class="p">[</span><span class="n">perm</span><span class="p">]</span>
+        
+        <span class="c1"># Batch training</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">batch_inputs</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">]</span>
+            <span class="n">batch_targets</span> <span class="o">=</span> <span class="n">targets</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">]</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="p">(</span><span class="n">batch_inputs</span><span class="p">,</span> <span class="n">batch_targets</span><span class="p">)</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">batch</span><span class="p">)</span>
+        
+        <span class="c1"># End of epoch: print loss (optional)</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_fn</span><span class="p">({</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">params</span><span class="p">},</span> <span class="n">inputs</span><span class="p">)</span>
+        <span class="n">train_acc</span> <span class="o">=</span> <span class="n">compute_accuracy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">%</span> <span class="mi">20</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">:</span><span class="s1">.8f</span><span class="si">}</span><span class="s1">, Accuracy: </span><span class="si">{</span><span class="n">train_acc</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">, Accuracy: </span><span class="si">{</span><span class="n">train_acc</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+
+<span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">model_state</span><span class="p">):</span>
+
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">model_state</span><span class="o">.</span><span class="n">apply_fn</span><span class="p">({</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">model_state</span><span class="o">.</span><span class="n">params</span><span class="p">},</span> <span class="n">X</span><span class="p">)</span>
+    <span class="n">probabilities</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Y</span>
+
+
+<span class="c1"># Generate the combined embeddings</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">embeddings</span> <span class="o">+</span> <span class="n">pos_embeddings</span>
+
+<span class="c1"># Initialize model state</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">PosDiffPredictor</span><span class="p">()</span>
+<span class="n">rng</span><span class="p">,</span> <span class="n">sub_rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">initialize_train_state</span><span class="p">(</span><span class="n">sub_rng</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">embedding_length</span><span class="p">))</span>
+
+<span class="c1"># Generate dataset of differences</span>
+<span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">generate_dataset</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+
+<span class="c1"># Train the model for 10 epochs</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">num_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+<span class="c1">#print(inputs[0, :, :])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.88639450, Accuracy: 0.3226
+Epoch 21, Loss: 0.87316853, Accuracy: 0.7006
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.48291337, Accuracy: 0.9694
+Epoch 61, Loss: 0.25906512, Accuracy: 0.9694
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.15556176, Accuracy: 0.9694
+Epoch 101, Loss: 0.09540022, Accuracy: 0.9694
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.06331594, Accuracy: 0.9694
+Epoch 141, Loss: 0.04492490, Accuracy: 0.9694
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.02930218, Accuracy: 0.9694
+Epoch 181, Loss: 0.02344639, Accuracy: 0.9694
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 200, Loss: 0.0205, Accuracy: 0.9694
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now, let’s see if our trained model is able to predict the distance between two tokens in the training data accurately.</p>
+<p>First, let’s pick two positions, say 5 and 3. The model should predict 5-3 = 2.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dataset</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">5</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">state</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2
+</pre></div>
+</div>
 </div>
 </div>
 </section>
