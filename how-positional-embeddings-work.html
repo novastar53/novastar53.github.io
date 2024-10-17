@@ -131,7 +131,7 @@ w^{\prime}_t = w_t + p_t
 <img alt="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" src="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" />
 </div>
 </div>
-<p>The above 12x10 matrix was generated using the Vaswani et. al. (2017) method. It represents positional encodings for sentence length of 12 and embedding length of 10. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
+<p>The matrix above was generated using the Vaswani et. al. (2017) method. It represents positional encodings for a sentence length of 15 and embedding length of 9. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
 <p>Also, notice that all the values are nicely bounded in the range [-1,1] thanks to the choice of sinusoidal functions. This is crucial for deep neural networks since it prevents the exploding gradient problem.</p>
 </section>
 <section id="how-the-model-learns-to-calculate-distances-between-tokens">
