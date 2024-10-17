@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
@@ -213,7 +213,7 @@ w^{\prime}_t = w_t + p_t
 <section id="so-does-this-work">
 <h2>So Does This Work?<a class="headerlink" href="#so-does-this-work" title="Link to this heading">¶</a></h2>
 <p>To find out, let’s train a neural network to calculate the distance <span class="math notranslate nohighlight">\(k\)</span> between pairs of embeddings.</p>
-<p>First, let’s generate some sample word embeddings</p>
+<p>First, let’s generate some sample word embeddings.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
@@ -230,7 +230,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 </div>
-<p>Next, let’s generate the positional embeddings</p>
+<p>Next, let’s generate the positional embeddings.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
@@ -249,7 +249,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 </div>
-<p>Let’s add the embeddings to obtain the final word embeddings</p>
+<p>Let’s add the embeddings to obtain the final word embeddings.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">embeddings</span> <span class="o">+</span> <span class="n">pos_embeddings</span>
@@ -257,7 +257,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 </div>
-<p>let’s train a simple 2 layer neural network and see if it can accurately predict the distance between two embeddings</p>
+<p>Let’s train a simple 2 layer neural network and see if it can accurately predict the distance between two embeddings.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">jax</span>
@@ -371,26 +371,26 @@ w^{\prime}_t = w_t + p_t
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.88378394, Accuracy: 0.3055
-Epoch 21, Loss: 0.86632895, Accuracy: 0.6923
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.46926567, Accuracy: 0.9694
-Epoch 61, Loss: 0.24195217, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 21, Loss: 0.86632895, Accuracy: 0.6923
+Epoch 41, Loss: 0.46926567, Accuracy: 0.9694
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.13765799, Accuracy: 0.9694
-Epoch 101, Loss: 0.08174699, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 61, Loss: 0.24195217, Accuracy: 0.9694
+Epoch 81, Loss: 0.13765799, Accuracy: 0.9694
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.05177718, Accuracy: 0.9694
-Epoch 141, Loss: 0.03598683, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 101, Loss: 0.08174699, Accuracy: 0.9694
+Epoch 121, Loss: 0.05177718, Accuracy: 0.9694
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.02333565, Accuracy: 0.9694
-Epoch 181, Loss: 0.01824435, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 141, Loss: 0.03598683, Accuracy: 0.9694
+Epoch 161, Loss: 0.02333565, Accuracy: 0.9694
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 200, Loss: 0.0156, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 181, Loss: 0.01824435, Accuracy: 0.9694
+Epoch 200, Loss: 0.0156, Accuracy: 0.9694
 </pre></div>
 </div>
 </div>
