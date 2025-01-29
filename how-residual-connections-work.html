@@ -677,35 +677,6 @@ Trained model with 887674 parameters
 </tbody>
 </table>
 <p>The ResNet architecture performs better on the test set in both the 20 and 56 layer configurations. However, notice how much better ResNet-56 does than the corresponding plain network. Clearly, residual connections become much more useful as the depth of the network increases.</p>
-<div class="cell tag_hide-input tag_remove-output docutils container">
-<details class="hide above-input">
-<summary aria-label="Toggle hidden content">
-<span class="collapsed">Show code cell source</span>
-<span class="expanded">Hide code cell source</span>
-</summary>
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load saved checkpoints</span>
-<span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
-<span class="n">deepcnn_state</span> <span class="o">=</span> <span class="n">checkpoints</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/deepcnn-56/&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
-
-<span class="n">resnet_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">ResidualCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
-<span class="n">resnet_state</span> <span class="o">=</span> <span class="n">checkpoints</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/resnet-56/&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">resnet_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
-
-<span class="c1"># Load batch stats</span>
-<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
-<span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
-<span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-<span class="c1"># Load metrics</span>
-<span class="n">deepcnn_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
-<span class="n">resnet_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</details>
-</div>
 </section>
 </section>
 <section id="so-why-do-skip-connections-work">
