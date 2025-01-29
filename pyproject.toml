@@ -22,4 +22,5 @@ dependencies = [
     "sphinx-nameko-theme>=0.0.3",
     "sphinx>=7.4.7",
     "jupyter>=1.1.1",
+    "torchvision>=0.19.1",
 ]
