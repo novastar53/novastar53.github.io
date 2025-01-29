@@ -72,6 +72,8 @@ f(x) = x + g(x)
 <p>So does this work? We will compare two CNN architectures - the ResNet architecture and a comparable network (“DeepCNN”) without residual connections.
 For each architecture, we will compare networks with 20 and 56 layers.</p>
 <p><img alt="fc-resnet" src="_images/fc-resnet-side-by-side.jpg" /></p>
+<section id="let-s-define-the-deepcnn-model">
+<h3>Let’s Define the DeepCNN Model<a class="headerlink" href="#let-s-define-the-deepcnn-model" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
@@ -90,8 +92,6 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </div>
 </div>
 </div>
-<section id="let-s-define-the-deepcnn-network">
-<h3>Let’s Define the DeepCNN Network<a class="headerlink" href="#let-s-define-the-deepcnn-network" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -148,7 +148,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </div>
 </section>
 <section id="now-let-s-define-the-resnet-model">
-<h3>Now, Let’s Define the Resnet Model<a class="headerlink" href="#now-let-s-define-the-resnet-model" title="Link to this heading">¶</a></h3>
+<h3>Now, Let’s Define the ResNet Model<a class="headerlink" href="#now-let-s-define-the-resnet-model" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -259,8 +259,8 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </section>
 <section id="next-let-s-set-up-the-cifar-10-dataset">
 <h3>Next, Let’s Set up the CIFAR-10 Dataset<a class="headerlink" href="#next-let-s-set-up-the-cifar-10-dataset" title="Link to this heading">¶</a></h3>
-<div class="cell tag_hide-output docutils container">
-<div class="cell_input above-output-prompt docutils container">
+<div class="cell tag_hide-output tag_remove-output docutils container">
+<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torchvision.transforms</span> <span class="k">as</span> <span class="nn">transforms</span>
 <span class="kn">from</span> <span class="nn">torchvision.datasets</span> <span class="kn">import</span> <span class="n">CIFAR10</span>
@@ -365,20 +365,6 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </pre></div>
 </div>
 </div>
-<details class="hide below-input">
-<summary aria-label="Toggle hidden content">
-<span class="collapsed">Show code cell output</span>
-<span class="expanded">Hide code cell output</span>
-</summary>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Files already downloaded and verified
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Files already downloaded and verified
-</pre></div>
-</div>
-</div>
-</details>
 </div>
 </section>
 <section id="finally-let-s-set-up-the-training-loop">
@@ -534,23 +520,10 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </div>
 </div>
 </div>
-<div class="cell tag_hide-input docutils container">
-<details class="hide above-input">
-<summary aria-label="Toggle hidden content">
-<span class="collapsed">Show code cell source</span>
-<span class="expanded">Hide code cell source</span>
-</summary>
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">OUTPUT_DIR</span> <span class="o">=</span> <span class="s2">&quot;/Users/vikram/dev/vikrampawar.com/site/CIFAR10_ResNet&quot;</span>
-</pre></div>
-</div>
-</div>
-</details>
-</div>
 </section>
 <section id="let-s-train-the-deep-cnn-first">
 <h3>Let’s train the deep CNN first<a class="headerlink" href="#let-s-train-the-deep-cnn-first" title="Link to this heading">¶</a></h3>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_output_scroll docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
 <span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
@@ -772,7 +745,7 @@ Iter: 70381, Epoch 180, Train Loss: 0.3731, Test Loss: 0.7683, Train Accuracy: 0
 </section>
 <section id="now-let-s-train-the-resnet">
 <h3>Now let’s train the Resnet<a class="headerlink" href="#now-let-s-train-the-resnet" title="Link to this heading">¶</a></h3>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_output_scroll docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
 <span class="n">resnet_state</span><span class="p">,</span> <span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">ResidualCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
@@ -1036,13 +1009,13 @@ Trained model with 887674 parameters
 </tbody>
 </table>
 <p>The ResNet architecture performs better on the test set in both the 20 and 56 layer configurations. However, notice how much better ResNet-56 does than the corresponding plain network. Clearly, residual connections become much more useful as the depth of the network increases.</p>
-<div class="cell tag_hide-input tag_hide-output docutils container">
+<div class="cell tag_hide-input tag_remove-output docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
 <span class="expanded">Hide code cell source</span>
 </summary>
-<div class="cell_input above-output-prompt docutils container">
+<div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load saved checkpoints</span>
 <span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
 <span class="n">deepcnn_state</span> <span class="o">=</span> <span class="n">checkpoints</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/deepcnn-56/&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
@@ -1060,28 +1033,6 @@ Trained model with 887674 parameters
 <span class="c1"># Load metrics</span>
 <span class="n">deepcnn_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
 <span class="n">resnet_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</div>
-</details>
-<details class="hide below-input">
-<summary aria-label="Toggle hidden content">
-<span class="collapsed">Show code cell output</span>
-<span class="expanded">Hide code cell output</span>
-</summary>
-<div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:The transformations API will eventually be replaced by an upgraded design. The current API will not be removed until this point, but it will no longer be actively worked on.
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
-[31590, 47580]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:The transformations API will eventually be replaced by an upgraded design. The current API will not be removed until this point, but it will no longer be actively worked on.
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
-[31590, 47580]
 </pre></div>
 </div>
 </div>
@@ -1127,7 +1078,12 @@ Trained model with 887674 parameters
 </section>
 <section id="result-faster-convergence">
 <h3>Result: Faster Convergence<a class="headerlink" href="#result-faster-convergence" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
 
@@ -1148,6 +1104,7 @@ Trained model with 887674 parameters
 </pre></div>
 </div>
 </div>
+</details>
 <div class="cell_output docutils container">
 <img alt="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" src="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" />
 </div>
