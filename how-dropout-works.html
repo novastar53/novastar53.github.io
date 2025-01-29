@@ -98,8 +98,88 @@
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training Set Size 50000
-Test Set Size 10000
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR:absl:Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
+Traceback (most recent call last):
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 70, in _module
+    module = importlib.import_module(self.module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/importlib/__init__.py&quot;, line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1387, in _gcd_import
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1360, in _find_and_load
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1331, in _find_and_load_unlocked
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 935, in _load_unlocked
+  File &quot;&lt;frozen importlib._bootstrap_external&gt;&quot;, line 995, in exec_module
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 488, in _call_with_frames_removed
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/registered.py&quot;, line 36, in &lt;module&gt;
+    import tensorflow_datasets.core.logging as _tfds_logging
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/__init__.py&quot;, line 29, in &lt;module&gt;
+    from tensorflow_datasets.core.logging import logging_logger
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/logging_logger.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import decode
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/__init__.py&quot;, line 22, in &lt;module&gt;
+    from tensorflow_datasets.core.decode.partial_decode import PartialDecoding
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/partial_decode.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import features as features_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/__init__.py&quot;, line 22, in &lt;module&gt;
+    from tensorflow_datasets.core.features.audio_feature import Audio
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/audio_feature.py&quot;, line 33, in &lt;module&gt;
+    from tensorflow_datasets.core.features import feature as feature_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/feature.py&quot;, line 36, in &lt;module&gt;
+    from tensorflow_datasets.core.proto import feature_pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/__init__.py&quot;, line 18, in &lt;module&gt;
+    from tensorflow_datasets.core.proto import dataset_info_generated_pb2 as dataset_info_pb2  # pylint: disable=line-too-long
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/dataset_info_generated_pb2.py&quot;, line 32, in &lt;module&gt;
+    from tensorflow_metadata.proto.v0 import schema_pb2 as tensorflow__metadata_dot_proto_dot_v0_dot_schema__pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/__init__.py&quot;, line 18, in &lt;module&gt;
+    from tensorflow_metadata.proto.v0 import metric_pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/v0/metric_pb2.py&quot;, line 25, in &lt;module&gt;
+    google_dot_protobuf_dot_descriptor__pb2.MessageOptions.RegisterExtension(metric_type)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/__init__.py&quot;, line 79, in &lt;module&gt;
+    from tensorflow_datasets import rlds  # pylint: disable=g-bad-import-order
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/__init__.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.rlds import envlogger_reader
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/envlogger_reader.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core.utils.lazy_imports_utils import tree
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/__init__.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import community
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/__init__.py&quot;, line 19, in &lt;module&gt;
+    from tensorflow_datasets.core.community.huggingface_wrapper import mock_builtin_to_use_gfile
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/huggingface_wrapper.py&quot;, line 31, in &lt;module&gt;
+    from tensorflow_datasets.core import dataset_builder
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_builder.py&quot;, line 158, in &lt;module&gt;
+    class DatasetBuilder(registered.RegisteredDataset):
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 109, in __getattr__
+    return getattr(self._module, name)
+                   ^^^^^^^^^^^^
+  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/functools.py&quot;, line 995, in __get__
+    val = self.func(instance)
+          ^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 82, in _module
+    raise ImportError(f&quot;Error importing {self.module_name}: {e!r}&quot;) from e
+ImportError: Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
+</pre></div>
+</div>
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">5</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="ne">----&gt; </span><span class="mi">5</span> <span class="n">train_tf</span><span class="p">,</span> <span class="n">test_tf</span> <span class="o">=</span> <span class="n">tfds</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;cifar10&#39;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">as_supervised</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">raw_train_images</span><span class="p">,</span> <span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">raw_train_images</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">raw_train_images</span><span class="p">)</span>
+
+<span class="ne">AttributeError</span>: module &#39;tensorflow_datasets&#39; has no attribute &#39;load&#39;
 </pre></div>
 </div>
 </div>
@@ -144,7 +224,19 @@ Test Set Size 10000
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" src="_images/869da7a0a2d9558c3ced8a6a465e97d9088b7ee94e41dd5446bae7359e69b6bd.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">line</span> <span class="mi">13</span>
+<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span> <span class="n">row_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span><span class="n">row_size</span><span class="p">))</span>
+<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">RANDOM_KEY</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">13</span> <span class="n">idxs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="p">(</span><span class="n">num_examples</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">raw_train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="n">exs</span> <span class="o">=</span> <span class="n">raw_train_images</span><span class="p">[</span><span class="n">idxs</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_examples</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">/</span><span class="mf">255.0</span>
+<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_examples</span><span class="p">):</span>
+
+<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
+</pre></div>
+</div>
+<img alt="_images/ed8faf6d0262cabd879eb6d4cc2993bf902716f53a13e0eba798a8e99ca17ae7.png" src="_images/ed8faf6d0262cabd879eb6d4cc2993bf902716f53a13e0eba798a8e99ca17ae7.png" />
 </div>
 </div>
 <p>Let’s now preprocess the dataset and look at the input feature distrubition.</p>
@@ -187,7 +279,19 @@ Test Set Size 10000
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" src="_images/e9d75bf6de63c39b2885e3ef47be5653d3a2a78db954ce3045c722fd708bee03.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="c1"># First, let&#39;s plot the histogram for the unnormalized dataset</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">raw_train_images</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Unnormalized Input Feature Distribution&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Feature Values&quot;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
+</pre></div>
+</div>
+<img alt="_images/d5abe383131f62d68c2a32a6ff07fbb20153c60af0ddba81928f87ce12ff4ba8.png" src="_images/d5abe383131f62d68c2a32a6ff07fbb20153c60af0ddba81928f87ce12ff4ba8.png" />
 </div>
 </div>
 </section>
@@ -383,12 +487,20 @@ The candidate is just the baseline with an additional dropout layer after each R
 </details>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of baseline parameters: 831210
-Baseline P/S ratio: 16.6242
-Number of candidate parameters: 831210
-Candidate P/S ratio: 16.6242
 </pre></div>
 </div>
-<img alt="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" src="_images/f887fe46c13f28d7bd45e23fd273c60aaf222c9c0349ea3302171e75dd780f64.png" />
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">14</span>
+<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">num_candidate_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">candidate_params</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of baseline parameters: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="ne">---&gt; </span><span class="mi">14</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline P/S ratio: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">15</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of candidate parameters: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Candidate P/S ratio: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;train_images&#39; is not defined
+</pre></div>
+</div>
 </div>
 </div>
 <p>As you can see, both models have the same number of parameters as well as initial distributions. Hence, we can safely assume that any performance improvement seen by the candidate model will be due to dropout.</p>
@@ -552,12 +664,12 @@ Candidate P/S ratio: 16.6242
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1044, Test Accuracy: 0.1060
-Epoch 1, Train Accuracy: 0.4701, Test Accuracy: 0.4562
-Epoch 51, Train Accuracy: 0.9221, Test Accuracy: 0.5429
-Epoch 101, Train Accuracy: 0.9732, Test Accuracy: 0.5283
-Epoch 151, Train Accuracy: 0.9874, Test Accuracy: 0.5322
-Epoch 200, Train Accuracy: 0.9939, Test Accuracy: 0.5356
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1096, Test Accuracy: 0.1108
+Epoch 1, Train Accuracy: 0.4660, Test Accuracy: 0.4513
+Epoch 51, Train Accuracy: 0.9228, Test Accuracy: 0.5328
+Epoch 101, Train Accuracy: 0.9756, Test Accuracy: 0.5329
+Epoch 151, Train Accuracy: 0.9816, Test Accuracy: 0.5228
+Epoch 200, Train Accuracy: 0.9936, Test Accuracy: 0.5331
 </pre></div>
 </div>
 </div>
@@ -640,12 +752,12 @@ Epoch 200, Train Accuracy: 0.9939, Test Accuracy: 0.5356
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1044, Test Accuracy: 0.1060
-Epoch 1, Train Accuracy: 0.4273, Test Accuracy: 0.4257
-Epoch 51, Train Accuracy: 0.6964, Test Accuracy: 0.5599
-Epoch 101, Train Accuracy: 0.7741, Test Accuracy: 0.5612
-Epoch 151, Train Accuracy: 0.8042, Test Accuracy: 0.5570
-Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 0, Train Accuracy: 0.1096, Test Accuracy: 0.1108
+Epoch 1, Train Accuracy: 0.4211, Test Accuracy: 0.4225
+Epoch 51, Train Accuracy: 0.6981, Test Accuracy: 0.5640
+Epoch 101, Train Accuracy: 0.7710, Test Accuracy: 0.5615
+Epoch 151, Train Accuracy: 0.8101, Test Accuracy: 0.5637
+Epoch 200, Train Accuracy: 0.8367, Test Accuracy: 0.5632
 </pre></div>
 </div>
 </div>
@@ -687,46 +799,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ValueError</span><span class="g g-Whitespace">                                </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span> <span class="n">line</span> <span class="mi">8</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">candidate_train_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="n">candidate_test_accuracy_history</span> <span class="o">=</span> <span class="n">load_accuracy_from_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">)</span>
-<span class="ne">----&gt; </span><span class="mi">8</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_train_accuracy_history</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_train_accuracy_history</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Train Accuracy&quot;</span><span class="p">)</span>
-
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/matplotlib/axes/_axes.py:1779,</span> in <span class="ni">Axes.plot</span><span class="nt">(self, scalex, scaley, data, *args, **kwargs)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1536</span><span class="w"> </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="g g-Whitespace">   </span><span class="mi">1537</span><span class="sd"> Plot y versus x as lines and/or markers.</span>
-<span class="g g-Whitespace">   </span><span class="mi">1538</span><span class="sd"> </span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">   </span><span class="mi">1776</span><span class="sd"> (``&#39;green&#39;``) or hex strings (``&#39;#008000&#39;``).</span>
-<span class="g g-Whitespace">   </span><span class="mi">1777</span><span class="sd"> &quot;&quot;&quot;</span>
-<span class="g g-Whitespace">   </span><span class="mi">1778</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">cbook</span><span class="o">.</span><span class="n">normalize_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">mlines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">)</span>
-<span class="ne">-&gt; </span><span class="mi">1779</span> <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)]</span>
-<span class="g g-Whitespace">   </span><span class="mi">1780</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">1781</span>     <span class="bp">self</span><span class="o">.</span><span class="n">add_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/matplotlib/axes/_base.py:296,</span> in <span class="ni">_process_plot_var_args.__call__</span><span class="nt">(self, axes, data, *args, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">294</span>     <span class="n">this</span> <span class="o">+=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-<span class="g g-Whitespace">    </span><span class="mi">295</span>     <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-<span class="ne">--&gt; </span><span class="mi">296</span> <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_args</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">297</span>     <span class="n">axes</span><span class="p">,</span> <span class="n">this</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">ambiguous_fmt_datakey</span><span class="o">=</span><span class="n">ambiguous_fmt_datakey</span><span class="p">)</span>
-
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/matplotlib/axes/_base.py:447,</span> in <span class="ni">_process_plot_var_args._plot_args</span><span class="nt">(self, axes, tup, kwargs, return_kwargs, ambiguous_fmt_datakey)</span>
-<span class="g g-Whitespace">    </span><span class="mi">444</span> <span class="c1"># Don&#39;t allow any None value; these would be up-converted to one</span>
-<span class="g g-Whitespace">    </span><span class="mi">445</span> <span class="c1"># element array of None which causes problems downstream.</span>
-<span class="g g-Whitespace">    </span><span class="mi">446</span> <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tup</span><span class="p">):</span>
-<span class="ne">--&gt; </span><span class="mi">447</span>     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;x, y, and format string must not be None&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">449</span> <span class="n">kw</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="g g-Whitespace">    </span><span class="mi">450</span> <span class="k">for</span> <span class="n">prop_name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">&#39;linestyle&#39;</span><span class="p">,</span> <span class="s1">&#39;marker&#39;</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">),</span>
-<span class="g g-Whitespace">    </span><span class="mi">451</span>                           <span class="p">(</span><span class="n">linestyle</span><span class="p">,</span> <span class="n">marker</span><span class="p">,</span> <span class="n">color</span><span class="p">)):</span>
-
-<span class="ne">ValueError</span>: x, y, and format string must not be None
-</pre></div>
-</div>
-<img alt="_images/c5f9ba5a3e7bb7ae97bdd937bf5eee8903b80aced4f1a550e9e372f83bbcbb40.png" src="_images/c5f9ba5a3e7bb7ae97bdd937bf5eee8903b80aced4f1a550e9e372f83bbcbb40.png" />
+<img alt="_images/aee5a5feb21b81fe214b87c948f89f48f5c3009f883fce8dd8a34cc867bc2187.png" src="_images/aee5a5feb21b81fe214b87c948f89f48f5c3009f883fce8dd8a34cc867bc2187.png" />
 </div>
 </div>
 <p>As you can see, the candidate model with the dropout layers performs better than the baseline. It also takes longer to converge than the baseline.</p>
@@ -785,29 +858,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>No data found for file /var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/model_outputs/Baseline_test_outputs_epoch_0_Relu_0.npy
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span> <span class="n">line</span> <span class="mi">20</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="n">fix</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span><span class="mi">5</span><span class="o">*</span><span class="mi">4</span><span class="p">])</span>
-<span class="g g-Whitespace">     </span><span class="mi">18</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
-<span class="ne">---&gt; </span><span class="mi">20</span>     <span class="n">baseline_test_activation_counts</span><span class="p">,</span> <span class="n">baseline_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">21</span>     <span class="n">candidate_test_activation_counts</span><span class="p">,</span> <span class="n">candidate_test_dead_neuron_counts</span> <span class="o">=</span> <span class="n">get_activation_stats</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Dropout_</span><span class="si">{</span><span class="n">layer</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
-<span class="g g-Whitespace">     </span><span class="mi">23</span>     <span class="n">ax</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_test_activation_counts</span><span class="p">)</span>
-
-<span class="nn">Cell In[10], line 7,</span> in <span class="ni">get_activation_stats</span><span class="nt">(model, phase, layer)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span>     <span class="n">baseline_outputs</span> <span class="o">=</span>  <span class="n">load_outputs_from_disk</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">phase</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">layer</span><span class="p">)</span>
-<span class="ne">----&gt; </span><span class="mi">7</span>     <span class="n">baseline_datapoints</span> <span class="o">=</span> <span class="n">baseline_outputs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="g g-Whitespace">      </span><span class="mi">9</span>     <span class="n">active_baseline_outputs</span> <span class="o">=</span> <span class="n">baseline_outputs</span><span class="p">[</span><span class="n">baseline_outputs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span>     <span class="n">bcount</span> <span class="o">=</span> <span class="n">active_baseline_outputs</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">baseline_datapoints</span>
-
-<span class="ne">AttributeError</span>: &#39;NoneType&#39; object has no attribute &#39;shape&#39;
-</pre></div>
-</div>
-<img alt="_images/08053054be3bf753f669d2d12d2ae6014ff379b2b817a8514069e189bb3a5586.png" src="_images/08053054be3bf753f669d2d12d2ae6014ff379b2b817a8514069e189bb3a5586.png" />
+<img alt="_images/7429f4946e11d8e1f27dbf58efb174d3845fa1d8dfb79a1ff9fb530c5b033375.png" src="_images/7429f4946e11d8e1f27dbf58efb174d3845fa1d8dfb79a1ff9fb530c5b033375.png" />
 </div>
 </div>
 <p>Notice that both the baseline and candidate models have similar numbers of activated neurons at the start of training. However, as training progresses, the candidate model tends to have fewer activations per training example. Dropout thus encourages sparse representations, which, as we saw in the results, also tend to be more robust to changes in the inputs (i.e. regularization).</p>
@@ -861,22 +912,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>No data found for file /var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/model_outputs/Baseline_train_outputs_epoch_0_Relu_0.npy
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">11</span><span class="p">],</span> <span class="n">line</span> <span class="mi">12</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span>     <span class="n">baseline_o1</span> <span class="o">=</span> <span class="n">load_outputs_from_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">12</span>     <span class="n">baseline_m1</span> <span class="o">=</span> <span class="n">baseline_o1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span>     <span class="n">baseline_output_means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">baseline_m1</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span>     <span class="n">baseline_s1</span> <span class="o">=</span> <span class="n">baseline_o1</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
-
-<span class="ne">AttributeError</span>: &#39;NoneType&#39; object has no attribute &#39;mean&#39;
-</pre></div>
-</div>
-<img alt="_images/f3331a77b8086fb8b8153073f0ea45867ec78ad88c15093f26f49773eb7715e9.png" src="_images/f3331a77b8086fb8b8153073f0ea45867ec78ad88c15093f26f49773eb7715e9.png" />
+<img alt="_images/e064525125a01532ba7b9dbd643577aaf47c4b729765def9b9146f06056dc4b6.png" src="_images/e064525125a01532ba7b9dbd643577aaf47c4b729765def9b9146f06056dc4b6.png" />
 </div>
 </div>
 <p>Notice that both the mean and standard deviation of the baseline activations increase as training progressses. However, the candidate activation statistics tend to stabilize and even decrease.</p>
@@ -904,23 +940,6 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </div>
 </details>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>No data found for file /var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/model_outputs/Baseline_test_outputs_epoch_199_Relu_0.npy
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">12</span><span class="p">],</span> <span class="n">line</span> <span class="mi">5</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">num_epochs</span> <span class="o">=</span> <span class="mi">200</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
-<span class="ne">----&gt; </span><span class="mi">5</span>     <span class="n">outputs</span> <span class="o">=</span> <span class="n">load_outputs_from_disk</span><span class="p">(</span><span class="s2">&quot;Baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">num_epochs</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span>     <span class="n">baseline_all_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span>     <span class="n">outputs</span> <span class="o">=</span> <span class="n">load_outputs_from_disk</span><span class="p">(</span><span class="s2">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">num_epochs</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Relu_</span><span class="si">{</span><span class="n">l</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-
-<span class="ne">AttributeError</span>: &#39;NoneType&#39; object has no attribute &#39;flatten&#39;
-</pre></div>
-</div>
-</div>
 </div>
 <div class="cell tag_hide-input docutils container">
 <details class="hide above-input">
@@ -947,7 +966,7 @@ Epoch 200, Train Accuracy: 0.8414, Test Accuracy: 0.5571
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/28b917a54845717c40b386ee8c8bbb84d664535589a824395224c160dce65fdf.png" src="_images/28b917a54845717c40b386ee8c8bbb84d664535589a824395224c160dce65fdf.png" />
+<img alt="_images/ff150e89e59ee4b31345b6c1535b9e8a4d85d173ed9716277825de20a1297343.png" src="_images/ff150e89e59ee4b31345b6c1535b9e8a4d85d173ed9716277825de20a1297343.png" />
 </div>
 </div>
 <p>It’s clear that the baseline activations are more spread out than the candidate ones, which are more sparse and smaller in magnitude. Thus, not only are fewer neurons activated per example, but the magnitudes of the activations themselves are diminished. This is due to the network having learned to avoid overly depending on specific neurons across training examples.</p>
