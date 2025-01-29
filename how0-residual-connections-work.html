@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How Do Residual Connections Work? &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-do-residual-connections-work">
+<h1>How Do Residual Connections Work?<a class="headerlink" href="#how-do-residual-connections-work" title="Link to this heading">¶</a></h1>
+<p>Residual connections were introduced in the paper Deep Residual Learning for Image Recognition (He et al., 2015). Conceptually similar to and mathematically simpler than the gated connections used in highway networks (Srivastava et al., 2015), they made it possible to train much deeper neural networks than was previously possible.</p>
+<section id="what-are-residual-connections">
+<h2>What are Residual Connections?<a class="headerlink" href="#what-are-residual-connections" title="Link to this heading">¶</a></h2>
+<p>A residual connection directly connects non-adjacent layers, bypassing the intermediate ones. This is implemented by simply adding the input of a set of layers to its output.</p>
+<div class="math notranslate nohighlight">
+\[
+f(x) = x + g(x)
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(f(x)\)</span> represents the transformation for one or more layers. The authors proposed that it was simpler for a network to learn the residual <span class="math notranslate nohighlight">\(g(x)\)</span> rather than the entire transformation <span class="math notranslate nohighlight">\(f(x)\)</span>, making it easier to train the network.</p>
+<p><img alt="residual-connection" src="_images/residual-connection.jpg" /></p>
+</section>
+<section id="lets-set-up-the-experiment">
+<h2>Lets Set up the Experiment<a class="headerlink" href="#lets-set-up-the-experiment" title="Link to this heading">¶</a></h2>
+<p>So does this work? We will compare two CNN architectures - the ResNet architecture and a comparable network (“DeepCNN”) without residual connections.
+For each architecture, we will compare networks with 20 and 56 layers.</p>
+<p><img alt="fc-resnet" src="_images/fc-resnet-side-by-side.jpg" /></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">import</span> <span class="nn">optax</span>
+<span class="kn">import</span> <span class="nn">flax.linen</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">train_state</span>
+<span class="kn">import</span> <span class="nn">tensorflow_datasets</span> <span class="k">as</span> <span class="nn">tfds</span>
+
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">9</span> <span class="c1">## Number of basic blocks, each consisting of 2 convolutional layers.</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="let-s-define-the-deepcnn-network">
+<h3>Let’s Define the DeepCNN Network<a class="headerlink" href="#let-s-define-the-deepcnn-network" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">kernel_init</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">he_normal</span><span class="p">()</span>
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;SAME&#39;</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stride</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;SAME&#39;</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DeepCNN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="n">kernel_init</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">he_normal</span><span class="p">()</span>
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ConvBlock</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">16</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">ConvBlock</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ConvBlock</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">ConvBlock</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ConvBlock</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">avg_pool</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">window_shape</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># Flatten</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> 
+
+
+        <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="now-let-s-define-the-resnet-model">
+<h3>Now, Let’s Define the Resnet Model<a class="headerlink" href="#now-let-s-define-the-resnet-model" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">kernel_init</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">kaiming_normal</span><span class="p">()</span>
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">):</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+                    <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                    <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;SAME&quot;</span><span class="p">,</span>
+                    <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+                    <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                    <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;SAME&quot;</span><span class="p">,</span>
+                    <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">residual</span>
+
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">DownSampleResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">kernel_init</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">kaiming_normal</span><span class="p">()</span>
+
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">):</span>
+        <span class="n">residual</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="p">,</span>
+                    <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                    <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;SAME&quot;</span><span class="p">,</span>
+                    <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span>
+                    <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                    <span class="n">strides</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="n">padding</span><span class="o">=</span><span class="p">(((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))),</span>
+                    <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad_identity</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">nowrap</span>
+    <span class="k">def</span> <span class="nf">pad_identity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># Pad identity connection when downsampling</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">[:,</span> <span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">::],</span>
+            <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">4</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)),</span>
+            <span class="s2">&quot;constant&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ResidualCNN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="n">kernel_init</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">kaiming_normal</span><span class="p">()</span>
+
+    <span class="nd">@nn</span><span class="o">.</span><span class="n">compact</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s2">&quot;SAME&quot;</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm</span><span class="p">(</span><span class="n">use_running_average</span><span class="o">=</span><span class="ow">not</span> <span class="n">train</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ResidualBlock</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">16</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">DownSampleResidualBlock</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ResidualBlock</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">DownSampleResidualBlock</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+          <span class="n">x</span> <span class="o">=</span> <span class="n">ResidualBlock</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="mi">64</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">train</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">avg_pool</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">window_shape</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># Flatten</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">kernel_init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_init</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> 
+
+        <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="next-let-s-set-up-the-cifar-10-dataset">
+<h3>Next, Let’s Set up the CIFAR-10 Dataset<a class="headerlink" href="#next-let-s-set-up-the-cifar-10-dataset" title="Link to this heading">¶</a></h3>
+<div class="cell tag_hide-output docutils container">
+<div class="cell_input above-output-prompt docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torchvision.transforms</span> <span class="k">as</span> <span class="nn">transforms</span>
+<span class="kn">from</span> <span class="nn">torchvision.datasets</span> <span class="kn">import</span> <span class="n">CIFAR10</span>
+<span class="kn">from</span> <span class="nn">torch.utils</span> <span class="kn">import</span> <span class="n">data</span>
+
+
+<span class="k">def</span> <span class="nf">numpy_collate</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="n">transposed</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">numpy_collate</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">samples</span> <span class="ow">in</span> <span class="n">transposed</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">FlattenAndCast</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pic</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pic</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">NumpyLoader</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sampler</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">batch_sampler</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">pin_memory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">drop_last</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">worker_init_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">shuffle</span><span class="o">=</span><span class="n">shuffle</span><span class="p">,</span>
+            <span class="n">sampler</span><span class="o">=</span><span class="n">sampler</span><span class="p">,</span>
+            <span class="n">batch_sampler</span><span class="o">=</span><span class="n">batch_sampler</span><span class="p">,</span>
+            <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">,</span>
+            <span class="n">collate_fn</span><span class="o">=</span><span class="n">numpy_collate</span><span class="p">,</span>
+            <span class="n">pin_memory</span><span class="o">=</span><span class="n">pin_memory</span><span class="p">,</span>
+            <span class="n">drop_last</span><span class="o">=</span><span class="n">drop_last</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">worker_init_fn</span><span class="o">=</span><span class="n">worker_init_fn</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="n">transforms_train</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
+    <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="o">.</span><span class="n">RandomCrop</span><span class="p">(</span>
+        <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
+        <span class="n">padding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">fill</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">padding_mode</span><span class="o">=</span><span class="s2">&quot;constant&quot;</span>
+    <span class="p">),</span>
+
+    <span class="n">transforms</span><span class="o">.</span><span class="n">RandomHorizontalFlip</span><span class="p">(),</span>
+
+    <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span>
+        <span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.4914</span><span class="p">,</span> <span class="mf">0.4822</span><span class="p">,</span> <span class="mf">0.4465</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2470</span><span class="p">,</span> <span class="mf">0.2435</span><span class="p">,</span> <span class="mf">0.2616</span><span class="p">]</span>
+    <span class="p">),</span>
+    <span class="n">FlattenAndCast</span><span class="p">(),</span>
+<span class="p">])</span>
+
+
+<span class="n">transforms_test</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span>
+            <span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.4914</span><span class="p">,</span> <span class="mf">0.4822</span><span class="p">,</span> <span class="mf">0.4465</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2470</span><span class="p">,</span> <span class="mf">0.2435</span><span class="p">,</span> <span class="mf">0.2616</span><span class="p">]</span>
+        <span class="p">),</span>
+        <span class="n">FlattenAndCast</span><span class="p">(),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">CIFAR10</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;./CIFAR&quot;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transforms_train</span>
+<span class="p">)</span>
+
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">CIFAR10</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;./CIFAR&quot;</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">transforms_test</span>
+<span class="p">)</span>
+
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">128</span>
+
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">NumpyLoader</span><span class="p">(</span>
+    <span class="n">train_dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">pin_memory</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+
+<span class="n">test_loader</span><span class="o">=</span> <span class="n">NumpyLoader</span><span class="p">(</span>
+    <span class="n">test_dataset</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+    <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">pin_memory</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<details class="hide below-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell output</span>
+<span class="expanded">Hide code cell output</span>
+</summary>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Files already downloaded and verified
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Files already downloaded and verified
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+</section>
+<section id="finally-let-s-set-up-the-training-loop">
+<h3>Finally, Let’s Set Up The Training Loop<a class="headerlink" href="#finally-let-s-set-up-the-training-loop" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">LEARNING_RATE</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">WEIGHT_DECAY</span> <span class="o">=</span> <span class="mf">1e-4</span>
+<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">180</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">flax</span>
+<span class="kn">from</span> <span class="nn">flax.training</span> <span class="kn">import</span> <span class="n">checkpoints</span>
+
+<span class="k">def</span> <span class="nf">count_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">params</span><span class="p">)))</span>
+
+
+<span class="k">def</span> <span class="nf">compute_weight_decay</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+    <span class="n">param_norm</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">weight_decay_params_filter</span> <span class="o">=</span> <span class="n">flax</span><span class="o">.</span><span class="n">traverse_util</span><span class="o">.</span><span class="n">ModelParamTraversal</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">path</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;bias&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">path</span> <span class="ow">and</span> <span class="s2">&quot;scale&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">path</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">weight_decay_params</span> <span class="o">=</span> <span class="n">weight_decay_params_filter</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">weight_decay_params</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">param_norm</span> <span class="o">+=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">param_norm</span>
+
+<span class="c1"># Create the train state</span>
+<span class="k">def</span> <span class="nf">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">cnn</span><span class="p">,</span> <span class="n">train_size</span><span class="p">):</span>
+    <span class="n">variables</span> <span class="o">=</span> <span class="n">cnn</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="s1">&#39;params&#39;</span><span class="p">]</span>
+
+    <span class="n">num_params</span> <span class="o">=</span> <span class="n">count_parameters</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initialized model with </span><span class="si">{</span><span class="n">num_params</span><span class="si">}</span><span class="s2"> parameters&quot;</span><span class="p">)</span>
+
+    <span class="n">batch_stats</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="s2">&quot;batch_stats&quot;</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+        <span class="n">batch_stats</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="s1">&#39;batch_stats&#39;</span><span class="p">]</span>
+
+    <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="n">train_size</span><span class="o">//</span><span class="n">BATCH_SIZE</span>
+    <span class="n">scales</span> <span class="o">=</span> <span class="p">[</span><span class="mi">81</span><span class="o">*</span><span class="n">steps_per_epoch</span><span class="p">,</span> <span class="mi">122</span><span class="o">*</span><span class="n">steps_per_epoch</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span>
+
+    <span class="n">lr_schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">schedules</span><span class="o">.</span><span class="n">piecewise_constant_schedule</span><span class="p">(</span><span class="n">init_value</span><span class="o">=</span><span class="n">LEARNING_RATE</span><span class="p">,</span>
+                                                              <span class="n">boundaries_and_scales</span><span class="o">=</span><span class="p">{</span><span class="n">scales</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">scales</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="mf">0.1</span><span class="p">})</span>
+
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">sgd</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">lr_schedule</span><span class="p">,</span>
+                   <span class="n">momentum</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">nesterov</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+    <span class="k">return</span> <span class="n">train_state</span><span class="o">.</span><span class="n">TrainState</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">apply_fn</span><span class="o">=</span><span class="n">cnn</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span>
+                                         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">tx</span><span class="o">=</span><span class="n">tx</span><span class="p">),</span> <span class="n">batch_stats</span>
+
+
+<span class="c1"># Define the training and evaluation steps</span>
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">):</span>
+        <span class="n">logits</span><span class="p">,</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_fn</span><span class="p">({</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">params</span><span class="p">,</span> <span class="s1">&#39;batch_stats&#39;</span><span class="p">:</span> <span class="n">batch_stats</span><span class="p">},</span> <span class="n">images</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mutable</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;batch_stats&quot;</span><span class="p">])</span>
+
+        <span class="n">updated_batch_stats</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;batch_stats&#39;</span><span class="p">]</span>
+
+        <span class="n">one_hot</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optax</span><span class="o">.</span><span class="n">softmax_cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">WEIGHT_DECAY</span> <span class="o">*</span> <span class="n">compute_weight_decay</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="p">(</span><span class="n">updated_batch_stats</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
+
+
+    <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">,</span> <span class="n">has_aux</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">outputs</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">grad_fn</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">)</span>
+    <span class="n">loss</span><span class="p">,</span> <span class="n">aux</span>  <span class="o">=</span> <span class="n">outputs</span>
+    <span class="n">updated_batch_stats</span><span class="p">,</span> <span class="n">logits</span> <span class="o">=</span> <span class="n">aux</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">predictions</span> <span class="o">==</span> <span class="n">labels</span><span class="p">)</span>
+    <span class="n">grads_flat</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_flatten</span><span class="p">(</span><span class="n">grads</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">grad_norm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">grads_flat</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_gradients</span><span class="p">(</span><span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">accuracy</span><span class="p">,</span> <span class="n">updated_batch_stats</span><span class="p">,</span> <span class="n">grad_norm</span>
+
+
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">eval_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">):</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">apply_fn</span><span class="p">({</span><span class="s1">&#39;params&#39;</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="s1">&#39;batch_stats&#39;</span><span class="p">:</span> <span class="n">batch_stats</span><span class="p">},</span> <span class="n">images</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">predictions</span> <span class="o">==</span> <span class="n">labels</span><span class="p">)</span>
+    <span class="n">one_hot</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optax</span><span class="o">.</span><span class="n">softmax_cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">))</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">WEIGHT_DECAY</span> <span class="o">*</span> <span class="n">compute_weight_decay</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">accuracy</span>
+
+
+<span class="c1"># Training loop</span>
+<span class="k">def</span> <span class="nf">train_and_evaluate</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+
+    <span class="nb">iter</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Prepare data batches</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NUM_EPOCHS</span><span class="p">):</span>
+
+        <span class="c1"># Training</span>
+        <span class="n">train_losses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">train_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="n">train_loader</span><span class="p">:</span>
+
+            <span class="n">state</span><span class="p">,</span> <span class="n">loss</span><span class="p">,</span> <span class="n">accuracy</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">,</span> <span class="n">grad_norm</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">)</span>
+            <span class="n">train_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+            <span class="n">train_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accuracy</span><span class="p">)</span>
+
+            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;train_losses&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;grad_norms&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad_norm</span><span class="p">)</span>
+            <span class="nb">iter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Evaluation</span>
+        <span class="n">test_losses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">test_accuracies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="n">test_loader</span><span class="p">:</span>
+
+            <span class="n">loss</span><span class="p">,</span> <span class="n">accuracy</span> <span class="o">=</span> <span class="n">eval_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">batch_stats</span><span class="p">)</span>
+            <span class="n">test_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+            <span class="n">test_accuracies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accuracy</span><span class="p">)</span>
+
+            <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;test_losses&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+
+        <span class="c1"># Compute mean loss</span>
+        <span class="n">epoch_train_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">train_losses</span><span class="p">))</span>
+        <span class="n">epoch_test_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">test_losses</span><span class="p">))</span>
+
+
+        <span class="c1"># Compute mean accuracy</span>
+        <span class="n">train_accuracy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">train_accuracies</span><span class="p">))</span> 
+        <span class="n">test_accuracy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">test_accuracies</span><span class="p">))</span> 
+
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iter: </span><span class="si">{</span><span class="nb">iter</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">, Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">, Train Loss: </span><span class="si">{</span><span class="n">epoch_train_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Test Loss: </span><span class="si">{</span><span class="n">epoch_test_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Train Accuracy: </span><span class="si">{</span><span class="n">train_accuracy</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Test Accuracy: </span><span class="si">{</span><span class="n">test_accuracy</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="n">batch_stats</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">OUTPUT_DIR</span> <span class="o">=</span> <span class="s2">&quot;/Users/vikram/dev/vikrampawar.com/site/CIFAR10_ResNet&quot;</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+</section>
+<section id="let-s-train-the-deep-cnn-first">
+<h3>Let’s train the deep CNN first<a class="headerlink" href="#let-s-train-the-deep-cnn-first" title="Link to this heading">¶</a></h3>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
+<span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
+
+<span class="c1"># Create the metrics object</span>
+<span class="n">deepcnn_metrics</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;grad_norms&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;train_losses&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;test_losses&quot;</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="c1"># Run the training</span>
+<span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">deepcnn_batch_stats</span><span class="p">,</span> <span class="n">deepcnn_metrics</span><span class="p">)</span>
+
+<span class="c1"># Save model checkpoint</span>
+<span class="n">checkpoints</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/deepcnn-56&quot;</span><span class="p">,</span>
+                            <span class="n">target</span><span class="o">=</span><span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">,</span>
+                            <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="c1"># Save batch statistics to a file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">deepcnn_batch_stats</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="c1"># Save metrics to a file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+  <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">deepcnn_metrics</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
+[31590, 47580]
+Iter: 392, Epoch 1, Train Loss: 50.2543, Test Loss: 50.0755, Train Accuracy: 0.1167, Test Accuracy: 0.1640
+Iter: 783, Epoch 2, Train Loss: 48.2142, Test Loss: 46.2973, Train Accuracy: 0.1807, Test Accuracy: 0.2173
+Iter: 1174, Epoch 3, Train Loss: 44.5303, Test Loss: 42.7697, Train Accuracy: 0.2620, Test Accuracy: 0.3033
+Iter: 1565, Epoch 4, Train Loss: 41.2210, Test Loss: 39.6207, Train Accuracy: 0.3059, Test Accuracy: 0.3455
+Iter: 1956, Epoch 5, Train Loss: 38.2083, Test Loss: 36.7250, Train Accuracy: 0.3262, Test Accuracy: 0.3636
+Iter: 2347, Epoch 6, Train Loss: 35.4227, Test Loss: 34.0386, Train Accuracy: 0.3497, Test Accuracy: 0.3862
+Iter: 2738, Epoch 7, Train Loss: 32.8476, Test Loss: 31.6369, Train Accuracy: 0.3697, Test Accuracy: 0.3775
+Iter: 3129, Epoch 8, Train Loss: 30.4668, Test Loss: 29.2670, Train Accuracy: 0.3846, Test Accuracy: 0.4172
+Iter: 3520, Epoch 9, Train Loss: 28.2634, Test Loss: 27.1804, Train Accuracy: 0.4043, Test Accuracy: 0.4206
+Iter: 3911, Epoch 10, Train Loss: 26.2238, Test Loss: 25.1934, Train Accuracy: 0.4198, Test Accuracy: 0.4510
+Iter: 4302, Epoch 11, Train Loss: 24.3460, Test Loss: 23.4041, Train Accuracy: 0.4307, Test Accuracy: 0.4545
+Iter: 4693, Epoch 12, Train Loss: 22.6012, Test Loss: 21.7527, Train Accuracy: 0.4467, Test Accuracy: 0.4614
+Iter: 5084, Epoch 13, Train Loss: 20.9882, Test Loss: 20.1403, Train Accuracy: 0.4595, Test Accuracy: 0.4883
+Iter: 5475, Epoch 14, Train Loss: 19.4902, Test Loss: 18.7513, Train Accuracy: 0.4745, Test Accuracy: 0.4861
+Iter: 5866, Epoch 15, Train Loss: 18.1117, Test Loss: 17.3900, Train Accuracy: 0.4849, Test Accuracy: 0.5146
+Iter: 6257, Epoch 16, Train Loss: 16.8201, Test Loss: 16.1868, Train Accuracy: 0.5052, Test Accuracy: 0.5179
+Iter: 6648, Epoch 17, Train Loss: 15.6294, Test Loss: 15.0042, Train Accuracy: 0.5198, Test Accuracy: 0.5416
+Iter: 7039, Epoch 18, Train Loss: 14.5275, Test Loss: 13.9785, Train Accuracy: 0.5310, Test Accuracy: 0.5475
+Iter: 7430, Epoch 19, Train Loss: 13.5040, Test Loss: 13.0046, Train Accuracy: 0.5461, Test Accuracy: 0.5757
+Iter: 7821, Epoch 20, Train Loss: 12.5631, Test Loss: 12.0801, Train Accuracy: 0.5612, Test Accuracy: 0.5836
+Iter: 8212, Epoch 21, Train Loss: 11.6823, Test Loss: 11.2622, Train Accuracy: 0.5720, Test Accuracy: 0.5845
+Iter: 8603, Epoch 22, Train Loss: 10.8817, Test Loss: 10.5063, Train Accuracy: 0.5828, Test Accuracy: 0.5886
+Iter: 8994, Epoch 23, Train Loss: 10.1321, Test Loss: 9.7525, Train Accuracy: 0.5946, Test Accuracy: 0.5985
+Iter: 9385, Epoch 24, Train Loss: 9.4411, Test Loss: 9.0906, Train Accuracy: 0.6062, Test Accuracy: 0.6122
+Iter: 9776, Epoch 25, Train Loss: 8.7988, Test Loss: 8.5163, Train Accuracy: 0.6194, Test Accuracy: 0.6117
+Iter: 10167, Epoch 26, Train Loss: 8.1980, Test Loss: 7.9390, Train Accuracy: 0.6292, Test Accuracy: 0.6280
+Iter: 10558, Epoch 27, Train Loss: 7.6476, Test Loss: 7.4050, Train Accuracy: 0.6396, Test Accuracy: 0.6382
+Iter: 10949, Epoch 28, Train Loss: 7.1401, Test Loss: 6.8874, Train Accuracy: 0.6490, Test Accuracy: 0.6580
+Iter: 11340, Epoch 29, Train Loss: 6.6692, Test Loss: 6.4388, Train Accuracy: 0.6561, Test Accuracy: 0.6628
+Iter: 11731, Epoch 30, Train Loss: 6.2287, Test Loss: 6.0489, Train Accuracy: 0.6642, Test Accuracy: 0.6701
+Iter: 12122, Epoch 31, Train Loss: 5.8312, Test Loss: 5.6654, Train Accuracy: 0.6722, Test Accuracy: 0.6654
+Iter: 12513, Epoch 32, Train Loss: 5.4539, Test Loss: 5.3192, Train Accuracy: 0.6792, Test Accuracy: 0.6685
+Iter: 12904, Epoch 33, Train Loss: 5.1090, Test Loss: 4.9728, Train Accuracy: 0.6853, Test Accuracy: 0.6852
+Iter: 13295, Epoch 34, Train Loss: 4.7808, Test Loss: 4.6305, Train Accuracy: 0.6962, Test Accuracy: 0.7028
+Iter: 13686, Epoch 35, Train Loss: 4.4911, Test Loss: 4.3434, Train Accuracy: 0.7002, Test Accuracy: 0.7022
+Iter: 14077, Epoch 36, Train Loss: 4.2136, Test Loss: 4.0734, Train Accuracy: 0.7081, Test Accuracy: 0.7131
+Iter: 14468, Epoch 37, Train Loss: 3.9553, Test Loss: 3.9070, Train Accuracy: 0.7142, Test Accuracy: 0.6943
+Iter: 14859, Epoch 38, Train Loss: 3.7228, Test Loss: 3.6313, Train Accuracy: 0.7179, Test Accuracy: 0.7169
+Iter: 15250, Epoch 39, Train Loss: 3.5043, Test Loss: 3.4183, Train Accuracy: 0.7237, Test Accuracy: 0.7142
+Iter: 15641, Epoch 40, Train Loss: 3.3054, Test Loss: 3.2341, Train Accuracy: 0.7286, Test Accuracy: 0.7319
+Iter: 16032, Epoch 41, Train Loss: 3.1152, Test Loss: 3.0490, Train Accuracy: 0.7340, Test Accuracy: 0.7331
+Iter: 16423, Epoch 42, Train Loss: 2.9420, Test Loss: 2.8509, Train Accuracy: 0.7379, Test Accuracy: 0.7439
+Iter: 16814, Epoch 43, Train Loss: 2.7741, Test Loss: 2.7367, Train Accuracy: 0.7437, Test Accuracy: 0.7387
+Iter: 17205, Epoch 44, Train Loss: 2.6314, Test Loss: 2.5912, Train Accuracy: 0.7476, Test Accuracy: 0.7442
+Iter: 17596, Epoch 45, Train Loss: 2.4947, Test Loss: 2.4915, Train Accuracy: 0.7509, Test Accuracy: 0.7404
+Iter: 17987, Epoch 46, Train Loss: 2.3677, Test Loss: 2.3925, Train Accuracy: 0.7511, Test Accuracy: 0.7371
+Iter: 18378, Epoch 47, Train Loss: 2.2528, Test Loss: 2.1990, Train Accuracy: 0.7562, Test Accuracy: 0.7619
+Iter: 18769, Epoch 48, Train Loss: 2.1330, Test Loss: 2.1262, Train Accuracy: 0.7642, Test Accuracy: 0.7528
+Iter: 19160, Epoch 49, Train Loss: 2.0308, Test Loss: 2.0061, Train Accuracy: 0.7667, Test Accuracy: 0.7652
+Iter: 19551, Epoch 50, Train Loss: 1.9402, Test Loss: 1.9019, Train Accuracy: 0.7693, Test Accuracy: 0.7702
+Iter: 19942, Epoch 51, Train Loss: 1.8458, Test Loss: 1.8143, Train Accuracy: 0.7730, Test Accuracy: 0.7778
+Iter: 20333, Epoch 52, Train Loss: 1.7689, Test Loss: 1.7846, Train Accuracy: 0.7761, Test Accuracy: 0.7631
+Iter: 20724, Epoch 53, Train Loss: 1.6966, Test Loss: 1.6868, Train Accuracy: 0.7771, Test Accuracy: 0.7753
+Iter: 21115, Epoch 54, Train Loss: 1.6179, Test Loss: 1.6516, Train Accuracy: 0.7822, Test Accuracy: 0.7637
+Iter: 21506, Epoch 55, Train Loss: 1.5575, Test Loss: 1.6288, Train Accuracy: 0.7838, Test Accuracy: 0.7626
+Iter: 21897, Epoch 56, Train Loss: 1.4918, Test Loss: 1.5064, Train Accuracy: 0.7899, Test Accuracy: 0.7802
+Iter: 22288, Epoch 57, Train Loss: 1.4400, Test Loss: 1.4999, Train Accuracy: 0.7909, Test Accuracy: 0.7619
+Iter: 22679, Epoch 58, Train Loss: 1.3903, Test Loss: 1.3652, Train Accuracy: 0.7921, Test Accuracy: 0.7992
+Iter: 23070, Epoch 59, Train Loss: 1.3354, Test Loss: 1.3822, Train Accuracy: 0.7961, Test Accuracy: 0.7802
+Iter: 23461, Epoch 60, Train Loss: 1.2954, Test Loss: 1.3155, Train Accuracy: 0.7955, Test Accuracy: 0.7888
+Iter: 23852, Epoch 61, Train Loss: 1.2523, Test Loss: 1.2706, Train Accuracy: 0.8013, Test Accuracy: 0.7957
+Iter: 24243, Epoch 62, Train Loss: 1.2091, Test Loss: 1.2494, Train Accuracy: 0.8031, Test Accuracy: 0.7979
+Iter: 24634, Epoch 63, Train Loss: 1.1795, Test Loss: 1.2178, Train Accuracy: 0.8027, Test Accuracy: 0.7930
+Iter: 25025, Epoch 64, Train Loss: 1.1448, Test Loss: 1.2038, Train Accuracy: 0.8057, Test Accuracy: 0.7894
+Iter: 25416, Epoch 65, Train Loss: 1.1091, Test Loss: 1.1868, Train Accuracy: 0.8081, Test Accuracy: 0.7850
+Iter: 25807, Epoch 66, Train Loss: 1.0839, Test Loss: 1.1966, Train Accuracy: 0.8114, Test Accuracy: 0.7807
+Iter: 26198, Epoch 67, Train Loss: 1.0580, Test Loss: 1.1021, Train Accuracy: 0.8129, Test Accuracy: 0.7988
+Iter: 26589, Epoch 68, Train Loss: 1.0284, Test Loss: 1.0663, Train Accuracy: 0.8148, Test Accuracy: 0.8018
+Iter: 26980, Epoch 69, Train Loss: 1.0116, Test Loss: 1.0617, Train Accuracy: 0.8130, Test Accuracy: 0.8026
+Iter: 27371, Epoch 70, Train Loss: 0.9919, Test Loss: 1.0418, Train Accuracy: 0.8175, Test Accuracy: 0.8013
+Iter: 27762, Epoch 71, Train Loss: 0.9719, Test Loss: 1.0003, Train Accuracy: 0.8172, Test Accuracy: 0.8041
+Iter: 28153, Epoch 72, Train Loss: 0.9500, Test Loss: 0.9962, Train Accuracy: 0.8189, Test Accuracy: 0.8054
+Iter: 28544, Epoch 73, Train Loss: 0.9337, Test Loss: 0.9832, Train Accuracy: 0.8196, Test Accuracy: 0.8015
+Iter: 28935, Epoch 74, Train Loss: 0.9147, Test Loss: 1.0809, Train Accuracy: 0.8222, Test Accuracy: 0.7811
+Iter: 29326, Epoch 75, Train Loss: 0.9018, Test Loss: 0.9419, Train Accuracy: 0.8222, Test Accuracy: 0.8084
+Iter: 29717, Epoch 76, Train Loss: 0.8896, Test Loss: 0.9245, Train Accuracy: 0.8219, Test Accuracy: 0.8183
+Iter: 30108, Epoch 77, Train Loss: 0.8765, Test Loss: 0.9408, Train Accuracy: 0.8252, Test Accuracy: 0.8073
+Iter: 30499, Epoch 78, Train Loss: 0.8661, Test Loss: 0.9324, Train Accuracy: 0.8263, Test Accuracy: 0.8108
+Iter: 30890, Epoch 79, Train Loss: 0.8542, Test Loss: 0.9024, Train Accuracy: 0.8271, Test Accuracy: 0.8116
+Iter: 31281, Epoch 80, Train Loss: 0.8417, Test Loss: 0.8919, Train Accuracy: 0.8293, Test Accuracy: 0.8174
+Iter: 31672, Epoch 81, Train Loss: 0.8199, Test Loss: 0.8280, Train Accuracy: 0.8326, Test Accuracy: 0.8357
+Iter: 32063, Epoch 82, Train Loss: 0.6954, Test Loss: 0.8086, Train Accuracy: 0.8728, Test Accuracy: 0.8417
+Iter: 32454, Epoch 83, Train Loss: 0.6632, Test Loss: 0.7672, Train Accuracy: 0.8847, Test Accuracy: 0.8514
+Iter: 32845, Epoch 84, Train Loss: 0.6458, Test Loss: 0.7635, Train Accuracy: 0.8877, Test Accuracy: 0.8568
+Iter: 33236, Epoch 85, Train Loss: 0.6351, Test Loss: 0.7762, Train Accuracy: 0.8922, Test Accuracy: 0.8536
+Iter: 33627, Epoch 86, Train Loss: 0.6267, Test Loss: 0.7624, Train Accuracy: 0.8941, Test Accuracy: 0.8521
+Iter: 34018, Epoch 87, Train Loss: 0.6182, Test Loss: 0.7497, Train Accuracy: 0.8972, Test Accuracy: 0.8587
+Iter: 34409, Epoch 88, Train Loss: 0.6091, Test Loss: 0.7908, Train Accuracy: 0.8999, Test Accuracy: 0.8509
+Iter: 34800, Epoch 89, Train Loss: 0.6029, Test Loss: 0.7705, Train Accuracy: 0.9004, Test Accuracy: 0.8572
+Iter: 35191, Epoch 90, Train Loss: 0.5957, Test Loss: 0.7632, Train Accuracy: 0.9009, Test Accuracy: 0.8533
+Iter: 35582, Epoch 91, Train Loss: 0.5911, Test Loss: 0.7525, Train Accuracy: 0.9012, Test Accuracy: 0.8558
+Iter: 35973, Epoch 92, Train Loss: 0.5829, Test Loss: 0.7612, Train Accuracy: 0.9044, Test Accuracy: 0.8569
+Iter: 36364, Epoch 93, Train Loss: 0.5755, Test Loss: 0.7474, Train Accuracy: 0.9067, Test Accuracy: 0.8574
+Iter: 36755, Epoch 94, Train Loss: 0.5698, Test Loss: 0.7538, Train Accuracy: 0.9081, Test Accuracy: 0.8552
+Iter: 37146, Epoch 95, Train Loss: 0.5656, Test Loss: 0.7323, Train Accuracy: 0.9088, Test Accuracy: 0.8592
+Iter: 37537, Epoch 96, Train Loss: 0.5601, Test Loss: 0.7564, Train Accuracy: 0.9090, Test Accuracy: 0.8618
+Iter: 37928, Epoch 97, Train Loss: 0.5546, Test Loss: 0.7607, Train Accuracy: 0.9108, Test Accuracy: 0.8583
+Iter: 38319, Epoch 98, Train Loss: 0.5472, Test Loss: 0.7473, Train Accuracy: 0.9135, Test Accuracy: 0.8543
+Iter: 38710, Epoch 99, Train Loss: 0.5427, Test Loss: 0.7373, Train Accuracy: 0.9115, Test Accuracy: 0.8579
+Iter: 39101, Epoch 100, Train Loss: 0.5425, Test Loss: 0.7237, Train Accuracy: 0.9113, Test Accuracy: 0.8616
+Iter: 39492, Epoch 101, Train Loss: 0.5357, Test Loss: 0.7375, Train Accuracy: 0.9138, Test Accuracy: 0.8574
+Iter: 39883, Epoch 102, Train Loss: 0.5286, Test Loss: 0.7486, Train Accuracy: 0.9160, Test Accuracy: 0.8568
+Iter: 40274, Epoch 103, Train Loss: 0.5262, Test Loss: 0.7360, Train Accuracy: 0.9157, Test Accuracy: 0.8641
+Iter: 40665, Epoch 104, Train Loss: 0.5199, Test Loss: 0.7482, Train Accuracy: 0.9185, Test Accuracy: 0.8594
+Iter: 41056, Epoch 105, Train Loss: 0.5157, Test Loss: 0.7508, Train Accuracy: 0.9176, Test Accuracy: 0.8602
+Iter: 41447, Epoch 106, Train Loss: 0.5116, Test Loss: 0.7300, Train Accuracy: 0.9198, Test Accuracy: 0.8576
+Iter: 41838, Epoch 107, Train Loss: 0.5110, Test Loss: 0.7331, Train Accuracy: 0.9188, Test Accuracy: 0.8599
+Iter: 42229, Epoch 108, Train Loss: 0.5008, Test Loss: 0.7354, Train Accuracy: 0.9216, Test Accuracy: 0.8605
+Iter: 42620, Epoch 109, Train Loss: 0.5016, Test Loss: 0.7459, Train Accuracy: 0.9200, Test Accuracy: 0.8547
+Iter: 43011, Epoch 110, Train Loss: 0.4964, Test Loss: 0.7670, Train Accuracy: 0.9220, Test Accuracy: 0.8539
+Iter: 43402, Epoch 111, Train Loss: 0.4940, Test Loss: 0.7411, Train Accuracy: 0.9229, Test Accuracy: 0.8601
+Iter: 43793, Epoch 112, Train Loss: 0.4908, Test Loss: 0.7214, Train Accuracy: 0.9230, Test Accuracy: 0.8575
+Iter: 44184, Epoch 113, Train Loss: 0.4837, Test Loss: 0.7423, Train Accuracy: 0.9240, Test Accuracy: 0.8538
+Iter: 44575, Epoch 114, Train Loss: 0.4852, Test Loss: 0.7739, Train Accuracy: 0.9225, Test Accuracy: 0.8531
+Iter: 44966, Epoch 115, Train Loss: 0.4809, Test Loss: 0.7347, Train Accuracy: 0.9241, Test Accuracy: 0.8647
+Iter: 45357, Epoch 116, Train Loss: 0.4773, Test Loss: 0.7423, Train Accuracy: 0.9240, Test Accuracy: 0.8582
+Iter: 45748, Epoch 117, Train Loss: 0.4734, Test Loss: 0.7427, Train Accuracy: 0.9257, Test Accuracy: 0.8580
+Iter: 46139, Epoch 118, Train Loss: 0.4727, Test Loss: 0.7068, Train Accuracy: 0.9257, Test Accuracy: 0.8637
+Iter: 46530, Epoch 119, Train Loss: 0.4689, Test Loss: 0.7600, Train Accuracy: 0.9261, Test Accuracy: 0.8511
+Iter: 46921, Epoch 120, Train Loss: 0.4646, Test Loss: 0.7475, Train Accuracy: 0.9262, Test Accuracy: 0.8575
+Iter: 47312, Epoch 121, Train Loss: 0.4588, Test Loss: 0.7574, Train Accuracy: 0.9278, Test Accuracy: 0.8586
+Iter: 47703, Epoch 122, Train Loss: 0.4561, Test Loss: 0.7348, Train Accuracy: 0.9288, Test Accuracy: 0.8591
+Iter: 48094, Epoch 123, Train Loss: 0.4311, Test Loss: 0.7208, Train Accuracy: 0.9386, Test Accuracy: 0.8636
+Iter: 48485, Epoch 124, Train Loss: 0.4245, Test Loss: 0.7260, Train Accuracy: 0.9406, Test Accuracy: 0.8606
+Iter: 48876, Epoch 125, Train Loss: 0.4237, Test Loss: 0.7118, Train Accuracy: 0.9405, Test Accuracy: 0.8625
+Iter: 49267, Epoch 126, Train Loss: 0.4136, Test Loss: 0.7297, Train Accuracy: 0.9445, Test Accuracy: 0.8634
+Iter: 49658, Epoch 127, Train Loss: 0.4132, Test Loss: 0.7246, Train Accuracy: 0.9433, Test Accuracy: 0.8664
+Iter: 50049, Epoch 128, Train Loss: 0.4176, Test Loss: 0.7319, Train Accuracy: 0.9435, Test Accuracy: 0.8650
+Iter: 50440, Epoch 129, Train Loss: 0.4118, Test Loss: 0.7432, Train Accuracy: 0.9439, Test Accuracy: 0.8612
+Iter: 50831, Epoch 130, Train Loss: 0.4119, Test Loss: 0.7183, Train Accuracy: 0.9447, Test Accuracy: 0.8662
+Iter: 51222, Epoch 131, Train Loss: 0.4069, Test Loss: 0.7412, Train Accuracy: 0.9460, Test Accuracy: 0.8615
+Iter: 51613, Epoch 132, Train Loss: 0.4064, Test Loss: 0.7486, Train Accuracy: 0.9456, Test Accuracy: 0.8610
+Iter: 52004, Epoch 133, Train Loss: 0.4084, Test Loss: 0.7387, Train Accuracy: 0.9454, Test Accuracy: 0.8605
+Iter: 52395, Epoch 134, Train Loss: 0.4069, Test Loss: 0.7298, Train Accuracy: 0.9458, Test Accuracy: 0.8656
+Iter: 52786, Epoch 135, Train Loss: 0.4004, Test Loss: 0.7389, Train Accuracy: 0.9486, Test Accuracy: 0.8656
+Iter: 53177, Epoch 136, Train Loss: 0.4062, Test Loss: 0.7422, Train Accuracy: 0.9461, Test Accuracy: 0.8628
+Iter: 53568, Epoch 137, Train Loss: 0.4015, Test Loss: 0.7148, Train Accuracy: 0.9473, Test Accuracy: 0.8677
+Iter: 53959, Epoch 138, Train Loss: 0.4036, Test Loss: 0.7304, Train Accuracy: 0.9453, Test Accuracy: 0.8662
+Iter: 54350, Epoch 139, Train Loss: 0.4018, Test Loss: 0.7308, Train Accuracy: 0.9467, Test Accuracy: 0.8666
+Iter: 54741, Epoch 140, Train Loss: 0.4011, Test Loss: 0.7297, Train Accuracy: 0.9475, Test Accuracy: 0.8616
+Iter: 55132, Epoch 141, Train Loss: 0.3969, Test Loss: 0.7404, Train Accuracy: 0.9480, Test Accuracy: 0.8620
+Iter: 55523, Epoch 142, Train Loss: 0.3986, Test Loss: 0.7466, Train Accuracy: 0.9478, Test Accuracy: 0.8619
+Iter: 55914, Epoch 143, Train Loss: 0.3957, Test Loss: 0.7419, Train Accuracy: 0.9487, Test Accuracy: 0.8640
+Iter: 56305, Epoch 144, Train Loss: 0.3983, Test Loss: 0.7360, Train Accuracy: 0.9476, Test Accuracy: 0.8675
+Iter: 56696, Epoch 145, Train Loss: 0.3958, Test Loss: 0.7366, Train Accuracy: 0.9486, Test Accuracy: 0.8671
+Iter: 57087, Epoch 146, Train Loss: 0.3926, Test Loss: 0.7683, Train Accuracy: 0.9487, Test Accuracy: 0.8604
+Iter: 57478, Epoch 147, Train Loss: 0.3955, Test Loss: 0.7502, Train Accuracy: 0.9494, Test Accuracy: 0.8640
+Iter: 57869, Epoch 148, Train Loss: 0.3931, Test Loss: 0.7527, Train Accuracy: 0.9500, Test Accuracy: 0.8636
+Iter: 58260, Epoch 149, Train Loss: 0.3949, Test Loss: 0.7346, Train Accuracy: 0.9484, Test Accuracy: 0.8631
+Iter: 58651, Epoch 150, Train Loss: 0.3932, Test Loss: 0.7557, Train Accuracy: 0.9487, Test Accuracy: 0.8598
+Iter: 59042, Epoch 151, Train Loss: 0.3926, Test Loss: 0.7597, Train Accuracy: 0.9495, Test Accuracy: 0.8624
+Iter: 59433, Epoch 152, Train Loss: 0.3936, Test Loss: 0.7521, Train Accuracy: 0.9485, Test Accuracy: 0.8612
+Iter: 59824, Epoch 153, Train Loss: 0.3886, Test Loss: 0.7323, Train Accuracy: 0.9499, Test Accuracy: 0.8663
+Iter: 60215, Epoch 154, Train Loss: 0.3930, Test Loss: 0.7402, Train Accuracy: 0.9493, Test Accuracy: 0.8614
+Iter: 60606, Epoch 155, Train Loss: 0.3895, Test Loss: 0.7681, Train Accuracy: 0.9495, Test Accuracy: 0.8597
+Iter: 60997, Epoch 156, Train Loss: 0.3878, Test Loss: 0.7384, Train Accuracy: 0.9502, Test Accuracy: 0.8655
+Iter: 61388, Epoch 157, Train Loss: 0.3890, Test Loss: 0.7555, Train Accuracy: 0.9501, Test Accuracy: 0.8613
+Iter: 61779, Epoch 158, Train Loss: 0.3884, Test Loss: 0.7502, Train Accuracy: 0.9497, Test Accuracy: 0.8656
+Iter: 62170, Epoch 159, Train Loss: 0.3893, Test Loss: 0.7947, Train Accuracy: 0.9493, Test Accuracy: 0.8565
+Iter: 62561, Epoch 160, Train Loss: 0.3879, Test Loss: 0.7592, Train Accuracy: 0.9501, Test Accuracy: 0.8616
+Iter: 62952, Epoch 161, Train Loss: 0.3852, Test Loss: 0.7586, Train Accuracy: 0.9521, Test Accuracy: 0.8594
+Iter: 63343, Epoch 162, Train Loss: 0.3834, Test Loss: 0.7621, Train Accuracy: 0.9513, Test Accuracy: 0.8659
+Iter: 63734, Epoch 163, Train Loss: 0.3859, Test Loss: 0.7399, Train Accuracy: 0.9505, Test Accuracy: 0.8626
+Iter: 64125, Epoch 164, Train Loss: 0.3837, Test Loss: 0.7666, Train Accuracy: 0.9516, Test Accuracy: 0.8609
+Iter: 64516, Epoch 165, Train Loss: 0.3849, Test Loss: 0.7451, Train Accuracy: 0.9508, Test Accuracy: 0.8666
+Iter: 64907, Epoch 166, Train Loss: 0.3804, Test Loss: 0.7375, Train Accuracy: 0.9522, Test Accuracy: 0.8675
+Iter: 65298, Epoch 167, Train Loss: 0.3797, Test Loss: 0.7615, Train Accuracy: 0.9524, Test Accuracy: 0.8630
+Iter: 65689, Epoch 168, Train Loss: 0.3824, Test Loss: 0.7831, Train Accuracy: 0.9525, Test Accuracy: 0.8624
+Iter: 66080, Epoch 169, Train Loss: 0.3829, Test Loss: 0.7556, Train Accuracy: 0.9517, Test Accuracy: 0.8641
+Iter: 66471, Epoch 170, Train Loss: 0.3815, Test Loss: 0.7593, Train Accuracy: 0.9504, Test Accuracy: 0.8644
+Iter: 66862, Epoch 171, Train Loss: 0.3787, Test Loss: 0.7472, Train Accuracy: 0.9526, Test Accuracy: 0.8616
+Iter: 67253, Epoch 172, Train Loss: 0.3775, Test Loss: 0.7535, Train Accuracy: 0.9534, Test Accuracy: 0.8632
+Iter: 67644, Epoch 173, Train Loss: 0.3754, Test Loss: 0.7688, Train Accuracy: 0.9532, Test Accuracy: 0.8636
+Iter: 68035, Epoch 174, Train Loss: 0.3759, Test Loss: 0.7597, Train Accuracy: 0.9529, Test Accuracy: 0.8641
+Iter: 68426, Epoch 175, Train Loss: 0.3783, Test Loss: 0.7604, Train Accuracy: 0.9522, Test Accuracy: 0.8640
+Iter: 68817, Epoch 176, Train Loss: 0.3751, Test Loss: 0.7487, Train Accuracy: 0.9533, Test Accuracy: 0.8638
+Iter: 69208, Epoch 177, Train Loss: 0.3783, Test Loss: 0.7887, Train Accuracy: 0.9528, Test Accuracy: 0.8620
+Iter: 69599, Epoch 178, Train Loss: 0.3739, Test Loss: 0.7508, Train Accuracy: 0.9546, Test Accuracy: 0.8635
+Iter: 69990, Epoch 179, Train Loss: 0.3743, Test Loss: 0.7704, Train Accuracy: 0.9534, Test Accuracy: 0.8652
+Iter: 70381, Epoch 180, Train Loss: 0.3731, Test Loss: 0.7683, Train Accuracy: 0.9541, Test Accuracy: 0.8602
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="now-let-s-train-the-resnet">
+<h3>Now let’s train the Resnet<a class="headerlink" href="#now-let-s-train-the-resnet" title="Link to this heading">¶</a></h3>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
+<span class="n">resnet_state</span><span class="p">,</span> <span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">ResidualCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
+
+<span class="c1"># Create the metrics object</span>
+<span class="n">resnet_metrics</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;grad_norms&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;train_losses&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;test_losses&quot;</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
+
+<span class="c1"># Run the training</span>
+<span class="n">resnet_state</span><span class="p">,</span> <span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">train_and_evaluate</span><span class="p">(</span><span class="n">resnet_state</span><span class="p">,</span> <span class="n">resnet_batch_stats</span><span class="p">,</span> <span class="n">resnet_metrics</span><span class="p">)</span>
+
+
+<span class="n">num_params</span> <span class="o">=</span> <span class="n">count_parameters</span><span class="p">(</span><span class="n">resnet_state</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Trained model with </span><span class="si">{</span><span class="n">num_params</span><span class="si">}</span><span class="s2"> parameters&quot;</span><span class="p">)</span>
+
+<span class="c1"># Save model checkpoint</span>
+<span class="n">checkpoints</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/resnet-56&quot;</span><span class="p">,</span>
+                            <span class="n">target</span><span class="o">=</span><span class="n">resnet_state</span><span class="p">,</span>
+                            <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">,</span>
+                            <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Save batch statistics to a file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">resnet_batch_stats</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="c1"># Save metrics to a file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+  <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">resnet_metrics</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
+[31590, 47580]
+Iter: 392, Epoch 1, Train Loss: 2.6827, Test Loss: 2.2537, Train Accuracy: 0.1574, Test Accuracy: 0.2668
+Iter: 783, Epoch 2, Train Loss: 2.0263, Test Loss: 1.8066, Train Accuracy: 0.3522, Test Accuracy: 0.4309
+Iter: 1174, Epoch 3, Train Loss: 1.6461, Test Loss: 1.5273, Train Accuracy: 0.4963, Test Accuracy: 0.5458
+Iter: 1565, Epoch 4, Train Loss: 1.3715, Test Loss: 1.2758, Train Accuracy: 0.6027, Test Accuracy: 0.6508
+Iter: 1956, Epoch 5, Train Loss: 1.1791, Test Loss: 1.1053, Train Accuracy: 0.6747, Test Accuracy: 0.7047
+Iter: 2347, Epoch 6, Train Loss: 1.0445, Test Loss: 1.0773, Train Accuracy: 0.7222, Test Accuracy: 0.7184
+Iter: 2738, Epoch 7, Train Loss: 0.9608, Test Loss: 0.9403, Train Accuracy: 0.7513, Test Accuracy: 0.7633
+Iter: 3129, Epoch 8, Train Loss: 0.8909, Test Loss: 0.8545, Train Accuracy: 0.7727, Test Accuracy: 0.7909
+Iter: 3520, Epoch 9, Train Loss: 0.8393, Test Loss: 0.8497, Train Accuracy: 0.7906, Test Accuracy: 0.7920
+Iter: 3911, Epoch 10, Train Loss: 0.7960, Test Loss: 0.8215, Train Accuracy: 0.8053, Test Accuracy: 0.8036
+Iter: 4302, Epoch 11, Train Loss: 0.7571, Test Loss: 0.7829, Train Accuracy: 0.8160, Test Accuracy: 0.8134
+Iter: 4693, Epoch 12, Train Loss: 0.7251, Test Loss: 0.7871, Train Accuracy: 0.8274, Test Accuracy: 0.8129
+Iter: 5084, Epoch 13, Train Loss: 0.7040, Test Loss: 0.7570, Train Accuracy: 0.8330, Test Accuracy: 0.8230
+Iter: 5475, Epoch 14, Train Loss: 0.6748, Test Loss: 0.7231, Train Accuracy: 0.8445, Test Accuracy: 0.8318
+Iter: 5866, Epoch 15, Train Loss: 0.6513, Test Loss: 0.7243, Train Accuracy: 0.8515, Test Accuracy: 0.8338
+Iter: 6257, Epoch 16, Train Loss: 0.6307, Test Loss: 0.7469, Train Accuracy: 0.8566, Test Accuracy: 0.8301
+Iter: 6648, Epoch 17, Train Loss: 0.6193, Test Loss: 0.6799, Train Accuracy: 0.8619, Test Accuracy: 0.8457
+Iter: 7039, Epoch 18, Train Loss: 0.6007, Test Loss: 0.6855, Train Accuracy: 0.8649, Test Accuracy: 0.8456
+Iter: 7430, Epoch 19, Train Loss: 0.5839, Test Loss: 0.6693, Train Accuracy: 0.8700, Test Accuracy: 0.8474
+Iter: 7821, Epoch 20, Train Loss: 0.5716, Test Loss: 0.6807, Train Accuracy: 0.8750, Test Accuracy: 0.8519
+Iter: 8212, Epoch 21, Train Loss: 0.5627, Test Loss: 0.6848, Train Accuracy: 0.8799, Test Accuracy: 0.8499
+Iter: 8603, Epoch 22, Train Loss: 0.5445, Test Loss: 0.6589, Train Accuracy: 0.8843, Test Accuracy: 0.8571
+Iter: 8994, Epoch 23, Train Loss: 0.5376, Test Loss: 0.6574, Train Accuracy: 0.8877, Test Accuracy: 0.8591
+Iter: 9385, Epoch 24, Train Loss: 0.5305, Test Loss: 0.6407, Train Accuracy: 0.8899, Test Accuracy: 0.8625
+Iter: 9776, Epoch 25, Train Loss: 0.5220, Test Loss: 0.6372, Train Accuracy: 0.8924, Test Accuracy: 0.8633
+Iter: 10167, Epoch 26, Train Loss: 0.5144, Test Loss: 0.6325, Train Accuracy: 0.8947, Test Accuracy: 0.8662
+Iter: 10558, Epoch 27, Train Loss: 0.5037, Test Loss: 0.6463, Train Accuracy: 0.8983, Test Accuracy: 0.8649
+Iter: 10949, Epoch 28, Train Loss: 0.4952, Test Loss: 0.6376, Train Accuracy: 0.9014, Test Accuracy: 0.8675
+Iter: 11340, Epoch 29, Train Loss: 0.4922, Test Loss: 0.6323, Train Accuracy: 0.9021, Test Accuracy: 0.8697
+Iter: 11731, Epoch 30, Train Loss: 0.4864, Test Loss: 0.6266, Train Accuracy: 0.9047, Test Accuracy: 0.8698
+Iter: 12122, Epoch 31, Train Loss: 0.4815, Test Loss: 0.6070, Train Accuracy: 0.9056, Test Accuracy: 0.8761
+Iter: 12513, Epoch 32, Train Loss: 0.4736, Test Loss: 0.6404, Train Accuracy: 0.9103, Test Accuracy: 0.8685
+Iter: 12904, Epoch 33, Train Loss: 0.4722, Test Loss: 0.6176, Train Accuracy: 0.9096, Test Accuracy: 0.8742
+Iter: 13295, Epoch 34, Train Loss: 0.4619, Test Loss: 0.6289, Train Accuracy: 0.9142, Test Accuracy: 0.8692
+Iter: 13686, Epoch 35, Train Loss: 0.4599, Test Loss: 0.6480, Train Accuracy: 0.9152, Test Accuracy: 0.8641
+Iter: 14077, Epoch 36, Train Loss: 0.4555, Test Loss: 0.6217, Train Accuracy: 0.9161, Test Accuracy: 0.8751
+Iter: 14468, Epoch 37, Train Loss: 0.4616, Test Loss: 0.6250, Train Accuracy: 0.9144, Test Accuracy: 0.8748
+Iter: 14859, Epoch 38, Train Loss: 0.4525, Test Loss: 0.6326, Train Accuracy: 0.9189, Test Accuracy: 0.8714
+Iter: 15250, Epoch 39, Train Loss: 0.4503, Test Loss: 0.6259, Train Accuracy: 0.9188, Test Accuracy: 0.8736
+Iter: 15641, Epoch 40, Train Loss: 0.4486, Test Loss: 0.6259, Train Accuracy: 0.9205, Test Accuracy: 0.8780
+Iter: 16032, Epoch 41, Train Loss: 0.4423, Test Loss: 0.6360, Train Accuracy: 0.9205, Test Accuracy: 0.8737
+Iter: 16423, Epoch 42, Train Loss: 0.4425, Test Loss: 0.5964, Train Accuracy: 0.9237, Test Accuracy: 0.8866
+Iter: 16814, Epoch 43, Train Loss: 0.4338, Test Loss: 0.6403, Train Accuracy: 0.9247, Test Accuracy: 0.8757
+Iter: 17205, Epoch 44, Train Loss: 0.4370, Test Loss: 0.6396, Train Accuracy: 0.9248, Test Accuracy: 0.8770
+Iter: 17596, Epoch 45, Train Loss: 0.4342, Test Loss: 0.6307, Train Accuracy: 0.9262, Test Accuracy: 0.8757
+Iter: 17987, Epoch 46, Train Loss: 0.4328, Test Loss: 0.6311, Train Accuracy: 0.9261, Test Accuracy: 0.8764
+Iter: 18378, Epoch 47, Train Loss: 0.4244, Test Loss: 0.6297, Train Accuracy: 0.9299, Test Accuracy: 0.8788
+Iter: 18769, Epoch 48, Train Loss: 0.4321, Test Loss: 0.6145, Train Accuracy: 0.9275, Test Accuracy: 0.8833
+Iter: 19160, Epoch 49, Train Loss: 0.4221, Test Loss: 0.6028, Train Accuracy: 0.9330, Test Accuracy: 0.8847
+Iter: 19551, Epoch 50, Train Loss: 0.4241, Test Loss: 0.6134, Train Accuracy: 0.9309, Test Accuracy: 0.8865
+Iter: 19942, Epoch 51, Train Loss: 0.4210, Test Loss: 0.6322, Train Accuracy: 0.9334, Test Accuracy: 0.8814
+Iter: 20333, Epoch 52, Train Loss: 0.4253, Test Loss: 0.6078, Train Accuracy: 0.9308, Test Accuracy: 0.8853
+Iter: 20724, Epoch 53, Train Loss: 0.4154, Test Loss: 0.6651, Train Accuracy: 0.9344, Test Accuracy: 0.8765
+Iter: 21115, Epoch 54, Train Loss: 0.4184, Test Loss: 0.6072, Train Accuracy: 0.9343, Test Accuracy: 0.8840
+Iter: 21506, Epoch 55, Train Loss: 0.4122, Test Loss: 0.6619, Train Accuracy: 0.9349, Test Accuracy: 0.8759
+Iter: 21897, Epoch 56, Train Loss: 0.4203, Test Loss: 0.6641, Train Accuracy: 0.9331, Test Accuracy: 0.8779
+Iter: 22288, Epoch 57, Train Loss: 0.4122, Test Loss: 0.6331, Train Accuracy: 0.9358, Test Accuracy: 0.8786
+Iter: 22679, Epoch 58, Train Loss: 0.4121, Test Loss: 0.6370, Train Accuracy: 0.9366, Test Accuracy: 0.8854
+Iter: 23070, Epoch 59, Train Loss: 0.4085, Test Loss: 0.6770, Train Accuracy: 0.9379, Test Accuracy: 0.8775
+Iter: 23461, Epoch 60, Train Loss: 0.4077, Test Loss: 0.6234, Train Accuracy: 0.9393, Test Accuracy: 0.8819
+Iter: 23852, Epoch 61, Train Loss: 0.4121, Test Loss: 0.6412, Train Accuracy: 0.9369, Test Accuracy: 0.8830
+Iter: 24243, Epoch 62, Train Loss: 0.4098, Test Loss: 0.6057, Train Accuracy: 0.9378, Test Accuracy: 0.8862
+Iter: 24634, Epoch 63, Train Loss: 0.4030, Test Loss: 0.6636, Train Accuracy: 0.9407, Test Accuracy: 0.8789
+Iter: 25025, Epoch 64, Train Loss: 0.4059, Test Loss: 0.6660, Train Accuracy: 0.9404, Test Accuracy: 0.8734
+Iter: 25416, Epoch 65, Train Loss: 0.4009, Test Loss: 0.6374, Train Accuracy: 0.9424, Test Accuracy: 0.8842
+Iter: 25807, Epoch 66, Train Loss: 0.4002, Test Loss: 0.6433, Train Accuracy: 0.9421, Test Accuracy: 0.8867
+Iter: 26198, Epoch 67, Train Loss: 0.4055, Test Loss: 0.6412, Train Accuracy: 0.9410, Test Accuracy: 0.8842
+Iter: 26589, Epoch 68, Train Loss: 0.4004, Test Loss: 0.6515, Train Accuracy: 0.9425, Test Accuracy: 0.8768
+Iter: 26980, Epoch 69, Train Loss: 0.4022, Test Loss: 0.6161, Train Accuracy: 0.9403, Test Accuracy: 0.8889
+Iter: 27371, Epoch 70, Train Loss: 0.4042, Test Loss: 0.6415, Train Accuracy: 0.9405, Test Accuracy: 0.8832
+Iter: 27762, Epoch 71, Train Loss: 0.3970, Test Loss: 0.6176, Train Accuracy: 0.9431, Test Accuracy: 0.8894
+Iter: 28153, Epoch 72, Train Loss: 0.3979, Test Loss: 0.6498, Train Accuracy: 0.9432, Test Accuracy: 0.8897
+Iter: 28544, Epoch 73, Train Loss: 0.3952, Test Loss: 0.6593, Train Accuracy: 0.9451, Test Accuracy: 0.8792
+Iter: 28935, Epoch 74, Train Loss: 0.3954, Test Loss: 0.5864, Train Accuracy: 0.9438, Test Accuracy: 0.8972
+Iter: 29326, Epoch 75, Train Loss: 0.3946, Test Loss: 0.6803, Train Accuracy: 0.9445, Test Accuracy: 0.8736
+Iter: 29717, Epoch 76, Train Loss: 0.3937, Test Loss: 0.6278, Train Accuracy: 0.9447, Test Accuracy: 0.8824
+Iter: 30108, Epoch 77, Train Loss: 0.3941, Test Loss: 0.6481, Train Accuracy: 0.9442, Test Accuracy: 0.8827
+Iter: 30499, Epoch 78, Train Loss: 0.3921, Test Loss: 0.6391, Train Accuracy: 0.9454, Test Accuracy: 0.8862
+Iter: 30890, Epoch 79, Train Loss: 0.3938, Test Loss: 0.6434, Train Accuracy: 0.9456, Test Accuracy: 0.8847
+Iter: 31281, Epoch 80, Train Loss: 0.3961, Test Loss: 0.6305, Train Accuracy: 0.9438, Test Accuracy: 0.8930
+Iter: 31672, Epoch 81, Train Loss: 0.3814, Test Loss: 0.5761, Train Accuracy: 0.9496, Test Accuracy: 0.9027
+Iter: 32063, Epoch 82, Train Loss: 0.3105, Test Loss: 0.5582, Train Accuracy: 0.9754, Test Accuracy: 0.9088
+Iter: 32454, Epoch 83, Train Loss: 0.2917, Test Loss: 0.5377, Train Accuracy: 0.9817, Test Accuracy: 0.9165
+Iter: 32845, Epoch 84, Train Loss: 0.2834, Test Loss: 0.5499, Train Accuracy: 0.9839, Test Accuracy: 0.9161
+Iter: 33236, Epoch 85, Train Loss: 0.2755, Test Loss: 0.5615, Train Accuracy: 0.9866, Test Accuracy: 0.9146
+Iter: 33627, Epoch 86, Train Loss: 0.2696, Test Loss: 0.5701, Train Accuracy: 0.9878, Test Accuracy: 0.9143
+Iter: 34018, Epoch 87, Train Loss: 0.2642, Test Loss: 0.5564, Train Accuracy: 0.9893, Test Accuracy: 0.9191
+Iter: 34409, Epoch 88, Train Loss: 0.2578, Test Loss: 0.5517, Train Accuracy: 0.9905, Test Accuracy: 0.9185
+Iter: 34800, Epoch 89, Train Loss: 0.2550, Test Loss: 0.5459, Train Accuracy: 0.9904, Test Accuracy: 0.9186
+Iter: 35191, Epoch 90, Train Loss: 0.2507, Test Loss: 0.5636, Train Accuracy: 0.9917, Test Accuracy: 0.9181
+Iter: 35582, Epoch 91, Train Loss: 0.2482, Test Loss: 0.5929, Train Accuracy: 0.9916, Test Accuracy: 0.9124
+Iter: 35973, Epoch 92, Train Loss: 0.2442, Test Loss: 0.5799, Train Accuracy: 0.9929, Test Accuracy: 0.9166
+Iter: 36364, Epoch 93, Train Loss: 0.2413, Test Loss: 0.5700, Train Accuracy: 0.9931, Test Accuracy: 0.9152
+Iter: 36755, Epoch 94, Train Loss: 0.2381, Test Loss: 0.5607, Train Accuracy: 0.9939, Test Accuracy: 0.9196
+Iter: 37146, Epoch 95, Train Loss: 0.2358, Test Loss: 0.6015, Train Accuracy: 0.9940, Test Accuracy: 0.9148
+Iter: 37537, Epoch 96, Train Loss: 0.2320, Test Loss: 0.5926, Train Accuracy: 0.9948, Test Accuracy: 0.9177
+Iter: 37928, Epoch 97, Train Loss: 0.2306, Test Loss: 0.5845, Train Accuracy: 0.9952, Test Accuracy: 0.9153
+Iter: 38319, Epoch 98, Train Loss: 0.2288, Test Loss: 0.5838, Train Accuracy: 0.9947, Test Accuracy: 0.9170
+Iter: 38710, Epoch 99, Train Loss: 0.2259, Test Loss: 0.6040, Train Accuracy: 0.9950, Test Accuracy: 0.9178
+Iter: 39101, Epoch 100, Train Loss: 0.2230, Test Loss: 0.5805, Train Accuracy: 0.9956, Test Accuracy: 0.9174
+Iter: 39492, Epoch 101, Train Loss: 0.2218, Test Loss: 0.5995, Train Accuracy: 0.9954, Test Accuracy: 0.9171
+Iter: 39883, Epoch 102, Train Loss: 0.2190, Test Loss: 0.5959, Train Accuracy: 0.9959, Test Accuracy: 0.9210
+Iter: 40274, Epoch 103, Train Loss: 0.2178, Test Loss: 0.5994, Train Accuracy: 0.9957, Test Accuracy: 0.9154
+Iter: 40665, Epoch 104, Train Loss: 0.2146, Test Loss: 0.5852, Train Accuracy: 0.9963, Test Accuracy: 0.9188
+Iter: 41056, Epoch 105, Train Loss: 0.2140, Test Loss: 0.6008, Train Accuracy: 0.9962, Test Accuracy: 0.9178
+Iter: 41447, Epoch 106, Train Loss: 0.2114, Test Loss: 0.5933, Train Accuracy: 0.9963, Test Accuracy: 0.9185
+Iter: 41838, Epoch 107, Train Loss: 0.2110, Test Loss: 0.5975, Train Accuracy: 0.9962, Test Accuracy: 0.9198
+Iter: 42229, Epoch 108, Train Loss: 0.2075, Test Loss: 0.5958, Train Accuracy: 0.9967, Test Accuracy: 0.9170
+Iter: 42620, Epoch 109, Train Loss: 0.2062, Test Loss: 0.5877, Train Accuracy: 0.9969, Test Accuracy: 0.9200
+Iter: 43011, Epoch 110, Train Loss: 0.2034, Test Loss: 0.6214, Train Accuracy: 0.9973, Test Accuracy: 0.9196
+Iter: 43402, Epoch 111, Train Loss: 0.2024, Test Loss: 0.5925, Train Accuracy: 0.9972, Test Accuracy: 0.9212
+Iter: 43793, Epoch 112, Train Loss: 0.2008, Test Loss: 0.5973, Train Accuracy: 0.9971, Test Accuracy: 0.9163
+Iter: 44184, Epoch 113, Train Loss: 0.1982, Test Loss: 0.6172, Train Accuracy: 0.9976, Test Accuracy: 0.9191
+Iter: 44575, Epoch 114, Train Loss: 0.1966, Test Loss: 0.6005, Train Accuracy: 0.9975, Test Accuracy: 0.9174
+Iter: 44966, Epoch 115, Train Loss: 0.1955, Test Loss: 0.6472, Train Accuracy: 0.9975, Test Accuracy: 0.9150
+Iter: 45357, Epoch 116, Train Loss: 0.1934, Test Loss: 0.5930, Train Accuracy: 0.9977, Test Accuracy: 0.9178
+Iter: 45748, Epoch 117, Train Loss: 0.1925, Test Loss: 0.6003, Train Accuracy: 0.9975, Test Accuracy: 0.9212
+Iter: 46139, Epoch 118, Train Loss: 0.1907, Test Loss: 0.6053, Train Accuracy: 0.9979, Test Accuracy: 0.9158
+Iter: 46530, Epoch 119, Train Loss: 0.1894, Test Loss: 0.6143, Train Accuracy: 0.9974, Test Accuracy: 0.9168
+Iter: 46921, Epoch 120, Train Loss: 0.1872, Test Loss: 0.5942, Train Accuracy: 0.9981, Test Accuracy: 0.9192
+Iter: 47312, Epoch 121, Train Loss: 0.1865, Test Loss: 0.6276, Train Accuracy: 0.9976, Test Accuracy: 0.9163
+Iter: 47703, Epoch 122, Train Loss: 0.1841, Test Loss: 0.5963, Train Accuracy: 0.9982, Test Accuracy: 0.9205
+Iter: 48094, Epoch 123, Train Loss: 0.1830, Test Loss: 0.5845, Train Accuracy: 0.9983, Test Accuracy: 0.9193
+Iter: 48485, Epoch 124, Train Loss: 0.1827, Test Loss: 0.5995, Train Accuracy: 0.9984, Test Accuracy: 0.9179
+Iter: 48876, Epoch 125, Train Loss: 0.1825, Test Loss: 0.5910, Train Accuracy: 0.9985, Test Accuracy: 0.9209
+Iter: 49267, Epoch 126, Train Loss: 0.1825, Test Loss: 0.5963, Train Accuracy: 0.9982, Test Accuracy: 0.9202
+Iter: 49658, Epoch 127, Train Loss: 0.1818, Test Loss: 0.6020, Train Accuracy: 0.9985, Test Accuracy: 0.9186
+Iter: 50049, Epoch 128, Train Loss: 0.1814, Test Loss: 0.5763, Train Accuracy: 0.9985, Test Accuracy: 0.9191
+Iter: 50440, Epoch 129, Train Loss: 0.1815, Test Loss: 0.5893, Train Accuracy: 0.9987, Test Accuracy: 0.9209
+Iter: 50831, Epoch 130, Train Loss: 0.1813, Test Loss: 0.5837, Train Accuracy: 0.9985, Test Accuracy: 0.9214
+Iter: 51222, Epoch 131, Train Loss: 0.1813, Test Loss: 0.5929, Train Accuracy: 0.9986, Test Accuracy: 0.9206
+Iter: 51613, Epoch 132, Train Loss: 0.1813, Test Loss: 0.6083, Train Accuracy: 0.9984, Test Accuracy: 0.9194
+Iter: 52004, Epoch 133, Train Loss: 0.1803, Test Loss: 0.5793, Train Accuracy: 0.9990, Test Accuracy: 0.9215
+Iter: 52395, Epoch 134, Train Loss: 0.1806, Test Loss: 0.6322, Train Accuracy: 0.9988, Test Accuracy: 0.9195
+Iter: 52786, Epoch 135, Train Loss: 0.1804, Test Loss: 0.6031, Train Accuracy: 0.9988, Test Accuracy: 0.9207
+Iter: 53177, Epoch 136, Train Loss: 0.1808, Test Loss: 0.6134, Train Accuracy: 0.9985, Test Accuracy: 0.9183
+Iter: 53568, Epoch 137, Train Loss: 0.1795, Test Loss: 0.6020, Train Accuracy: 0.9989, Test Accuracy: 0.9175
+Iter: 53959, Epoch 138, Train Loss: 0.1794, Test Loss: 0.5902, Train Accuracy: 0.9989, Test Accuracy: 0.9213
+Iter: 54350, Epoch 139, Train Loss: 0.1796, Test Loss: 0.5793, Train Accuracy: 0.9988, Test Accuracy: 0.9208
+Iter: 54741, Epoch 140, Train Loss: 0.1794, Test Loss: 0.5923, Train Accuracy: 0.9989, Test Accuracy: 0.9219
+Iter: 55132, Epoch 141, Train Loss: 0.1787, Test Loss: 0.5967, Train Accuracy: 0.9991, Test Accuracy: 0.9206
+Iter: 55523, Epoch 142, Train Loss: 0.1790, Test Loss: 0.5935, Train Accuracy: 0.9989, Test Accuracy: 0.9215
+Iter: 55914, Epoch 143, Train Loss: 0.1787, Test Loss: 0.5989, Train Accuracy: 0.9989, Test Accuracy: 0.9226
+Iter: 56305, Epoch 144, Train Loss: 0.1786, Test Loss: 0.5994, Train Accuracy: 0.9990, Test Accuracy: 0.9176
+Iter: 56696, Epoch 145, Train Loss: 0.1784, Test Loss: 0.6153, Train Accuracy: 0.9990, Test Accuracy: 0.9165
+Iter: 57087, Epoch 146, Train Loss: 0.1782, Test Loss: 0.6137, Train Accuracy: 0.9990, Test Accuracy: 0.9185
+Iter: 57478, Epoch 147, Train Loss: 0.1783, Test Loss: 0.6197, Train Accuracy: 0.9989, Test Accuracy: 0.9180
+Iter: 57869, Epoch 148, Train Loss: 0.1780, Test Loss: 0.5965, Train Accuracy: 0.9988, Test Accuracy: 0.9198
+Iter: 58260, Epoch 149, Train Loss: 0.1777, Test Loss: 0.5922, Train Accuracy: 0.9990, Test Accuracy: 0.9181
+Iter: 58651, Epoch 150, Train Loss: 0.1779, Test Loss: 0.6058, Train Accuracy: 0.9990, Test Accuracy: 0.9183
+Iter: 59042, Epoch 151, Train Loss: 0.1774, Test Loss: 0.6114, Train Accuracy: 0.9990, Test Accuracy: 0.9216
+Iter: 59433, Epoch 152, Train Loss: 0.1775, Test Loss: 0.5984, Train Accuracy: 0.9990, Test Accuracy: 0.9211
+Iter: 59824, Epoch 153, Train Loss: 0.1771, Test Loss: 0.5909, Train Accuracy: 0.9990, Test Accuracy: 0.9196
+Iter: 60215, Epoch 154, Train Loss: 0.1767, Test Loss: 0.5832, Train Accuracy: 0.9991, Test Accuracy: 0.9219
+Iter: 60606, Epoch 155, Train Loss: 0.1768, Test Loss: 0.5852, Train Accuracy: 0.9990, Test Accuracy: 0.9229
+Iter: 60997, Epoch 156, Train Loss: 0.1768, Test Loss: 0.5976, Train Accuracy: 0.9989, Test Accuracy: 0.9183
+Iter: 61388, Epoch 157, Train Loss: 0.1765, Test Loss: 0.6394, Train Accuracy: 0.9992, Test Accuracy: 0.9185
+Iter: 61779, Epoch 158, Train Loss: 0.1766, Test Loss: 0.5751, Train Accuracy: 0.9989, Test Accuracy: 0.9222
+Iter: 62170, Epoch 159, Train Loss: 0.1762, Test Loss: 0.6257, Train Accuracy: 0.9989, Test Accuracy: 0.9192
+Iter: 62561, Epoch 160, Train Loss: 0.1759, Test Loss: 0.5841, Train Accuracy: 0.9992, Test Accuracy: 0.9233
+Iter: 62952, Epoch 161, Train Loss: 0.1758, Test Loss: 0.5922, Train Accuracy: 0.9991, Test Accuracy: 0.9186
+Iter: 63343, Epoch 162, Train Loss: 0.1760, Test Loss: 0.6092, Train Accuracy: 0.9991, Test Accuracy: 0.9158
+Iter: 63734, Epoch 163, Train Loss: 0.1760, Test Loss: 0.6329, Train Accuracy: 0.9990, Test Accuracy: 0.9169
+Iter: 64125, Epoch 164, Train Loss: 0.1753, Test Loss: 0.6123, Train Accuracy: 0.9992, Test Accuracy: 0.9191
+Iter: 64516, Epoch 165, Train Loss: 0.1754, Test Loss: 0.6120, Train Accuracy: 0.9991, Test Accuracy: 0.9187
+Iter: 64907, Epoch 166, Train Loss: 0.1752, Test Loss: 0.6104, Train Accuracy: 0.9991, Test Accuracy: 0.9199
+Iter: 65298, Epoch 167, Train Loss: 0.1748, Test Loss: 0.6220, Train Accuracy: 0.9992, Test Accuracy: 0.9178
+Iter: 65689, Epoch 168, Train Loss: 0.1746, Test Loss: 0.6232, Train Accuracy: 0.9993, Test Accuracy: 0.9159
+Iter: 66080, Epoch 169, Train Loss: 0.1751, Test Loss: 0.6049, Train Accuracy: 0.9989, Test Accuracy: 0.9206
+Iter: 66471, Epoch 170, Train Loss: 0.1747, Test Loss: 0.5969, Train Accuracy: 0.9991, Test Accuracy: 0.9210
+Iter: 66862, Epoch 171, Train Loss: 0.1747, Test Loss: 0.6099, Train Accuracy: 0.9990, Test Accuracy: 0.9207
+Iter: 67253, Epoch 172, Train Loss: 0.1741, Test Loss: 0.6031, Train Accuracy: 0.9993, Test Accuracy: 0.9186
+Iter: 67644, Epoch 173, Train Loss: 0.1745, Test Loss: 0.6008, Train Accuracy: 0.9991, Test Accuracy: 0.9205
+Iter: 68035, Epoch 174, Train Loss: 0.1740, Test Loss: 0.6058, Train Accuracy: 0.9992, Test Accuracy: 0.9201
+Iter: 68426, Epoch 175, Train Loss: 0.1741, Test Loss: 0.5700, Train Accuracy: 0.9991, Test Accuracy: 0.9239
+Iter: 68817, Epoch 176, Train Loss: 0.1738, Test Loss: 0.5961, Train Accuracy: 0.9990, Test Accuracy: 0.9218
+Iter: 69208, Epoch 177, Train Loss: 0.1735, Test Loss: 0.5882, Train Accuracy: 0.9992, Test Accuracy: 0.9218
+Iter: 69599, Epoch 178, Train Loss: 0.1732, Test Loss: 0.5845, Train Accuracy: 0.9992, Test Accuracy: 0.9215
+Iter: 69990, Epoch 179, Train Loss: 0.1732, Test Loss: 0.6124, Train Accuracy: 0.9992, Test Accuracy: 0.9177
+Iter: 70381, Epoch 180, Train Loss: 0.1731, Test Loss: 0.5919, Train Accuracy: 0.9992, Test Accuracy: 0.9201
+Trained model with 887674 parameters
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="results">
+<h3>Results<a class="headerlink" href="#results" title="Link to this heading">¶</a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Conv Layers</p></th>
+<th class="head"><p>50 epochs.</p></th>
+<th class="head"><p>100 epochs</p></th>
+<th class="head"><p>180 epochs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DeepCNN</p></td>
+<td><p>20</p></td>
+<td><p>0.8720</p></td>
+<td><p>0.8808</p></td>
+<td><p>0.8860</p></td>
+</tr>
+<tr class="row-odd"><td><p>ResNet</p></td>
+<td><p>20</p></td>
+<td><p>0.8861</p></td>
+<td><p>0.8881</p></td>
+<td><p>0.8985</p></td>
+</tr>
+<tr class="row-even"><td><p>DeepCNN</p></td>
+<td><p>56</p></td>
+<td><p>0.7702</p></td>
+<td><p>0.8616</p></td>
+<td><p>0.8602</p></td>
+</tr>
+<tr class="row-odd"><td><p>ResNet</p></td>
+<td><p>56</p></td>
+<td><p>0.8865</p></td>
+<td><p>0.9174</p></td>
+<td><p>0.9201</p></td>
+</tr>
+</tbody>
+</table>
+<p>The ResNet architecture performs better on the test set in both the 20 and 56 layer configurations. However, notice how much better ResNet-56 does than the corresponding plain network. Clearly, residual connections become much more useful as the depth of the network increases.</p>
+<div class="cell tag_hide-input tag_hide-output docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input above-output-prompt docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load saved checkpoints</span>
+<span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
+<span class="n">deepcnn_state</span> <span class="o">=</span> <span class="n">checkpoints</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/deepcnn-56/&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
+
+<span class="n">resnet_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">ResidualCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
+<span class="n">resnet_state</span> <span class="o">=</span> <span class="n">checkpoints</span><span class="o">.</span><span class="n">restore_checkpoint</span><span class="p">(</span><span class="n">ckpt_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/ckpts/resnet-56/&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">resnet_state</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
+
+<span class="c1"># Load batch stats</span>
+<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+<span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/batch_stats/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+<span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+<span class="c1"># Load metrics</span>
+<span class="n">deepcnn_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/deepcnn-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">resnet_metrics</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OUTPUT_DIR</span><span class="si">}</span><span class="s2">/metrics/resnet-56.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</details>
+<details class="hide below-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell output</span>
+<span class="expanded">Hide code cell output</span>
+</summary>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:The transformations API will eventually be replaced by an upgraded design. The current API will not be removed until this point, but it will no longer be actively worked on.
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
+[31590, 47580]
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:The transformations API will eventually be replaced by an upgraded design. The current API will not be removed until this point, but it will no longer be actively worked on.
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Initialized model with 887674 parameters
+[31590, 47580]
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+</section>
+</section>
+<section id="so-why-do-skip-connections-work">
+<h2>So Why do Skip Connections Work?<a class="headerlink" href="#so-why-do-skip-connections-work" title="Link to this heading">¶</a></h2>
+<section id="better-gradient-propagation">
+<h3>1.   Better Gradient Propagation<a class="headerlink" href="#better-gradient-propagation" title="Link to this heading">¶</a></h3>
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn-v0_8-darkgrid&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">resnet_metrics</span><span class="p">[</span><span class="s2">&quot;grad_norms&quot;</span><span class="p">][</span><span class="mi">30</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Resnet-56&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">deepcnn_metrics</span><span class="p">[</span><span class="s2">&quot;grad_norms&quot;</span><span class="p">][</span><span class="mi">20</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;DeepCNN-56&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Gradient Norms&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Iteration&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Gradient Norm&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/328101b17ee859bf29a60a1ebe8a27caaeab0b36add08020677f8d9dbba269c3.png" src="_images/328101b17ee859bf29a60a1ebe8a27caaeab0b36add08020677f8d9dbba269c3.png" />
+</div>
+</div>
+<p>The plot above compares the magnitude of the gradient of the loss function with and without residual connections. It is clear that the gradient is consistently larger with residual connections.</p>
+</section>
+<section id="smoother-and-more-convex-loss-surface">
+<h3>2. Smoother and more convex loss surface<a class="headerlink" href="#smoother-and-more-convex-loss-surface" title="Link to this heading">¶</a></h3>
+<p>In the paper Visualizing the Loss Landscape of Neural Networks, Li et al. demonstrated that deep neural networks tend to develop progressively more chaotic and non-convex loss surfaces. However, by using residual connections, the loss surface tends to remain relatively convex even for very deep networks. It is possible to demonstrate this by plotting and comparing the loss surfaces of networks with and without residual connections. I will show this in future work.</p>
+</section>
+<section id="result-faster-convergence">
+<h3>Result: Faster Convergence<a class="headerlink" href="#result-faster-convergence" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">resnet_metrics</span><span class="p">[</span><span class="s2">&quot;train_losses&quot;</span><span class="p">][</span><span class="mi">30</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Resnet-56&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">deepcnn_metrics</span><span class="p">[</span><span class="s2">&quot;train_losses&quot;</span><span class="p">][</span><span class="mi">30</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;DeepCNN-56&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Training Loss&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Iteration&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Loss&quot;</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">resnet_metrics</span><span class="p">[</span><span class="s2">&quot;test_losses&quot;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Resnet-56&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">deepcnn_metrics</span><span class="p">[</span><span class="s2">&quot;test_losses&quot;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;DeepCNN-56&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Test Loss&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Iteration&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Loss&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" src="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" />
+</div>
+</div>
+<p>All this leads to faster convergence. As it is clear from the plots above, the ResNet model converges much quicker than the DeepCNN model.</p>
+</section>
+<section id="references">
+<h3>References:<a class="headerlink" href="#references" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Highway networks - Srivastava et. al (2015)</p></li>
+<li><p>“Deep Residual Learning for Image Recognition” by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, published in 2015</p></li>
+<li><p>ON LARGE-BATCH TRAINING FOR DEEP LEARNING: GENERALIZATION GAP AND SHARP MINIMA - Keskar et. al</p></li>
+<li><p>An empirical analysis of the optimization of deep network loss surfaces - Im et. al (2017)</p></li>
+<li><p>Hao Li1, Zheng Xu1, Gavin Taylor2, Christoph Studer3, Tom Goldstein1 - Visualizing the Loss Landscape of Neural Nets (2018)</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst-transparent.png" alt="Logo of Starburst Data Science Blog"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst Data Science Blog</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How and Why Does Batch Normalization Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024 Vikram Pawar novastar53.github.io.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/how0-residual-connections-work.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
