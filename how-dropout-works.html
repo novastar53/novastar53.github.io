@@ -67,7 +67,7 @@
 <h2>Let’s Start by Loading the CIFAR-10 Dataset<a class="headerlink" href="#let-s-start-by-loading-the-cifar-10-dataset" title="Link to this heading">¶</a></h2>
 <p>The CIFAR-10 dataset is a popular benchmark for machine learning and computer vision tasks, consisting of 60,000 32x32 color images across 10 distinct classes. Each image is labeled as one of the following categories: airplane, automobile, bird, cat, deer, dog, frog, horse, ship, or truck. The dataset is divided into 50,000 training images and 10,000 test images, with an even distribution of 6,000 images per class.</p>
 <p>Despite its simplicity, the dataset contains a variety of object poses, lighting conditions, and backgrounds, making it non-trivial to achieve high accuracy.</p>
-<p>Convolutional Neural Networks and other image-specific architectures are typically trained on this dataset. However, for this experiment, we will use a feedforward network in order to demonstrate the benefits of using dropout.</p>
+<p>Typicall, Convolutional Neural Networks and other image-specific architectures are used for this dataset. However, for this experiment, we will use a feedforward network in order to demonstrate the benefits of using dropout.</p>
 <div class="cell tag_hide-input docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
@@ -98,88 +98,8 @@
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR:absl:Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
-Traceback (most recent call last):
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 70, in _module
-    module = importlib.import_module(self.module_name)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/importlib/__init__.py&quot;, line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1387, in _gcd_import
-  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1360, in _find_and_load
-  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1331, in _find_and_load_unlocked
-  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 935, in _load_unlocked
-  File &quot;&lt;frozen importlib._bootstrap_external&gt;&quot;, line 995, in exec_module
-  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 488, in _call_with_frames_removed
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/registered.py&quot;, line 36, in &lt;module&gt;
-    import tensorflow_datasets.core.logging as _tfds_logging
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/__init__.py&quot;, line 29, in &lt;module&gt;
-    from tensorflow_datasets.core.logging import logging_logger
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/logging_logger.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.core import decode
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/__init__.py&quot;, line 22, in &lt;module&gt;
-    from tensorflow_datasets.core.decode.partial_decode import PartialDecoding
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/partial_decode.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.core import features as features_lib
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/__init__.py&quot;, line 22, in &lt;module&gt;
-    from tensorflow_datasets.core.features.audio_feature import Audio
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/audio_feature.py&quot;, line 33, in &lt;module&gt;
-    from tensorflow_datasets.core.features import feature as feature_lib
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/feature.py&quot;, line 36, in &lt;module&gt;
-    from tensorflow_datasets.core.proto import feature_pb2
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/__init__.py&quot;, line 18, in &lt;module&gt;
-    from tensorflow_datasets.core.proto import dataset_info_generated_pb2 as dataset_info_pb2  # pylint: disable=line-too-long
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/dataset_info_generated_pb2.py&quot;, line 32, in &lt;module&gt;
-    from tensorflow_metadata.proto.v0 import schema_pb2 as tensorflow__metadata_dot_proto_dot_v0_dot_schema__pb2
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/__init__.py&quot;, line 18, in &lt;module&gt;
-    from tensorflow_metadata.proto.v0 import metric_pb2
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/v0/metric_pb2.py&quot;, line 25, in &lt;module&gt;
-    google_dot_protobuf_dot_descriptor__pb2.MessageOptions.RegisterExtension(metric_type)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/__init__.py&quot;, line 79, in &lt;module&gt;
-    from tensorflow_datasets import rlds  # pylint: disable=g-bad-import-order
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/__init__.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.rlds import envlogger_reader
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/envlogger_reader.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.core.utils.lazy_imports_utils import tree
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/__init__.py&quot;, line 21, in &lt;module&gt;
-    from tensorflow_datasets.core import community
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/__init__.py&quot;, line 19, in &lt;module&gt;
-    from tensorflow_datasets.core.community.huggingface_wrapper import mock_builtin_to_use_gfile
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/huggingface_wrapper.py&quot;, line 31, in &lt;module&gt;
-    from tensorflow_datasets.core import dataset_builder
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_builder.py&quot;, line 158, in &lt;module&gt;
-    class DatasetBuilder(registered.RegisteredDataset):
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 109, in __getattr__
-    return getattr(self._module, name)
-                   ^^^^^^^^^^^^
-  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/functools.py&quot;, line 995, in __get__
-    val = self.func(instance)
-          ^^^^^^^^^^^^^^^^^^^
-  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 82, in _module
-    raise ImportError(f&quot;Error importing {self.module_name}: {e!r}&quot;) from e
-ImportError: Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
-</pre></div>
-</div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">AttributeError</span><span class="g g-Whitespace">                            </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">5</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
-<span class="ne">----&gt; </span><span class="mi">5</span> <span class="n">train_tf</span><span class="p">,</span> <span class="n">test_tf</span> <span class="o">=</span> <span class="n">tfds</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;cifar10&#39;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;test&#39;</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">as_supervised</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">raw_train_images</span><span class="p">,</span> <span class="n">train_labels</span> <span class="o">=</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">train_tf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">raw_train_images</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">raw_train_images</span><span class="p">)</span>
-
-<span class="ne">AttributeError</span>: module &#39;tensorflow_datasets&#39; has no attribute &#39;load&#39;
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Training Set Size 50000
+Test Set Size 10000
 </pre></div>
 </div>
 </div>
@@ -224,19 +144,7 @@ ImportError: Error importing tensorflow_datasets.core.registered: AttributeError
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">line</span> <span class="mi">13</span>
-<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span> <span class="n">row_size</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">row_size</span><span class="p">,</span><span class="n">row_size</span><span class="p">))</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="n">rng</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">RANDOM_KEY</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">13</span> <span class="n">idxs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="p">(</span><span class="n">num_examples</span><span class="p">,),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">raw_train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="n">exs</span> <span class="o">=</span> <span class="n">raw_train_images</span><span class="p">[</span><span class="n">idxs</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_examples</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span><span class="o">/</span><span class="mf">255.0</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_examples</span><span class="p">):</span>
-
-<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/ed8faf6d0262cabd879eb6d4cc2993bf902716f53a13e0eba798a8e99ca17ae7.png" src="_images/ed8faf6d0262cabd879eb6d4cc2993bf902716f53a13e0eba798a8e99ca17ae7.png" />
+<img alt="_images/dcab2ade50815093dd3c279abcb3ae3f4b47e4b5be8f4dad0598e84dff2b8446.png" src="_images/dcab2ade50815093dd3c279abcb3ae3f4b47e4b5be8f4dad0598e84dff2b8446.png" />
 </div>
 </div>
 <p>Let’s now preprocess the dataset and look at the input feature distrubition.</p>
@@ -279,19 +187,7 @@ ImportError: Error importing tensorflow_datasets.core.registered: AttributeError
 </div>
 </details>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="c1"># First, let&#39;s plot the histogram for the unnormalized dataset</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
-<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">raw_train_images</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Unnormalized Input Feature Distribution&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Feature Values&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;raw_train_images&#39; is not defined
-</pre></div>
-</div>
-<img alt="_images/d5abe383131f62d68c2a32a6ff07fbb20153c60af0ddba81928f87ce12ff4ba8.png" src="_images/d5abe383131f62d68c2a32a6ff07fbb20153c60af0ddba81928f87ce12ff4ba8.png" />
+<img alt="_images/61797c6194cdb2a28d85982929baca518692e8f9d41cbf979332048a364c5f14.png" src="_images/61797c6194cdb2a28d85982929baca518692e8f9d41cbf979332048a364c5f14.png" />
 </div>
 </div>
 </section>
@@ -487,20 +383,12 @@ The candidate is just the baseline with an additional dropout layer after each R
 </details>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of baseline parameters: 831210
+Baseline P/S ratio: 16.6242
+Number of candidate parameters: 831210
+Candidate P/S ratio: 16.6242
 </pre></div>
 </div>
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">14</span>
-<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">num_candidate_params</span> <span class="o">=</span> <span class="n">count_params</span><span class="p">(</span><span class="n">candidate_params</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of baseline parameters: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="ne">---&gt; </span><span class="mi">14</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Baseline P/S ratio: </span><span class="si">{</span><span class="n">num_baseline_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">15</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of candidate parameters: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Candidate P/S ratio: </span><span class="si">{</span><span class="n">num_candidate_params</span><span class="o">/</span><span class="n">train_images</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="ne">NameError</span>: name &#39;train_images&#39; is not defined
-</pre></div>
-</div>
+<img alt="_images/f7b08f12389a3ce1465643b31b73126e0bee2d8d9ab33a54058e8a915b492e94.png" src="_images/f7b08f12389a3ce1465643b31b73126e0bee2d8d9ab33a54058e8a915b492e94.png" />
 </div>
 </div>
 <p>As you can see, both models have the same number of parameters as well as initial distributions. Hence, we can safely assume that any performance improvement seen by the candidate model will be due to dropout.</p>
