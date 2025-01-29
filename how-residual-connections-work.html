@@ -66,10 +66,11 @@ f(x) = x + g(x)
 \]</div>
 <p>where <span class="math notranslate nohighlight">\(f(x)\)</span> represents the transformation for one or more layers. The authors proposed that it was simpler for a network to learn the residual <span class="math notranslate nohighlight">\(g(x)\)</span> rather than the entire transformation <span class="math notranslate nohighlight">\(f(x)\)</span>, making it easier to train the network.</p>
 <p><img alt="residual-connection" src="_images/residual-connection.jpg" /></p>
+<p>So, does this work?</p>
 </section>
-<section id="lets-set-up-the-experiment">
-<h2>Lets Set up the Experiment<a class="headerlink" href="#lets-set-up-the-experiment" title="Link to this heading">¶</a></h2>
-<p>So does this work? We will compare two CNN architectures - the ResNet architecture and a comparable network (“DeepCNN”) without residual connections.
+<section id="let-s-set-up-the-experiment">
+<h2>Let’s Set up the Experiment<a class="headerlink" href="#let-s-set-up-the-experiment" title="Link to this heading">¶</a></h2>
+<p>We will compare two CNN architectures - the ResNet architecture and a comparable network (“DeepCNN”) without residual connections.
 For each architecture, we will compare networks with 20 and 56 layers.</p>
 <p><img alt="fc-resnet" src="_images/fc-resnet-side-by-side.jpg" /></p>
 <section id="let-s-define-the-deepcnn-model">
@@ -88,6 +89,80 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 
 
 <span class="n">N</span> <span class="o">=</span> <span class="mi">9</span> <span class="c1">## Number of basic blocks, each consisting of 2 convolutional layers.</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ERROR:absl:Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
+Traceback (most recent call last):
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 70, in _module
+    module = importlib.import_module(self.module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/importlib/__init__.py&quot;, line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1387, in _gcd_import
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1360, in _find_and_load
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1331, in _find_and_load_unlocked
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 935, in _load_unlocked
+  File &quot;&lt;frozen importlib._bootstrap_external&gt;&quot;, line 995, in exec_module
+  File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 488, in _call_with_frames_removed
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/registered.py&quot;, line 36, in &lt;module&gt;
+    import tensorflow_datasets.core.logging as _tfds_logging
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/__init__.py&quot;, line 29, in &lt;module&gt;
+    from tensorflow_datasets.core.logging import logging_logger
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/logging/logging_logger.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import decode
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/__init__.py&quot;, line 22, in &lt;module&gt;
+    from tensorflow_datasets.core.decode.partial_decode import PartialDecoding
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/decode/partial_decode.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import features as features_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/__init__.py&quot;, line 22, in &lt;module&gt;
+    from tensorflow_datasets.core.features.audio_feature import Audio
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/audio_feature.py&quot;, line 33, in &lt;module&gt;
+    from tensorflow_datasets.core.features import feature as feature_lib
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/features/feature.py&quot;, line 36, in &lt;module&gt;
+    from tensorflow_datasets.core.proto import feature_pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/__init__.py&quot;, line 18, in &lt;module&gt;
+    from tensorflow_datasets.core.proto import dataset_info_generated_pb2 as dataset_info_pb2  # pylint: disable=line-too-long
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/proto/dataset_info_generated_pb2.py&quot;, line 32, in &lt;module&gt;
+    from tensorflow_metadata.proto.v0 import schema_pb2 as tensorflow__metadata_dot_proto_dot_v0_dot_schema__pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/__init__.py&quot;, line 18, in &lt;module&gt;
+    from tensorflow_metadata.proto.v0 import metric_pb2
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_metadata/proto/v0/metric_pb2.py&quot;, line 25, in &lt;module&gt;
+    google_dot_protobuf_dot_descriptor__pb2.MessageOptions.RegisterExtension(metric_type)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/__init__.py&quot;, line 79, in &lt;module&gt;
+    from tensorflow_datasets import rlds  # pylint: disable=g-bad-import-order
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/__init__.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.rlds import envlogger_reader
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/rlds/envlogger_reader.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core.utils.lazy_imports_utils import tree
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/__init__.py&quot;, line 21, in &lt;module&gt;
+    from tensorflow_datasets.core import community
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/__init__.py&quot;, line 19, in &lt;module&gt;
+    from tensorflow_datasets.core.community.huggingface_wrapper import mock_builtin_to_use_gfile
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/community/huggingface_wrapper.py&quot;, line 31, in &lt;module&gt;
+    from tensorflow_datasets.core import dataset_builder
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/tensorflow_datasets/core/dataset_builder.py&quot;, line 158, in &lt;module&gt;
+    class DatasetBuilder(registered.RegisteredDataset):
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 109, in __getattr__
+    return getattr(self._module, name)
+                   ^^^^^^^^^^^^
+  File &quot;/Users/vikram/.pyenv/versions/3.12.4/lib/python3.12/functools.py&quot;, line 995, in __get__
+    val = self.func(instance)
+          ^^^^^^^^^^^^^^^^^^^
+  File &quot;/Users/vikram/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/etils/epy/lazy_imports_utils.py&quot;, line 82, in _module
+    raise ImportError(f&quot;Error importing {self.module_name}: {e!r}&quot;) from e
+ImportError: Error importing tensorflow_datasets.core.registered: AttributeError(&quot;type object &#39;MessageOptions&#39; has no attribute &#39;RegisterExtension&#39;&quot;)
 </pre></div>
 </div>
 </div>
@@ -1067,7 +1142,7 @@ Trained model with 887674 parameters
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/328101b17ee859bf29a60a1ebe8a27caaeab0b36add08020677f8d9dbba269c3.png" src="_images/328101b17ee859bf29a60a1ebe8a27caaeab0b36add08020677f8d9dbba269c3.png" />
+<img alt="_images/3d58fa14ae079b40400de36350017efe317f1abd8d93912fd876c4f971b59ab8.png" src="_images/3d58fa14ae079b40400de36350017efe317f1abd8d93912fd876c4f971b59ab8.png" />
 </div>
 </div>
 <p>The plot above compares the magnitude of the gradient of the loss function with and without residual connections. It is clear that the gradient is consistently larger with residual connections.</p>
@@ -1106,7 +1181,7 @@ Trained model with 887674 parameters
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" src="_images/f42ed159297a504f6c4831e7690b1633781cfe5e9855800e23e82e694ce20155.png" />
+<img alt="_images/48422a22dac730f3c3c8e7174fa1793fc701cca02fa846d2ee61b56eda8a2386.png" src="_images/48422a22dac730f3c3c8e7174fa1793fc701cca02fa846d2ee61b56eda8a2386.png" />
 </div>
 </div>
 <p>All this leads to faster convergence. As it is clear from the plots above, the ResNet model converges much quicker than the DeepCNN model.</p>
