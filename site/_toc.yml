@@ -4,6 +4,7 @@
 format: jb-article
 root: intro
 sections:
+- file: how-residual-connections-work
 - file: how-positional-embeddings-work
 - file: how-dropout-works
 - file: how-batchnorm-works

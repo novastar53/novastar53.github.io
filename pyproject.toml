@@ -23,4 +23,5 @@ dependencies = [
     "sphinx>=7.4.7",
     "jupyter>=1.1.1",
     "torchvision>=0.19.1",
+    "protobuf<4.00",
 ]
