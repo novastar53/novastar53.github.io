@@ -18,11 +18,45 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script kind="utterances">
+
+    var commentsRunWhenDOMLoaded = cb => {
+    if (document.readyState != 'loading') {
+        cb()
+    } else if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', cb)
+    } else {
+        document.attachEvent('onreadystatechange', function() {
+        if (document.readyState == 'complete') cb()
+        })
+    }
+}
+
+var addUtterances = () => {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "https://utteranc.es/client.js";
+    script.async = "async";
+
+    script.setAttribute("repo", "novastar53/novastar53.github.io");
+    script.setAttribute("issue-term", "pathname");
+    script.setAttribute("theme", "github-light");
+    script.setAttribute("label", "💬 comment");
+    script.setAttribute("crossorigin", "anonymous");
+
+    sections = document.querySelectorAll("div.section");
+    if (sections !== null) {
+        section = sections[sections.length-1];
+        section.appendChild(script);
+    }
+}
+commentsRunWhenDOMLoaded(addUtterances);
+</script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
@@ -128,7 +162,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" src="_images/4c1b10e8f85021d5808fbc5ebf6193c1e11b7628936da306396c772562424ae5.png" />
+<img alt="_images/f67b294522f2357ee5242f2db9019096f89da8fcf6cebd4189774ff3c7688332.png" src="_images/f67b294522f2357ee5242f2db9019096f89da8fcf6cebd4189774ff3c7688332.png" />
 </div>
 </div>
 <p>The matrix above was generated using the Vaswani et. al. (2017) method. It represents positional encodings for a sentence length of 15 and embedding length of 9. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
@@ -206,7 +240,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/912f3cf604dc3f02571fc1a89e2e6a1c45a1093d22e76c2dd73d9ac4306aa48a.png" src="_images/912f3cf604dc3f02571fc1a89e2e6a1c45a1093d22e76c2dd73d9ac4306aa48a.png" />
+<img alt="_images/dad9f0ba84e12eca84ea2a9f0a36fca91a83dc592615365407551c8159cde3c8.png" src="_images/dad9f0ba84e12eca84ea2a9f0a36fca91a83dc592615365407551c8159cde3c8.png" />
 </div>
 </div>
 </section>
@@ -370,27 +404,27 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.88378394, Accuracy: 0.3055
-Epoch 21, Loss: 0.86632895, Accuracy: 0.6923
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.91001260, Accuracy: 0.1056
+Epoch 21, Loss: 0.83919179, Accuracy: 0.7397
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.46926567, Accuracy: 0.9694
-Epoch 61, Loss: 0.24195217, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.50581384, Accuracy: 0.9236
+Epoch 61, Loss: 0.30520070, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.13765799, Accuracy: 0.9694
-Epoch 101, Loss: 0.08174699, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.19201706, Accuracy: 0.9668
+Epoch 101, Loss: 0.12820432, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.05177718, Accuracy: 0.9694
-Epoch 141, Loss: 0.03598683, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.09353600, Accuracy: 0.9668
+Epoch 141, Loss: 0.06748383, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.02333565, Accuracy: 0.9694
-Epoch 181, Loss: 0.01824435, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.04608365, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 200, Loss: 0.0156, Accuracy: 0.9694
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 181, Loss: 0.03678935, Accuracy: 0.9668
+Epoch 200, Loss: 0.0290, Accuracy: 0.9668
 </pre></div>
 </div>
 </div>

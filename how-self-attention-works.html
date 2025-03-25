@@ -18,11 +18,45 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script kind="utterances">
+
+    var commentsRunWhenDOMLoaded = cb => {
+    if (document.readyState != 'loading') {
+        cb()
+    } else if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', cb)
+    } else {
+        document.attachEvent('onreadystatechange', function() {
+        if (document.readyState == 'complete') cb()
+        })
+    }
+}
+
+var addUtterances = () => {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "https://utteranc.es/client.js";
+    script.async = "async";
+
+    script.setAttribute("repo", "novastar53/novastar53.github.io");
+    script.setAttribute("issue-term", "pathname");
+    script.setAttribute("theme", "github-light");
+    script.setAttribute("label", "💬 comment");
+    script.setAttribute("crossorigin", "anonymous");
+
+    sections = document.querySelectorAll("div.section");
+    if (sections !== null) {
+        section = sections[sections.length-1];
+        section.appendChild(script);
+    }
+}
+commentsRunWhenDOMLoaded(addUtterances);
+</script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
@@ -140,7 +174,7 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Loaded IMDb dataset with 25000 train samples and 25000 test samples.
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-01-29 01:44:21.957458: W tensorflow/core/kernels/data/cache_dataset_ops.cc:913] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-03-25 12:50:17.439575: W tensorflow/core/kernels/data/cache_dataset_ops.cc:914] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 </pre></div>
 </div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
@@ -159,25 +193,26 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <span class="g g-Whitespace">     </span><span class="mi">29</span>     <span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">padded</span><span class="p">)</span>
 <span class="g g-Whitespace">     </span><span class="mi">30</span>     <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py:4007,</span> in <span class="ni">pad</span><span class="nt">(array, pad_width, mode, **kwargs)</span>
-<span class="g g-Whitespace">   </span><span class="mi">3890</span> <span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">:</span> <span class="n">PadValueLike</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-<span class="g g-Whitespace">   </span><span class="mi">3891</span>         <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">3892</span><span class="w">   </span><span class="sd">&quot;&quot;&quot;Add padding to an array.</span>
-<span class="g g-Whitespace">   </span><span class="mi">3893</span><span class="sd"> </span>
-<span class="g g-Whitespace">   </span><span class="mi">3894</span><span class="sd">   JAX implementation of :func:`numpy.pad`.</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py:4513,</span> in <span class="ni">pad</span><span class="nt">(array, pad_width, mode, **kwargs)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4395</span> <span class="nd">@export</span>
+<span class="g g-Whitespace">   </span><span class="mi">4396</span> <span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">:</span> <span class="n">PadValueLike</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+<span class="g g-Whitespace">   </span><span class="mi">4397</span>         <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">4398</span><span class="w">   </span><span class="sd">&quot;&quot;&quot;Add padding to an array.</span>
+<span class="g g-Whitespace">   </span><span class="mi">4399</span><span class="sd"> </span>
+<span class="g g-Whitespace">   </span><span class="mi">4400</span><span class="sd">   JAX implementation of :func:`numpy.pad`.</span>
 <span class="sd">   (...)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4004</span><span class="sd">     Array([-10, -10,   2,   3,   4,  10,  10], dtype=int32)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4005</span><span class="sd">   &quot;&quot;&quot;</span>
-<span class="ne">-&gt; </span><span class="mi">4007</span>   <span class="n">util</span><span class="o">.</span><span class="n">check_arraylike</span><span class="p">(</span><span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="n">array</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4008</span>   <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_broadcast_to_pairs</span><span class="p">(</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">ndim</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="s2">&quot;pad_width&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4009</span>   <span class="k">if</span> <span class="n">pad_width</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="g g-Whitespace">   </span><span class="mi">4010</span>                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pad_width</span><span class="p">):</span>
+<span class="g g-Whitespace">   </span><span class="mi">4510</span><span class="sd">     Array([-10, -10,   2,   3,   4,  10,  10], dtype=int32)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4511</span><span class="sd">   &quot;&quot;&quot;</span>
+<span class="ne">-&gt; </span><span class="mi">4513</span>   <span class="n">util</span><span class="o">.</span><span class="n">check_arraylike</span><span class="p">(</span><span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="n">array</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4514</span>   <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_broadcast_to_pairs</span><span class="p">(</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">ndim</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="s2">&quot;pad_width&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4515</span>   <span class="k">if</span> <span class="n">pad_width</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="g g-Whitespace">   </span><span class="mi">4516</span>                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pad_width</span><span class="p">):</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/util.py:311,</span> in <span class="ni">check_arraylike</span><span class="nt">(fun_name, emit_warning, stacklevel, *args)</span>
-<span class="g g-Whitespace">    </span><span class="mi">308</span>   <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; In a future JAX release this will be an error.&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">309</span>                 <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="n">stacklevel</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">310</span> <span class="k">else</span><span class="p">:</span>
-<span class="ne">--&gt; </span><span class="mi">311</span>   <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fun_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">),</span> <span class="n">pos</span><span class="p">))</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/util.py:147,</span> in <span class="ni">check_arraylike</span><span class="nt">(fun_name, emit_warning, stacklevel, *args)</span>
+<span class="g g-Whitespace">    </span><span class="mi">144</span>   <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; In a future JAX release this will be an error.&quot;</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">145</span>                 <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="n">stacklevel</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">146</span> <span class="k">else</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">147</span>   <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fun_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">),</span> <span class="n">pos</span><span class="p">))</span>
 
 <span class="ne">TypeError</span>: pad requires ndarray or scalar arguments, got &lt;class &#39;list&#39;&gt; at position 0.
 </pre></div>
@@ -345,12 +380,12 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 
     <span class="p">[</span><span class="o">...</span> <span class="n">skipping</span> <span class="n">hidden</span> <span class="mi">1</span> <span class="n">frame</span><span class="p">]</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/flax/core/scope.py:997,</span> in <span class="ni">Scope.param</span><span class="nt">(self, name, init_fn, unbox, *init_args, **init_kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">995</span>     <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">ScopeCollectionNotFound</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_text</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">996</span>   <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">ScopeParamNotFoundError</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_text</span><span class="p">)</span>
-<span class="ne">--&gt; </span><span class="mi">997</span> <span class="n">value</span> <span class="o">=</span> <span class="n">init_fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">make_rng</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">),</span> <span class="o">*</span><span class="n">init_args</span><span class="p">,</span> <span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">998</span> <span class="bp">self</span><span class="o">.</span><span class="n">put_variable</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">999</span> <span class="k">if</span> <span class="n">unbox</span><span class="p">:</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/flax/core/scope.py:968,</span> in <span class="ni">Scope.param</span><span class="nt">(self, name, init_fn, unbox, *init_args, **init_kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">966</span>     <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">ScopeCollectionNotFound</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_text</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">967</span>   <span class="k">raise</span> <span class="n">errors</span><span class="o">.</span><span class="n">ScopeParamNotFoundError</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_text</span><span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">968</span> <span class="n">value</span> <span class="o">=</span> <span class="n">init_fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">make_rng</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">),</span> <span class="o">*</span><span class="n">init_args</span><span class="p">,</span> <span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">969</span> <span class="bp">self</span><span class="o">.</span><span class="n">put_variable</span><span class="p">(</span><span class="s1">&#39;params&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">970</span> <span class="k">if</span> <span class="n">unbox</span><span class="p">:</span>
 
 <span class="ne">TypeError</span>: MyModel.__call__.&lt;locals&gt;.&lt;lambda&gt;() takes 2 positional arguments but 3 were given
 </pre></div>

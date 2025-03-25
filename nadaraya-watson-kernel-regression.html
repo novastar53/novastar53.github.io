@@ -18,11 +18,45 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
     <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script kind="utterances">
+
+    var commentsRunWhenDOMLoaded = cb => {
+    if (document.readyState != 'loading') {
+        cb()
+    } else if (document.addEventListener) {
+        document.addEventListener('DOMContentLoaded', cb)
+    } else {
+        document.attachEvent('onreadystatechange', function() {
+        if (document.readyState == 'complete') cb()
+        })
+    }
+}
+
+var addUtterances = () => {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "https://utteranc.es/client.js";
+    script.async = "async";
+
+    script.setAttribute("repo", "novastar53/novastar53.github.io");
+    script.setAttribute("issue-term", "pathname");
+    script.setAttribute("theme", "github-light");
+    script.setAttribute("label", "💬 comment");
+    script.setAttribute("crossorigin", "anonymous");
+
+    sections = document.querySelectorAll("div.section");
+    if (sections !== null) {
+        section = sections[sections.length-1];
+        section.appendChild(script);
+    }
+}
+commentsRunWhenDOMLoaded(addUtterances);
+</script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
@@ -113,7 +147,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/f3cea72c3086ff93ec2ecaf52299451e39f0cd13bbbe1102f4cf1d8c1d9c4e8f.png" src="_images/f3cea72c3086ff93ec2ecaf52299451e39f0cd13bbbe1102f4cf1d8c1d9c4e8f.png" />
+<img alt="_images/0934c1ef4800e56abe6a3cef9af2e7255f72ece7ad4f25331579776fb48caee1.png" src="_images/0934c1ef4800e56abe6a3cef9af2e7255f72ece7ad4f25331579776fb48caee1.png" />
 </div>
 </div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
@@ -150,7 +184,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/0f3ffe4ab2ee1dfd1c23625d1b052fde8690c6230c4aeddd21ff3e2cd2f75481.png" src="_images/0f3ffe4ab2ee1dfd1c23625d1b052fde8690c6230c4aeddd21ff3e2cd2f75481.png" />
+<img alt="_images/5d4aa20314a2204bba527c32529fc715fa18d84152239d27a10bbcfc8999a48c.png" src="_images/5d4aa20314a2204bba527c32529fc715fa18d84152239d27a10bbcfc8999a48c.png" />
 </div>
 </div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
@@ -223,7 +257,7 @@ class RegressionScene(Scene):
 <div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
 
 </pre>
-</div><div class="output text_html"><video src="media/jupyter/RegressionScene@2025-01-29@01-44-26.mp4" controls autoplay loop style="max-width: 100%;"  >
+</div><div class="output text_html"><video src="media/jupyter/RegressionScene@2025-03-25@12-50-23.mp4" controls autoplay loop style="max-width: 100%;"  >
       Your browser does not support the <code>video</code> element.
     </video></div></div>
 </div>
@@ -247,7 +281,7 @@ class RegressionScene(Scene):
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/dae6014526b5acfc7eb3a790c1b9afc7bca644d3691530590021988697a3a71b.png" src="_images/dae6014526b5acfc7eb3a790c1b9afc7bca644d3691530590021988697a3a71b.png" />
+<img alt="_images/00e51ee0e5536b9df411d4e8e60b2a434c97d2d47bb62aabe3b79651d421f30e.png" src="_images/00e51ee0e5536b9df411d4e8e60b2a434c97d2d47bb62aabe3b79651d421f30e.png" />
 </div>
 </div>
 <div class="cell tag_hide-input docutils container">
@@ -326,7 +360,7 @@ class AttentionScene(Scene):
 <div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.18.1</span>
 
 </pre>
-</div><div class="output text_html"><video src="media/jupyter/AttentionScene@2025-01-29@01-44-26.mp4" controls autoplay loop style="max-width: 100%;"  >
+</div><div class="output text_html"><video src="media/jupyter/AttentionScene@2025-03-25@12-50-23.mp4" controls autoplay loop style="max-width: 100%;"  >
       Your browser does not support the <code>video</code> element.
     </video></div></div>
 </div>
