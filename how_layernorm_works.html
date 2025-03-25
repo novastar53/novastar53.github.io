@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How and Why Does Layer Normalization Work? &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-and-why-does-layer-normalization-work">
+<h1>How and Why Does Layer Normalization Work?<a class="headerlink" href="#how-and-why-does-layer-normalization-work" title="Link to this heading">¶</a></h1>
+<p>Layer normalization was first introduced in the eponymous paper Layer Normalization by Ba et al. (2016). It was intended to be a batch normalization replacement for training recurrent networks. This technique introduced a per-example normalization, providing similar improvements to the stability of activations and gradients in recurrent neural networks that batch normalization provided for fully connected and convolutional networks.</p>
+<p>In a previous post (here), I attempted to explain why batch normalization is useful for training deep networks. However, it is not preferred for training sequence models like transformers. This is due to a few different reasons:</p>
+<ul class="simple">
+<li><p>The assumption behind my batch normalization implementation was that that each feature was drawn from an independent normal distribution with its own mean and variance. This worked well for a fully connected network trained on MNIST data (CNNs can get a bit more complicated).</p></li>
+<li><p>Token representations are learned contextually i.e. a token embedding is a function of tokens that co-occur in the sequence. For example, the representation for bank in the sentence “I went to the bank” would be different from the one in “The bank of the river is muddy”. Remember that batch normalization is implemented by normalizing each feature across a mini-batch. This is useful only when the features can be safely assumed to be i.i.d (independent and identically distributed). This is not the case for sequential data due to dependencies across tokens within a single example.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nnx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GPT</span><span class="p">,</span> <span class="n">GPTConfig</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">4</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nnx</span>
+<span class="ne">----&gt; </span><span class="mi">4</span> <span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GPT</span><span class="p">,</span> <span class="n">GPTConfig</span>
+
+<span class="ne">ModuleNotFoundError</span>: No module named &#39;jaxpt&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;JAX version:&quot;</span><span class="p">,</span> <span class="n">jax</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="n">devices</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">()</span>
+<span class="n">num_devices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Available devices:&quot;</span><span class="p">,</span> <span class="n">num_devices</span><span class="p">)</span>
+
+<span class="n">requested_device</span> <span class="o">=</span> <span class="s2">&quot;gpu&quot;</span>
+
+<span class="n">jax</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;jax_platform_name&quot;</span><span class="p">,</span> <span class="n">requested_device</span><span class="p">)</span> <span class="c1"># Make sure we&#39;re using the GPU</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">default_backend</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">device</span> <span class="o">!=</span> <span class="n">requested_device</span><span class="p">:</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;not using </span><span class="si">{</span><span class="n">requested_device</span><span class="si">}</span><span class="s2">. Using </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;using </span><span class="si">{</span><span class="n">device</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>JAX version: 0.5.0
+Available devices: 1
+</pre></div>
+</div>
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/ipykernel_791/1635961474.py:14: UserWarning: not using gpu. Using cpu
+  warnings.warn(f&quot;not using {requested_device}. Using {device}&quot;)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1338</span><span class="p">)</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">GPTConfig</span><span class="p">(</span><span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embed</span><span class="o">=</span><span class="mi">192</span><span class="p">)</span>
+<span class="n">baseline</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="n">graphdef</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">baseline</span><span class="p">)</span>
+<span class="n">nnx</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1338</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="ne">----&gt; </span><span class="mi">3</span> <span class="n">config</span> <span class="o">=</span> <span class="n">GPTConfig</span><span class="p">(</span><span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embed</span><span class="o">=</span><span class="mi">192</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">baseline</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">graphdef</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">baseline</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;GPTConfig&#39; is not defined
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Dummy</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1337</span><span class="p">)</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">GPTConfig</span><span class="p">(</span><span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embed</span><span class="o">=</span><span class="mi">192</span><span class="p">)</span>
+<span class="n">candidate</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">candidate</span><span class="o">.</span><span class="n">h</span><span class="p">:</span>
+    <span class="n">h</span><span class="o">.</span><span class="n">ln_1</span> <span class="o">=</span> <span class="n">Dummy</span><span class="p">()</span>
+    <span class="n">h</span><span class="o">.</span><span class="n">ln_2</span> <span class="o">=</span> <span class="n">Dummy</span><span class="p">()</span>
+<span class="n">candidate</span><span class="o">.</span><span class="n">ln_f</span> <span class="o">=</span> <span class="n">Dummy</span><span class="p">()</span>
+<span class="n">graphdef</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+<span class="n">nnx</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">line</span> <span class="mi">8</span>
+<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1337</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="ne">----&gt; </span><span class="mi">8</span> <span class="n">config</span> <span class="o">=</span> <span class="n">GPTConfig</span><span class="p">(</span><span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embed</span><span class="o">=</span><span class="mi">192</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">9</span> <span class="n">candidate</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">10</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">candidate</span><span class="o">.</span><span class="n">h</span><span class="p">:</span>
+
+<span class="ne">NameError</span>: name &#39;GPTConfig&#39; is not defined
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrainerConfig</span><span class="p">:</span>
+  <span class="n">num_tokens_per_batch</span><span class="o">=</span><span class="mi">2</span><span class="o">**</span><span class="mi">11</span>
+  <span class="n">mB</span><span class="o">=</span><span class="mi">16</span>
+  <span class="n">T</span><span class="o">=</span><span class="mi">128</span>
+  <span class="n">max_steps</span><span class="o">=</span><span class="mi">100</span>
+  <span class="n">max_lr</span><span class="o">=</span><span class="mf">6e-4</span>
+  <span class="n">min_lr</span><span class="o">=</span><span class="mf">6e-5</span>
+  <span class="n">max_grad_norm</span><span class="o">=</span><span class="mf">1.0</span>
+  <span class="n">warmup_steps</span><span class="o">=</span><span class="mi">10</span>
+  <span class="n">grad_accumulation_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">num_tokens_per_batch</span> <span class="o">//</span> <span class="p">(</span><span class="n">mB</span> <span class="o">*</span> <span class="n">T</span> <span class="o">*</span> <span class="n">num_devices</span><span class="p">)</span> <span class="c1"># Number of steps over which to average the gradient</span>
+
+<span class="n">trconf</span> <span class="o">=</span> <span class="n">TrainerConfig</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">warmup_with_cosine_decay_schedule</span><span class="p">(</span><span class="n">step</span><span class="p">):</span>
+
+    <span class="n">warmup_lr</span> <span class="o">=</span> <span class="n">trconf</span><span class="o">.</span><span class="n">max_lr</span> <span class="o">*</span> <span class="p">(</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">trconf</span><span class="o">.</span><span class="n">warmup_steps</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">step</span> <span class="o">-</span> <span class="n">trconf</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">trconf</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)))</span>
+    <span class="n">cosine_lr</span> <span class="o">=</span>  <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">+</span> <span class="n">coeff</span> <span class="o">*</span> <span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_lr</span> <span class="o">-</span> <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">step</span> <span class="o">&lt;</span> <span class="n">trconf</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                     <span class="n">warmup_lr</span><span class="p">,</span>
+                     <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">step</span> <span class="o">&lt;</span> <span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">cosine_lr</span><span class="p">,</span> <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span><span class="p">))</span>
+
+<span class="n">_</span><span class="p">,</span> <span class="n">baseline_params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">baseline</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Variable</span><span class="p">)</span>
+<span class="n">baseline_weight_decay_mask</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">baseline_params</span><span class="p">)</span>
+<span class="n">baseline_tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
+    <span class="n">optax</span><span class="o">.</span><span class="n">clip_by_global_norm</span><span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_grad_norm</span><span class="p">),</span>
+    <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="n">warmup_with_cosine_decay_schedule</span><span class="p">,</span> <span class="n">b1</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">b2</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">baseline_weight_decay_mask</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">baseline_optimizer</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="n">baseline</span><span class="p">,</span> <span class="n">baseline_tx</span><span class="p">)</span>
+
+<span class="n">_</span><span class="p">,</span> <span class="n">candidate_params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Variable</span><span class="p">)</span>
+<span class="n">candidate_weight_decay_mask</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">candidate_params</span><span class="p">)</span>
+<span class="n">candidate_tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
+    <span class="n">optax</span><span class="o">.</span><span class="n">clip_by_global_norm</span><span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_grad_norm</span><span class="p">),</span>
+    <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="n">warmup_with_cosine_decay_schedule</span><span class="p">,</span> <span class="n">b1</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">b2</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">candidate_weight_decay_mask</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">candidate_optimizer</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">candidate_tx</span><span class="p">)</span>
+
+<span class="c1"># count the number of weight decay params</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">x</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+<span class="n">baseline_weight_decay_param_count</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">baseline_weight_decay_mask</span><span class="p">,</span> <span class="n">baseline_params</span><span class="p">)</span>
+<span class="n">baseline_weight_decay_param_count</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">baseline_weight_decay_param_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">candidate_weight_decay_param_count</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">candidate_weight_decay_mask</span><span class="p">,</span> <span class="n">candidate_params</span><span class="p">)</span>
+<span class="n">candidate_weight_decay_param_count</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">,</span> <span class="n">candidate_weight_decay_param_count</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;baseline weight decay param count: </span><span class="si">{</span><span class="n">baseline_weight_decay_param_count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;candidate weight decay param count: </span><span class="si">{</span><span class="n">candidate_weight_decay_param_count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tokens/batch: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">num_tokens_per_batch</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;block size: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">T</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sub-batch size: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">mB</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;no. gradient accumulation steps: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">grad_accumulation_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;effective batch size per device: &quot;</span><span class="p">,</span> <span class="n">trconf</span><span class="o">.</span><span class="n">grad_accumulation_steps</span> <span class="o">*</span> <span class="n">trconf</span><span class="o">.</span><span class="n">mB</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;effective batch size: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">grad_accumulation_steps</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">trconf</span><span class="o">.</span><span class="n">mB</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">num_devices</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max steps: </span><span class="si">{</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">line</span> <span class="mi">31</span>
+<span class="g g-Whitespace">     </span><span class="mi">25</span>     <span class="n">cosine_lr</span> <span class="o">=</span>  <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">+</span> <span class="n">coeff</span> <span class="o">*</span> <span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_lr</span> <span class="o">-</span> <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">27</span>     <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">step</span> <span class="o">&lt;</span> <span class="n">trconf</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+<span class="g g-Whitespace">     </span><span class="mi">28</span>                      <span class="n">warmup_lr</span><span class="p">,</span>
+<span class="g g-Whitespace">     </span><span class="mi">29</span>                      <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">step</span> <span class="o">&lt;</span> <span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">cosine_lr</span><span class="p">,</span> <span class="n">trconf</span><span class="o">.</span><span class="n">min_lr</span><span class="p">))</span>
+<span class="ne">---&gt; </span><span class="mi">31</span> <span class="n">_</span><span class="p">,</span> <span class="n">baseline_params</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">baseline</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Variable</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">32</span> <span class="n">baseline_weight_decay_mask</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">baseline_params</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">33</span> <span class="n">baseline_tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
+<span class="g g-Whitespace">     </span><span class="mi">34</span>     <span class="n">optax</span><span class="o">.</span><span class="n">clip_by_global_norm</span><span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_grad_norm</span><span class="p">),</span>
+<span class="g g-Whitespace">     </span><span class="mi">35</span>     <span class="n">optax</span><span class="o">.</span><span class="n">adamw</span><span class="p">(</span><span class="n">warmup_with_cosine_decay_schedule</span><span class="p">,</span> <span class="n">b1</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">b2</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">baseline_weight_decay_mask</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">36</span> <span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;baseline&#39; is not defined
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.dataloaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;panchatantra-ryder&quot;</span>
+<span class="n">dataset_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;jaxpt&#39;</span> <span class="o">/</span> <span class="s2">&quot;datasets&quot;</span> <span class="o">/</span> <span class="n">dataset</span> <span class="o">/</span> <span class="s2">&quot;processed&quot;</span>
+<span class="n">train_dl</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">dirpath</span><span class="o">=</span><span class="n">dataset_path</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">trconf</span><span class="o">.</span><span class="n">mB</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="n">trconf</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">device_rank</span><span class="o">=</span><span class="n">num_devices</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span> <span class="n">line</span> <span class="mi">3</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="ne">----&gt; </span><span class="mi">3</span> <span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.dataloaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">dataset</span> <span class="o">=</span> <span class="s2">&quot;panchatantra-ryder&quot;</span>
+<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;jaxpt&#39;</span> <span class="o">/</span> <span class="s2">&quot;datasets&quot;</span> <span class="o">/</span> <span class="n">dataset</span> <span class="o">/</span> <span class="s2">&quot;processed&quot;</span>
+
+<span class="ne">ModuleNotFoundError</span>: No module named &#39;jaxpt&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">parallel_train_step</span>
+
+<span class="n">baseline_losses</span><span class="p">,</span> <span class="n">candidate_losses</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span><span class="p">):</span>
+    <span class="n">batch</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">train_dl</span><span class="p">()</span>
+    <span class="n">baseline_avg_loss</span><span class="p">,</span> <span class="n">_</span>  <span class="o">=</span> <span class="n">parallel_train_step</span><span class="p">(</span><span class="n">baseline</span><span class="p">,</span> <span class="n">baseline_optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+    <span class="n">candidate_avg_loss</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parallel_train_step</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">candidate_optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+    <span class="n">baseline_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">baseline_avg_loss</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">candidate_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">candidate_avg_loss</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;step: </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">, baseline loss: </span><span class="si">{</span><span class="n">baseline_avg_loss</span><span class="si">}</span><span class="s2">, candidate_loss: </span><span class="si">{</span><span class="n">candidate_avg_loss</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="kn">from</span><span class="w"> </span><span class="nn">jaxpt.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">parallel_train_step</span>
+<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">baseline_losses</span><span class="p">,</span> <span class="n">candidate_losses</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">trconf</span><span class="o">.</span><span class="n">max_steps</span><span class="p">):</span>
+
+<span class="ne">ModuleNotFoundError</span>: No module named &#39;jaxpt&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span> 
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_losses</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Baseline&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_losses</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Candidate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">NameError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span> <span class="n">line</span> <span class="mi">2</span>
+<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span> 
+<span class="ne">----&gt; </span><span class="mi">2</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">baseline_losses</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Baseline&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">candidate_losses</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Candidate&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">14</span><span class="p">)</span>
+
+<span class="ne">NameError</span>: name &#39;baseline_losses&#39; is not defined
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst-transparent.png" alt="Logo of Starburst Data Science Blog"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst Data Science Blog</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How and Why Does Batch Normalization Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024 Vikram Pawar novastar53.github.io.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/how_layernorm_works.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
