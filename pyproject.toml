@@ -24,4 +24,5 @@ dependencies = [
     "jupyter>=1.1.1",
     "torchvision>=0.19.1",
     "protobuf<4.00",
+    "sphinx-comments>=0.0.3",
 ]

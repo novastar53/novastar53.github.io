@@ -24,7 +24,7 @@ init:
 
 build: 
 	export PATH=$(PATH):/Library/TeX/texbin/latex
-	. $(VENV) && jupyter-book build site/
+	. $(VENV) && jupyter-book build site/ --verbose
 	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir 
 
 deploy: build
