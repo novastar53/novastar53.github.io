@@ -3,7 +3,7 @@ name = "Starburst-Blog"
 version = "0.1.0"
 description = "An AI Blog"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.12.8"
 dependencies = [
     "ghp-import>=2.1.0",
     "jupyter-book>=1.0.2",
@@ -25,4 +25,10 @@ dependencies = [
     "torchvision>=0.19.1",
     "protobuf<4.00",
     "sphinx-comments>=0.0.3",
+    "deepkit",
+    "jaxpt",
 ]
+
+[tool.uv.sources]
+deepkit = { path = "../deepkit/dist/deepkit-0.1.0-py3-none-any.whl" }
+jaxpt = { path = "../jaxpt/dist/jaxpt-0.1.0-py3-none-any.whl" }
