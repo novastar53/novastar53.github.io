@@ -493,7 +493,7 @@ dependencies = [
     { name = "torchvision" },
 ]
 wheels = [
-    { filename = "deepkit-0.1.0-py3-none-any.whl", hash = "sha256:30dab50ae75ea9867c1bc2cd5262f5e22bde1b77a6fdff22e86822d4c3173237" },
+    { filename = "deepkit-0.1.0-py3-none-any.whl", hash = "sha256:26f92d1c93f947dde7650cf417cdd501ae2fbae5a437658b2a5797dd67911996" },
 ]
 
 [package.metadata]
