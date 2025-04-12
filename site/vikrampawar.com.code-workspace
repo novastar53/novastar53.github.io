@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../xjax"
+		}
+	],
+	"settings": {
+		"makefile.configureOnOpen": false
+	}
+}
