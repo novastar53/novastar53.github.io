@@ -18,8 +18,8 @@ sphinx:
       logo_text_align: "start"
     nb_execution_show_tb: true
     nb_execution_timeout: 3600
-  extra_extension:
-    - sphinx_comments
+  extra_extensions:
+    - jupyterbook_patches
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -47,10 +47,4 @@ repository:
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
-  comments:
-      utterances:
-        repo: novastar53/novastar53.github.io
-        issue-term: pathname
-        theme: github-light
-      #hypothesis: true
   favicon: starburst (200 x 200 px).png
