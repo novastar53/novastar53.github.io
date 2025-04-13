@@ -43,7 +43,7 @@ div.body {
 }
 
 div.body > .section {
-    text-align: left;
+    text-align: justify;
 }
 
 div.footer {
@@ -98,7 +98,7 @@ div.sphinxsidebarwrapper h1.logo {
     margin-top: -10px;
     text-align: center;
     margin-bottom: 5px;
-    text-align: left;
+    text-align: start;
 }
 
 div.sphinxsidebarwrapper h1.logo-name {

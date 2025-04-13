@@ -222,7 +222,7 @@ table.modindextable td {
 /* -- general body styles --------------------------------------------------- */
 
 div.body {
-    min-width: inherit;
+    min-width: 900px;
     max-width: 800px;
 }
 

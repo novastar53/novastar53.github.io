@@ -7,7 +7,7 @@
 
     <title>How and Why does Self Attention Work? &#8212; Vikram&#39;s Data Science Blog</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=2a4ee713" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
@@ -174,7 +174,7 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Loaded IMDb dataset with 25000 train samples and 25000 test samples.
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-03-25 12:50:17.439575: W tensorflow/core/kernels/data/cache_dataset_ops.cc:914] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2025-04-12 11:57:29.079759: W tensorflow/core/kernels/data/cache_dataset_ops.cc:916] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 </pre></div>
 </div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
@@ -193,26 +193,25 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <span class="g g-Whitespace">     </span><span class="mi">29</span>     <span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">padded</span><span class="p">)</span>
 <span class="g g-Whitespace">     </span><span class="mi">30</span>     <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py:4513,</span> in <span class="ni">pad</span><span class="nt">(array, pad_width, mode, **kwargs)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4395</span> <span class="nd">@export</span>
-<span class="g g-Whitespace">   </span><span class="mi">4396</span> <span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">:</span> <span class="n">PadValueLike</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-<span class="g g-Whitespace">   </span><span class="mi">4397</span>         <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="g g-Whitespace">   </span><span class="mi">4398</span><span class="w">   </span><span class="sd">&quot;&quot;&quot;Add padding to an array.</span>
-<span class="g g-Whitespace">   </span><span class="mi">4399</span><span class="sd"> </span>
-<span class="g g-Whitespace">   </span><span class="mi">4400</span><span class="sd">   JAX implementation of :func:`numpy.pad`.</span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4510</span><span class="sd">     Array([-10, -10,   2,   3,   4,  10,  10], dtype=int32)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4511</span><span class="sd">   &quot;&quot;&quot;</span>
-<span class="ne">-&gt; </span><span class="mi">4513</span>   <span class="n">util</span><span class="o">.</span><span class="n">check_arraylike</span><span class="p">(</span><span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="n">array</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4514</span>   <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_broadcast_to_pairs</span><span class="p">(</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">ndim</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="s2">&quot;pad_width&quot;</span><span class="p">)</span>
-<span class="g g-Whitespace">   </span><span class="mi">4515</span>   <span class="k">if</span> <span class="n">pad_width</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="g g-Whitespace">   </span><span class="mi">4516</span>                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pad_width</span><span class="p">):</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/lax_numpy.py:4379,</span> in <span class="ni">pad</span><span class="nt">(array, pad_width, mode, **kwargs)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4261</span> <span class="nd">@export</span>
+<span class="g g-Whitespace">   </span><span class="mi">4262</span> <span class="k">def</span><span class="w"> </span><span class="nf">pad</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">:</span> <span class="n">PadValueLike</span><span class="p">[</span><span class="nb">int</span> <span class="o">|</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+<span class="g g-Whitespace">   </span><span class="mi">4263</span>         <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">4264</span><span class="w">   </span><span class="sd">&quot;&quot;&quot;Add padding to an array.</span>
+<span class="g g-Whitespace">   </span><span class="mi">4265</span><span class="sd"> </span>
+<span class="g g-Whitespace">   </span><span class="mi">4266</span><span class="sd">   JAX implementation of :func:`numpy.pad`.</span>
+<span class="sd">   (...)   4376     Array([-10, -10,   2,   3,   4,  10,  10], dtype=int32)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4377</span><span class="sd">   &quot;&quot;&quot;</span>
+<span class="ne">-&gt; </span><span class="mi">4379</span>   <span class="n">util</span><span class="o">.</span><span class="n">check_arraylike</span><span class="p">(</span><span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="n">array</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4380</span>   <span class="n">pad_width</span> <span class="o">=</span> <span class="n">_broadcast_to_pairs</span><span class="p">(</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="s2">&quot;pad_width&quot;</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">4381</span>   <span class="k">if</span> <span class="n">pad_width</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">core</span><span class="o">.</span><span class="n">is_dim</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="g g-Whitespace">   </span><span class="mi">4382</span>                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pad_width</span><span class="p">):</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/util.py:147,</span> in <span class="ni">check_arraylike</span><span class="nt">(fun_name, emit_warning, stacklevel, *args)</span>
-<span class="g g-Whitespace">    </span><span class="mi">144</span>   <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; In a future JAX release this will be an error.&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">    </span><span class="mi">145</span>                 <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="n">stacklevel</span><span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">146</span> <span class="k">else</span><span class="p">:</span>
-<span class="ne">--&gt; </span><span class="mi">147</span>   <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fun_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">),</span> <span class="n">pos</span><span class="p">))</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/jax/_src/numpy/util.py:181,</span> in <span class="ni">check_arraylike</span><span class="nt">(fun_name, emit_warning, stacklevel, *args)</span>
+<span class="g g-Whitespace">    </span><span class="mi">178</span>   <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot; In a future JAX release this will be an error.&quot;</span><span class="p">,</span>
+<span class="g g-Whitespace">    </span><span class="mi">179</span>                 <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="n">stacklevel</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">180</span> <span class="k">else</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">181</span>   <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fun_name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">),</span> <span class="n">pos</span><span class="p">))</span>
 
 <span class="ne">TypeError</span>: pad requires ndarray or scalar arguments, got &lt;class &#39;list&#39;&gt; at position 0.
 </pre></div>
@@ -256,14 +255,14 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <span class="g g-Whitespace">      </span><span class="mi">6</span>         <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
 <span class="g g-Whitespace">      </span><span class="mi">7</span>             <span class="n">values</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 
-<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/IPython/core/interactiveshell.py:324,</span> in <span class="ni">_modified_open</span><span class="nt">(file, *args, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">317</span> <span class="k">if</span> <span class="n">file</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}:</span>
-<span class="g g-Whitespace">    </span><span class="mi">318</span>     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">319</span>         <span class="sa">f</span><span class="s2">&quot;IPython won&#39;t let you open fd=</span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2"> by default &quot;</span>
-<span class="g g-Whitespace">    </span><span class="mi">320</span>         <span class="s2">&quot;as it is likely to crash IPython. If you know what you are doing, &quot;</span>
-<span class="g g-Whitespace">    </span><span class="mi">321</span>         <span class="s2">&quot;you can use builtins&#39; open.&quot;</span>
-<span class="g g-Whitespace">    </span><span class="mi">322</span>     <span class="p">)</span>
-<span class="ne">--&gt; </span><span class="mi">324</span> <span class="k">return</span> <span class="n">io_open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="nn">File ~/dev/vikrampawar.com/.venv/lib/python3.12/site-packages/IPython/core/interactiveshell.py:325,</span> in <span class="ni">_modified_open</span><span class="nt">(file, *args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">318</span> <span class="k">if</span> <span class="n">file</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}:</span>
+<span class="g g-Whitespace">    </span><span class="mi">319</span>     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">320</span>         <span class="sa">f</span><span class="s2">&quot;IPython won&#39;t let you open fd=</span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2"> by default &quot;</span>
+<span class="g g-Whitespace">    </span><span class="mi">321</span>         <span class="s2">&quot;as it is likely to crash IPython. If you know what you are doing, &quot;</span>
+<span class="g g-Whitespace">    </span><span class="mi">322</span>         <span class="s2">&quot;you can use builtins&#39; open.&quot;</span>
+<span class="g g-Whitespace">    </span><span class="mi">323</span>     <span class="p">)</span>
+<span class="ne">--&gt; </span><span class="mi">325</span> <span class="k">return</span> <span class="n">io_open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <span class="ne">FileNotFoundError</span>: [Errno 2] No such file or directory: &#39;datasets/glove.6B.100d.txt&#39;
 </pre></div>
@@ -464,10 +463,11 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 
 <h3>Navigation</h3>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How and Why Does Batch Normalization Work? Part 2</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How and Why Does Batch Normalization Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
 </ul>
 
