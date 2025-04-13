@@ -3,7 +3,7 @@
 
 title: Vikram's Data Science Blog
 author: Vikram Pawar
-logo: starburst-transparent.png
+logo: starburst_narrow.png
 description: A blog exploring AI and Machine Learning
 
 sphinx:
@@ -13,9 +13,12 @@ sphinx:
     copyright: 'Vikram Pawar novastar53.github.io'
     html_theme: alabaster #sphinx_book_theme 
     html_theme_options: 
-      body_min_width: 900
-      body_text_align: "justify"
-      logo_text_align: "start"
+      body_min_width: 480 
+      body_max_width: 1024
+      #body_text_align: "justify"
+      #logo_text_align: "start"
+      sidebar_width: 25%
+      page_width: 99%
     nb_execution_show_tb: true
     nb_execution_timeout: 3600
   extra_extensions:
