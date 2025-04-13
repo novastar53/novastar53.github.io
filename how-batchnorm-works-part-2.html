@@ -90,6 +90,7 @@ commentsRunWhenDOMLoaded(addUtterances);
             
   <section class="tex2jax_ignore mathjax_ignore" id="how-does-batch-normalization-work-part-2">
 <h1>How Does Batch Normalization Work? Part 2<a class="headerlink" href="#how-does-batch-normalization-work-part-2" title="Link to this heading">¶</a></h1>
+<p><img alt="batch-norm" src="_images/batch-norm.png" /></p>
 <p>In <a class="reference external" href="https://blog.vikrampawar.com/how-batchnorm-works.html">Part 1</a>, we saw that batch normalization (BN) can help train neural networks by reducing internal covariate shift (ICS) and smoothing gradient updates. We measured ICS as distributional shift in layer activations, in line with Ioffe and Szegedy (2015). For a fully-connected network with 4 layers, we observed that the activation distributions with BN were comparatively stable compared to those for the network without BN.  We also touched upon the idea that BN has a smoothing effect on the loss surface, making it more convex.</p>
 <p>In their 2018 paper, <a class="reference external" href="https://arxiv.org/pdf/1805.11604">Santurkar et al.</a> argued that the reduction in internal covariate shift due to BN is marginal at best, and might even increase it. Additionally:</p>
 <ul class="simple">
@@ -14174,7 +14175,7 @@ From the loss landscape measurements, it is clear that BN has a smoothing effect
 <li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How and Why Does Batch Normalization Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
 </ul>
 
