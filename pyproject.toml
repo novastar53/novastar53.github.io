@@ -26,6 +26,7 @@ dependencies = [
     "protobuf<4.00",
     "sphinx-comments>=0.0.3",
     "jaxpt",
+    "jupyterbook-patches>=1.4.4",
 ]
 
 [tool.uv.sources]

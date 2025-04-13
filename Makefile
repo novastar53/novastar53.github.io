@@ -27,6 +27,9 @@ build:
 	. $(VENV) && jupyter-book build site/ --verbose
 	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir 
 
+deploy-local:
+	. $(VENV) && python -m http.server 8000 --directory site/_build/html
+
 deploy: build
 	. $(VENV) && cd site && ghp-import -n -p -f _build/html
 
