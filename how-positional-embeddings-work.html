@@ -146,7 +146,7 @@ w^{\prime}_t = w_t + p_t
 \[
 9876 = 9*10^3 + 8*10^2 + 7*10^1 + 6*10^0
 \]</div>
-<p>This solves the periodicity problem by making each positional embedding unique. The model can thus retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span>. that assigns larger ‘weight’ to the a change in the value of later indices. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
+<p>This solves the periodicity problem by making each positional embedding unique. The model can thus retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a linear function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span>. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
 </section>
 </section>
 <section id="the-clock-faces-analogy">
