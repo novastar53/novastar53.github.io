@@ -13,10 +13,6 @@
     <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_admonition_style.css?v=8627ce31" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_dropdown_style.css?v=f3461767" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_code_header_style.css?v=7d542921" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_sidebar_scroll.css?v=b9929681" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -79,7 +75,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 <p><img alt="fc-resnet" src="_images/fc-resnet-side-by-side.jpg" /></p>
 <section id="let-s-define-the-deepcnn-model">
 <h3>Let’s Define the DeepCNN Model<a class="headerlink" href="#let-s-define-the-deepcnn-model" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
@@ -97,7 +93,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </div>
 </div>
 </div>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 
@@ -154,7 +150,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </section>
 <section id="now-let-s-define-the-resnet-model">
 <h3>Now, Let’s Define the ResNet Model<a class="headerlink" href="#now-let-s-define-the-resnet-model" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 
@@ -264,7 +260,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </section>
 <section id="next-let-s-set-up-the-cifar-10-dataset">
 <h3>Next, Let’s Set up the CIFAR-10 Dataset<a class="headerlink" href="#next-let-s-set-up-the-cifar-10-dataset" title="Link to this heading">¶</a></h3>
-<div class="cell tag_hide-output tag_remove-output docutils container">
+<div class="cell tag_hide-output tag_remove-output tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torchvision.transforms</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">transforms</span>
@@ -374,7 +370,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </section>
 <section id="finally-let-s-set-up-the-training-loop">
 <h3>Finally, Let’s Set Up The Training Loop<a class="headerlink" href="#finally-let-s-set-up-the-training-loop" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 
@@ -387,7 +383,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </div>
 </div>
 </div>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">flax</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax.training</span><span class="w"> </span><span class="kn">import</span> <span class="n">checkpoints</span>
@@ -528,7 +524,7 @@ For each architecture, we will compare networks with 20 and 56 layers.</p>
 </section>
 <section id="let-s-train-the-deep-cnn-first">
 <h3>Let’s train the deep CNN first<a class="headerlink" href="#let-s-train-the-deep-cnn-first" title="Link to this heading">¶</a></h3>
-<div class="cell tag_skip-execution tag_output_scroll docutils container">
+<div class="cell tag_skip-execution tag_output_scroll tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
 <span class="n">deepcnn_state</span><span class="p">,</span> <span class="n">deepcnn_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">DeepCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
@@ -586,7 +582,7 @@ Iter: 70381, Epoch 180, Train Loss: 0.3731, Test Loss: 0.7683, Train Accuracy: 0
 </section>
 <section id="now-let-s-train-the-resnet">
 <h3>Now let’s train the Resnet<a class="headerlink" href="#now-let-s-train-the-resnet" title="Link to this heading">¶</a></h3>
-<div class="cell tag_skip-execution tag_output_scroll tag_nbsphinx-scroll docutils container">
+<div class="cell tag_skip-execution tag_output_scroll tag_nbsphinx-scroll tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the train state</span>
 <span class="n">resnet_state</span><span class="p">,</span> <span class="n">resnet_batch_stats</span> <span class="o">=</span> <span class="n">create_train_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">ResidualCNN</span><span class="p">(),</span> <span class="mi">50000</span><span class="p">)</span>
@@ -687,7 +683,7 @@ Trained model with 887674 parameters
 <h2>So Why do Residual Connections Work?<a class="headerlink" href="#so-why-do-residual-connections-work" title="Link to this heading">¶</a></h2>
 <section id="better-gradient-propagation">
 <h3>1.   Better Gradient Propagation<a class="headerlink" href="#better-gradient-propagation" title="Link to this heading">¶</a></h3>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -724,7 +720,7 @@ It is possible to demonstrate this by plotting and comparing the loss surfaces o
 </section>
 <section id="result-faster-convergence">
 <h3>Result: Faster Convergence<a class="headerlink" href="#result-faster-convergence" title="Link to this heading">¶</a></h3>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -858,7 +854,7 @@ It is possible to demonstrate this by plotting and comparing the loss surfaces o
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &#169;Vikram Pawar novastar53.github.io.
+      &#169;Vikram Pawar [novastar53.github.io].
       
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>

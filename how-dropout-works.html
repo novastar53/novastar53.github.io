@@ -13,10 +13,6 @@
     <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_admonition_style.css?v=8627ce31" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_dropdown_style.css?v=f3461767" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_code_header_style.css?v=7d542921" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_sidebar_scroll.css?v=b9929681" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -72,7 +68,7 @@
 <p>The CIFAR-10 dataset is a popular benchmark for machine learning and computer vision tasks, consisting of 60,000 32x32 color images across 10 distinct classes. Each image is labeled as one of the following categories: airplane, automobile, bird, cat, deer, dog, frog, horse, ship, or truck. The dataset is divided into 50,000 training images and 10,000 test images, with an even distribution of 6,000 images per class.</p>
 <p>Despite its simplicity, the dataset contains a variety of object poses, lighting conditions, and backgrounds, making it non-trivial to achieve high accuracy.</p>
 <p>Typicall, Convolutional Neural Networks and other image-specific architectures are used for this dataset. However, for this experiment, we will use a feedforward network in order to demonstrate the benefits of using dropout.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -111,7 +107,7 @@ Test Set Size 10000
 <section id="what-does-our-dataset-look-like">
 <h3>What Does Our Dataset Look Like?<a class="headerlink" href="#what-does-our-dataset-look-like" title="Link to this heading">¶</a></h3>
 <p>Let’s look at a few training examples.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -152,7 +148,7 @@ Test Set Size 10000
 </div>
 </div>
 <p>Let’s now preprocess the dataset and look at the input feature distrubition.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -201,7 +197,7 @@ Test Set Size 10000
 <p>Our baseline model is a fully-connected network with ReLU activations. The output layer has 10 classes to generate logits for our class probabilities.
 The candidate is just the baseline with an additional dropout layer after each ReLU activation (except the final layer).</p>
 <p>The dropout layer is placed after the ReLU activation because we want to only remove those neurons that participate in classifying an example. Removing neurons with zero or negative values will not serve this purpose. In fact, it may lead to ‘dead neurons’ which never activate.</p>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
@@ -313,7 +309,7 @@ The candidate is just the baseline with an additional dropout layer after each R
 </div>
 <section id="let-s-count-the-parameters-and-plot-the-initial-distributions-for-the-parameter-values">
 <h3>Let’s count the parameters and plot the initial distributions for the parameter values.<a class="headerlink" href="#let-s-count-the-parameters-and-plot-the-initial-distributions-for-the-parameter-values" title="Link to this heading">¶</a></h3>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -392,7 +388,7 @@ Candidate P/S ratio: 16.6242
 </div>
 </div>
 <p>As you can see, both models have the same number of parameters as well as initial distributions. Hence, we can safely assume that any performance improvement seen by the candidate model will be due to dropout.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -437,7 +433,7 @@ Candidate P/S ratio: 16.6242
 </div>
 </details>
 </div>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -457,7 +453,7 @@ Candidate P/S ratio: 16.6242
 </section>
 <section id="let-s-train-the-baseline-model">
 <h2>Let’s Train the Baseline Model<a class="headerlink" href="#let-s-train-the-baseline-model" title="Link to this heading">¶</a></h2>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax.training</span><span class="w"> </span><span class="kn">import</span> <span class="n">train_state</span>
@@ -470,7 +466,7 @@ Candidate P/S ratio: 16.6242
 </div>
 </div>
 </div>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a train state</span>
 <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
@@ -565,7 +561,7 @@ Epoch 200, Train Accuracy: 0.9921, Test Accuracy: 0.5258
 </section>
 <section id="next-let-s-train-the-candidate-model">
 <h2>Next, Let’s Train the Candidate Model<a class="headerlink" href="#next-let-s-train-the-candidate-model" title="Link to this heading">¶</a></h2>
-<div class="cell tag_skip-execution docutils container">
+<div class="cell tag_skip-execution tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a train state</span>
 <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">LR</span><span class="p">)</span>
@@ -653,7 +649,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
 </div>
 </div>
 <p>Let’s look at the accuracy metrics over time.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -705,7 +701,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
 <section id="sparse-activations">
 <h3>Sparse Activations<a class="headerlink" href="#sparse-activations" title="Link to this heading">¶</a></h3>
 <p>Let’s plot the number of activated neurons per training example over time.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -753,7 +749,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
 <p>Notice that both the baseline and candidate models have similar numbers of activated neurons at the start of training. However, as training progresses, the candidate model tends to have fewer activations per training example. Dropout thus encourages sparse representations, which, as we saw in the results, also tend to be more robust to changes in the inputs (i.e. regularization).</p>
 <p>In the baseline model, a neuron tends to co-adapt to other specific neurons, which leads to overfitting. By using dropout, a neuron cannot necessarily depend on other units and has to individually learn a more robust function.</p>
 <p>Next, let’s look at the activation statistics.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -808,7 +804,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
 </div>
 <p>Notice that both the mean and standard deviation of the baseline activations increase as training progressses. However, the candidate activation statistics tend to stabilize and even decrease.</p>
 <p>Let’s confirm this by comparing activation histograms.</p>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -832,7 +828,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
 </div>
 </details>
 </div>
-<div class="cell tag_hide-input tag_skip-execution docutils container">
+<div class="cell tag_hide-input tag_skip-execution tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -965,7 +961,7 @@ Epoch 200, Train Accuracy: 0.8342, Test Accuracy: 0.5558
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &#169;Vikram Pawar novastar53.github.io.
+      &#169;Vikram Pawar [novastar53.github.io].
       
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>

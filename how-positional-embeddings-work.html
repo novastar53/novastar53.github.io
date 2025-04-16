@@ -13,10 +13,6 @@
     <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_admonition_style.css?v=8627ce31" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_dropdown_style.css?v=f3461767" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_code_header_style.css?v=7d542921" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_sidebar_scroll.css?v=b9929681" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -78,7 +74,7 @@ w^{\prime}_t = w_t + p_t
 <p>I’ll try to answer some of these questions.</p>
 <section id="first-let-s-generate-some-sample-embeddings">
 <h2>First, let’s generate some sample embeddings<a class="headerlink" href="#first-let-s-generate-some-sample-embeddings" title="Link to this heading">¶</a></h2>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sequence_length</span> <span class="o">=</span> <span class="mi">15</span>
 <span class="n">embedding_length</span> <span class="o">=</span> <span class="mi">9</span>
@@ -91,15 +87,15 @@ w^{\prime}_t = w_t + p_t
     <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">i</span><span class="o">%</span><span class="k">2</span> == 0, jnp.sin(x), jnp.cos(x))
 
 <span class="n">embeddings</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">sequence_length</span><span class="p">,</span> <span class="n">embedding_length</span><span class="p">])</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embedding_length</span><span class="p">):</span>
-        <span class="n">e</span> <span class="o">=</span> <span class="n">pos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
-        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embedding_length</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="n">pos</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -121,8 +117,8 @@ w^{\prime}_t = w_t + p_t
 <span class="n">axes</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cax</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span>
 
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sequence_length</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">embedding_length</span><span class="p">):</span>
         <span class="n">axes</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">embeddings</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
 
 
@@ -144,19 +140,19 @@ w^{\prime}_t = w_t + p_t
 <p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(p_t \approx p_{\left\lfloor t+2\pi \right\rfloor}\)</span>.</p>
 <section id="place-value-system">
 <h3>Place Value System<a class="headerlink" href="#place-value-system" title="Link to this heading">¶</a></h3>
-<p>The solution to this is an ancient idea - place value - which is also the basis for the number system. We noticed above that the sine and cosine frequencies decay for larger indices. The rightmost index pair has a frequency of  <span class="math notranslate nohighlight">\(\frac{1}{embedding\_length}\)</span>, which is nearly zero for large embedding_length.</p>
+<p>The solution to this is an ancient idea - place value - which is also the basis for the number system. Notice  that the sine and cosine frequencies decay for larger indices.</p>
 <p>In the decimal system, place value is calculated using <span class="math notranslate nohighlight">\(\sum_pn_p*b^p\)</span>, where n is the face value, b is the base and p is the position. for example,</p>
 <div class="math notranslate nohighlight">
 \[
 9876 = 9*10^3 + 8*10^2 + 7*10^1 + 6*10^0
 \]</div>
-<p>The model can thus retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span> that assigns larger ‘weight’ to the a change in the value of later indices. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
+<p>This solves the periodicity problem by making each positional embedding unique. The model can thus retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span>. that assigns larger ‘weight’ to the a change in the value of later indices. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
 </section>
 </section>
 <section id="the-clock-faces-analogy">
 <h2>The Clock-Faces Analogy<a class="headerlink" href="#the-clock-faces-analogy" title="Link to this heading">¶</a></h2>
 <p>Each dimension-pair can be visualized as a hand on a clock face. The clocks get “slower” as you move from left to right. A single row of clocks encodes the position of an embedding in a sequence.</p>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -218,7 +214,7 @@ w^{\prime}_t = w_t + p_t
 <h2>So Does This Work?<a class="headerlink" href="#so-does-this-work" title="Link to this heading">¶</a></h2>
 <p>To find out, let’s train a neural network to calculate the distance <span class="math notranslate nohighlight">\(k\)</span> between pairs of embeddings.</p>
 <p>First, let’s generate some sample word embeddings.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -235,7 +231,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 <p>Next, let’s generate the positional embeddings.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
@@ -254,7 +250,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 <p>Let’s add the embeddings to obtain the final word embeddings.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">embeddings</span> <span class="o">+</span> <span class="n">pos_embeddings</span>
 </pre></div>
@@ -262,7 +258,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 <p>Let’s train a simple 2 layer neural network and see if it can accurately predict the distance between two embeddings.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -400,7 +396,7 @@ Epoch 181, Loss: 0.03675065, Accuracy: 0.9668
 </div>
 </div>
 <p>Now, let’s see if our trained model is able to predict the distance between two tokens in the training data accurately.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">dataset</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">5</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -504,7 +500,7 @@ Epoch 181, Loss: 0.03675065, Accuracy: 0.9668
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &#169;Vikram Pawar novastar53.github.io.
+      &#169;Vikram Pawar [novastar53.github.io].
       
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>

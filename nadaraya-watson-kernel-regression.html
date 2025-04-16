@@ -13,10 +13,6 @@
     <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_admonition_style.css?v=8627ce31" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_dropdown_style.css?v=f3461767" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_code_header_style.css?v=7d542921" />
-    <link rel="stylesheet" type="text/css" href="_static/fix_sidebar_scroll.css?v=b9929681" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -91,7 +87,7 @@ result. <br />
 For our experiment, we will use a Gaussian kernel.</p>
 <section id="let-s-start-by-generating-the-data">
 <h2>Let’s start by generating the data.<a class="headerlink" href="#let-s-start-by-generating-the-data" title="Link to this heading">¶</a></h2>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -117,7 +113,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/190d7d4102046b15f8bbdf006ebff4f77dd62491931acbbd343745dc47ea621c.png" src="_images/190d7d4102046b15f8bbdf006ebff4f77dd62491931acbbd343745dc47ea621c.png" />
+<img alt="_images/86eabf57054cb26c624d24abc9b44a9936f7126e40a1bc3fc70066517870e0c6.png" src="_images/86eabf57054cb26c624d24abc9b44a9936f7126e40a1bc3fc70066517870e0c6.png" />
 </div>
 </div>
 <p>As you can see, we have generated 40 noisy datapoints for this curve.</p>
@@ -129,7 +125,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 \[
 \hat{y} = \sum_i y_i* \frac{\phi(||x-x_i||)}{\sum_j \phi(||x-x_j||)}
 \]</div>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">h</span><span class="p">))</span>
@@ -154,12 +150,12 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="_images/e68f69572a806cf3e4dfd4f74cda1b4d25dc6e66bdbcd88422ecedae8c00d39d.png" src="_images/e68f69572a806cf3e4dfd4f74cda1b4d25dc6e66bdbcd88422ecedae8c00d39d.png" />
+<img alt="_images/9e682d1ad210eb8b32a48190202774a2bb060c2929a6ead78dfa264341973c23.png" src="_images/9e682d1ad210eb8b32a48190202774a2bb060c2929a6ead78dfa264341973c23.png" />
 </div>
 </div>
 <p>The green curve is a fairly good approximation of the original source or process curve, without learning any parameters!</p>
 <p>We can experiment with different values of smoothing constant <span class="math notranslate nohighlight">\( h \)</span>.</p>
-<div class="cell docutils container">
+<div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y_pred_0_1</span><span class="p">,</span> <span class="n">weights_0_1</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="n">y_pred_0_5</span><span class="p">,</span> <span class="n">weights_0_5</span> <span class="o">=</span> <span class="n">nadaraya_watson_regression</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">x_gt</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
@@ -169,7 +165,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </div>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -185,7 +181,7 @@ For our experiment, we will use a Gaussian kernel.</p>
 </div>
 </details>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -227,7 +223,7 @@ class RegressionScene(Scene):
 <div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.19.0</span>
 
 </pre>
-</div><div class="output text_html"><video src="media/jupyter/RegressionScene@2025-04-13@14-00-56.mp4" controls autoplay loop style="max-width: 100%;"  >
+</div><div class="output text_html"><video src="media/jupyter/RegressionScene@2025-04-13@15-41-33.mp4" controls autoplay loop style="max-width: 100%;"  >
       Your browser does not support the <code>video</code> element.
     </video></div></div>
 </div>
@@ -235,7 +231,7 @@ class RegressionScene(Scene):
 <section id="finally-we-can-interpret-the-regression-weights-as-attention-over-the-training-data-points">
 <h2>Finally, we can interpret the regression weights as attention over the training data points<a class="headerlink" href="#finally-we-can-interpret-the-regression-weights-as-attention-over-the-training-data-points" title="Link to this heading">¶</a></h2>
 <p>On the X axis, you can see the each of the input data points. On the Y axis, you can observe the attention weights over the training data</p>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -251,10 +247,10 @@ class RegressionScene(Scene):
 </div>
 </details>
 <div class="cell_output docutils container">
-<img alt="_images/85b38eb9cbd6672d42c8709c88ebd5588e60b673fa31bb91b48065f4f6ab68ea.png" src="_images/85b38eb9cbd6672d42c8709c88ebd5588e60b673fa31bb91b48065f4f6ab68ea.png" />
+<img alt="_images/9a814a89254756071891343a823564c19b935a1787675e08a2971e5d1c806811.png" src="_images/9a814a89254756071891343a823564c19b935a1787675e08a2971e5d1c806811.png" />
 </div>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -270,7 +266,7 @@ class RegressionScene(Scene):
 </div>
 </details>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -285,7 +281,7 @@ class RegressionScene(Scene):
 </div>
 </details>
 </div>
-<div class="cell tag_hide-input docutils container">
+<div class="cell tag_hide-input tag_no-execute docutils container">
 <details class="hide above-input">
 <summary aria-label="Toggle hidden content">
 <span class="collapsed">Show code cell source</span>
@@ -330,7 +326,7 @@ class AttentionScene(Scene):
 <div class="output text_html"><pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Manim Community <span style="color: #008000; text-decoration-color: #008000">v0.19.0</span>
 
 </pre>
-</div><div class="output text_html"><video src="media/jupyter/AttentionScene@2025-04-13@14-00-56.mp4" controls autoplay loop style="max-width: 100%;"  >
+</div><div class="output text_html"><video src="media/jupyter/AttentionScene@2025-04-13@15-41-33.mp4" controls autoplay loop style="max-width: 100%;"  >
       Your browser does not support the <code>video</code> element.
     </video></div></div>
 </div>
@@ -423,7 +419,7 @@ class AttentionScene(Scene):
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &#169;Vikram Pawar novastar53.github.io.
+      &#169;Vikram Pawar [novastar53.github.io].
       
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
