@@ -59,12 +59,14 @@
 <p>In modern transformer-based architectures, token sequences are processed in parallel rather than sequentially (as they were done in the older Recursive Neural Network (RNN) architectures).
 This provides a great performance boost as parallel operations always do. One key idea that enables this is positional encoding.</p>
 <p>Positional encodings incorporate position within the embedding. The model can thus learn to extract it and even compare embeddings to obtain the distance between them .</p>
-<p>A formulation that is popularly used and was first introduced in the now famous Vaswani et. al. (2017) paper is given below:</p>
+<p>A formulation that is popularly used and was first introduced in the now famous Vaswani et al. (2017) paper is given below:</p>
 <div class="math notranslate nohighlight">
-\[ \begin{align}\begin{aligned}\begin{split}
-p_{i,2j} = sin(\frac{i}{10000^{2j/d}}) \\\end{split}\\p_{i,2j+1} = cos(\frac{i}{10000^{2j/d}})
-\end{aligned}\end{align} \]</div>
-<p>Where <span class="math notranslate nohighlight">\(i\)</span> is the token position and <span class="math notranslate nohighlight">\(2j, 2j+1\)</span> are adjacent embedding indices and <span class="math notranslate nohighlight">\(d\)</span> is the embedding size.</p>
+\[\begin{split}
+p_{t,2j} = sin(\frac{t}{10000^{2j/d}}) \\
+p_{t,2j+1} = cos(\frac{t}{10000^{2j/d}})
+\end{split}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(t\)</span> is the token position, (<span class="math notranslate nohighlight">\(2j, 2j+1\)</span>) are adjacent embedding indices and <span class="math notranslate nohighlight">\(d\)</span> is the embedding size.
+The angular frequency <span class="math notranslate nohighlight">\(\omega\)</span> decays <span class="math notranslate nohighlight">\(10000^{-2j/d}\)</span> exponentially with index i.</p>
 <p>The position embeddings are then simply added to the word embeddings before the forward pass.</p>
 <div class="math notranslate nohighlight">
 \[
@@ -131,23 +133,25 @@ w^{\prime}_t = w_t + p_t
 <img alt="_images/7e6585de8c6f52521633fbccc6f7368806d96339fc4b51ae7e783baca062c26e.png" src="_images/7e6585de8c6f52521633fbccc6f7368806d96339fc4b51ae7e783baca062c26e.png" />
 </div>
 </div>
-<p>The matrix above was generated using the Vaswani et. al. (2017) method. It represents positional encodings for a sentence length of 15 and embedding length of 9. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
+<p>The matrix above was generated using the Vaswani et al. (2017) method. It represents positional encodings for a sentence length of 15 and embedding length of 9. Notice that the values change quite quickly for the earlier index values, but tend to remain stable for the rightmost index positions.</p>
 <p>Also, notice that all the values are nicely bounded in the range [-1,1] thanks to the choice of sinusoidal functions. This is crucial for deep neural networks since it prevents the exploding gradient problem.</p>
 </section>
 <section id="how-the-model-learns-to-calculate-distances-between-tokens">
 <h2>How the Model Learns to Calculate Distances Between Tokens<a class="headerlink" href="#how-the-model-learns-to-calculate-distances-between-tokens" title="Link to this heading">¶</a></h2>
-<p>Let’s start by looking at adjacent pairs of embeddings - every <span class="math notranslate nohighlight">\((sin(\theta), cos(\theta))\)</span> pair can uniquely represent an angle between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>. Hence, you can use a <a class="reference external" href="https://blog.timodenk.com/linear-relationships-in-the-transformers-positional-encoding/">rotation matrix</a> to calculate the angular difference at the same index positions.</p>
-<p>However, this is periodic and not a valid distance measure, because <span class="math notranslate nohighlight">\(p_t \approx p_{\left\lfloor t+2\pi \right\rfloor}\)</span>.</p>
-<section id="place-value-system">
-<h3>Place Value System<a class="headerlink" href="#place-value-system" title="Link to this heading">¶</a></h3>
-<p>The solution to this is an ancient idea - place value - which is also the basis for the number system. Notice  that the sine and cosine frequencies decay for larger indices.</p>
-<p>In the decimal system, place value is calculated using <span class="math notranslate nohighlight">\(\sum_pn_p*b^p\)</span>, where n is the face value, b is the base and p is the position. for example,</p>
+<p>Let’s start by looking at adjacent pairs of embeddings - every <span class="math notranslate nohighlight">\((sin(\theta), cos(\theta))\)</span> pair can uniquely represent an angle between 0 and <span class="math notranslate nohighlight">\(2\pi\)</span>. One can use a <a class="reference external" href="https://blog.timodenk.com/linear-relationships-in-the-transformers-positional-encoding/">rotation matrix</a> to calculate the angular difference at the same index positions.</p>
+<p>Hence, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
 <div class="math notranslate nohighlight">
-\[
-9876 = 9*10^3 + 8*10^2 + 7*10^1 + 6*10^0
-\]</div>
-<p>This solves the periodicity problem by making each positional embedding unique. The model can thus retrieve the token position <span class="math notranslate nohighlight">\(t\)</span> by learning a linear function <span class="math notranslate nohighlight">\(g(p_t) = t\)</span>. Similarly, it is possible for the model to learn a function <span class="math notranslate nohighlight">\(f(p_t, p_{t+k}) = k\)</span> to obtain the distances between tokens.</p>
-</section>
+\[\begin{split}
+cos(\theta^{t+k} - \theta^{t}) = cos(\theta^{t+k})cos(\theta^k) + sin(\theta^{t+k})\sin(\theta^t) \\
+sin(\theta^{t+k} - \theta^{t}) = sin(\theta^{t+k})cos(\theta^k) - cos(\theta^{t+k})\sin(\theta^t)
+\end{split}\]</div>
+<p>Finally,</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+(\theta_i^{t+k} - \theta_i^{t}) = arctan(\frac{sin(\theta_i^{t+k} - \theta_i^{t})}{cos(\theta_i^{t+k} - \theta_i^{t})}) \\
+k = C_i * (\theta_i^{t+k} - \theta_i^{t})
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(C_i\)</span> converts angular difference to positional difference <span class="math notranslate nohighlight">\((k)\)</span> between tokens.</p>
 </section>
 <section id="the-clock-faces-analogy">
 <h2>The Clock-Faces Analogy<a class="headerlink" href="#the-clock-faces-analogy" title="Link to this heading">¶</a></h2>
@@ -257,7 +261,7 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 </div>
-<p>Let’s train a simple 2 layer linear neural network and see if it can accurately predict the distance between two embeddings.</p>
+<p>Let’s train a simple 2 layer neural network and see if it can accurately predict the distance between two embeddings.</p>
 <div class="cell tag_no-execute docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
@@ -272,6 +276,7 @@ w^{\prime}_t = w_t + p_t
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> 
         <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="mi">128</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">features</span><span class="o">=</span><span class="n">embedding_length</span><span class="o">-</span><span class="mi">1</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">x</span>
 
@@ -368,27 +373,27 @@ w^{\prime}_t = w_t + p_t
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.82499993, Accuracy: 0.1583
-Epoch 21, Loss: 0.93197823, Accuracy: 0.6305
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 1, Loss: 1.91001260, Accuracy: 0.1056
+Epoch 21, Loss: 0.83919179, Accuracy: 0.7397
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.63946468, Accuracy: 0.8074
-Epoch 61, Loss: 0.43713382, Accuracy: 0.9438
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 41, Loss: 0.50585639, Accuracy: 0.9236
+Epoch 61, Loss: 0.30525377, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.31007630, Accuracy: 0.9500
-Epoch 101, Loss: 0.22384809, Accuracy: 0.9668
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 81, Loss: 0.19191688, Accuracy: 0.9668
+Epoch 101, Loss: 0.12832175, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.17343514, Accuracy: 0.9668
-Epoch 141, Loss: 0.12995121, Accuracy: 0.9668
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 121, Loss: 0.09348652, Accuracy: 0.9668
+Epoch 141, Loss: 0.06743054, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.09335884, Accuracy: 0.9668
-Epoch 181, Loss: 0.07081576, Accuracy: 0.9668
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 161, Loss: 0.04605849, Accuracy: 0.9668
+Epoch 181, Loss: 0.03675065, Accuracy: 0.9668
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 200, Loss: 0.0586, Accuracy: 0.9668
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch 200, Loss: 0.0290, Accuracy: 0.9668
 </pre></div>
 </div>
 </div>
