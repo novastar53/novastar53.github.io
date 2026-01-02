@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How to Write a Matrix Multiplication Kernel using Pallas &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How do Mixture of Experts Layers Work? Part 1" href="how-mixture-of-experts-works-part-1.html" />
+    <link rel="prev" title="Explorations in Data Science" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-to-write-a-matrix-multiplication-kernel-using-pallas">
+<h1>How to Write a Matrix Multiplication Kernel using Pallas<a class="headerlink" href="#how-to-write-a-matrix-multiplication-kernel-using-pallas" title="Link to this heading">¶</a></h1>
+<p>Matrix multiplication is the core operation that lies at the heart of modern machine learning. Libraries like cuBLAS are used under the hood by most deep learning frameworks such as Jax and Torch. These are highly optimized and tuned for NVIDIA GPUs. Programs (called kernels) are written in a language called CUDA, which extends C/C++. CUDA is designed for the SIMD (Single Instruction Multiple Data) paradigm, which works very well for massively parallel operations like matrix multiplication.</p>
+<p>Most ML researchers and practitioners do not write GPU kernels, instead relying on the existing CUDA implementations for primitive operations. This works well most of the time. However, it’s often useful to write kernels for new or experimental operations or to combine multiple operations into a single kernel to improve efficiency.</p>
+<p>Frameworks such as Pallas and Triton allow us to write GPU Kernels in a high level language like Python while exposing enough of the low-level details like tiling, memory layout, parallelism and data movement. Pallas composes cleanly with high level Jax, which is a big advantage for programmers who can now write custom kernels within the Jax paradigm.</p>
+<section id="matrix-multiplication">
+<h2>Matrix Multiplication<a class="headerlink" href="#matrix-multiplication" title="Link to this heading">¶</a></h2>
+<p>Given matrices <span class="math notranslate nohighlight">\(A \in \mathbb{R}^{M \times K}\)</span> and <span class="math notranslate nohighlight">\(B \in \mathbb{R}^{K \times N}\)</span>, each element of the output matrix <span class="math notranslate nohighlight">\(C \in \mathbb{R}^{M \times N}\)</span> is just a dot product:</p>
+<div class="math notranslate nohighlight">
+\[
+C_{ij} = \sum_{k=1}^{K} A_{ik} \cdot B_{kj}
+\]</div>
+<p>You can easily implement this using three nested loops. However, this is highly inefficient on a CPU. On a GPU, this can be parallelized to a large extent because of special processors called Tensor cores, which can calculate small chunks of the matrix as ‘atomic’ operations, and run several of these in parallel.</p>
+<p><img alt="matrix-multiplication" src="_images/matmul.png" /></p>
+<p>So any good GPU programmer must think primarily in terms of tiles / blocks of computation.</p>
+<p>Now, matrices can get quite large. However, each GPU processor has limited memory. A big chunk of wall time is therefore spent in loading blocks of the matrix into caches that are located close to the GPU. It’s therefore useful to think of a GPU as a block processing pipeline - several blocks are loaded onto the processors in parallel, processed, then written out. To make this more concrete, let’s first learn some basics about the GPU hardware architecture.</p>
+</section>
+<section id="gpu-architecture">
+<h2>GPU Architecture<a class="headerlink" href="#gpu-architecture" title="Link to this heading">¶</a></h2>
+<section id="component-layout">
+<h3>Component Layout<a class="headerlink" href="#component-layout" title="Link to this heading">¶</a></h3>
+<p>Let’s build a simplified mental model of the NVIDIA GPU architecture. This will help us make good decisions when we write our matmul kernel.</p>
+<div style="display:flex; gap:16px; align-items:center; justify-content:center;">
+    <img src="_images/gpu_diagram_new.png" alt="gpu-diagram" style="width:60%; height:auto;"/>
+    <img src="_images/sm.png" alt="streaming-microprocessor" style="width:36%; height:auto;"/>
+</div>
+<p>At the top level, the GPU consists of many Streaming Multiprocessors (SMs) that run in parallel. Each SM executes blocks of threads (warps) independently, while sharing access to a large L2 cache and off-chip high-bandwidth global memory (HBM/GMEM). Inside each SM, computation is orchestrated by warp schedulers and carried out on execution units such as tensor cores for dense matrix operations. Data needed for fast reuse is staged in shared memory (SMEM), which is tightly coupled with the L1 cache and sits much closer to compute than L2 or global memory. High performance comes from structuring computation so that data flows down this hierarchy once, is reused heavily inside the SM, and continuously feeds the tensor cores without stalls.</p>
+</section>
+<section id="memory-hierarchy">
+<h3>Memory Hierarchy<a class="headerlink" href="#memory-hierarchy" title="Link to this heading">¶</a></h3>
+<div style="display:flex; gap:16px; align-items:center; justify-content:center;">
+    <img src="_images/gpu_memory_hierarchy.png" alt="gpu-memory-hierarchy" style="width:80%; height:auto;"/>
+</div>
+<p>This brings us to the memory hierarchy, which is essential to understand the tradeoffs between the different memory components. The details in the diagram above are specific to the NVIDIA H-100 chipset, however, the tradeoffs are the same for any modern GPU - slow and high capacity memory at the bottom, fastest and low capacity memory on top.</p>
+<p>At the top are registers (RMEM), which are private to each SM, extremely small, and effectively single-cycle, providing the highest bandwidth but the least capacity. Below that is shared memory / L1 cache, still per-SM and SRAM-backed, offering fast access and explicit data reuse for kernels. The next level, distributed shared memory (DSMEM), is shared across a cluster of SMs and enables limited cross-SM data sharing at higher latency. Beneath that sits the global L2 cache, shared by the entire GPU, providing much larger capacity but noticeably higher latency. At the base is device memory (HBM/VRAM), which offers massive capacity and high aggregate bandwidth, but with the highest access latency. The pyramid visually captures the central performance principle of GPU programming: the closer data is to the compute units, the faster it is, and high-performance kernels work by aggressively moving data up this hierarchy and reusing it before it falls back to lower levels.</p>
+<p>Matrix multiplication performance is dominated by where data lives at each moment of the computation. A matmul kernel repeatedly uses the same tiles of A and B to update many output values. Staging those tiles in registers or shared memory is critical: data fetched from HBM or even L2 is far too slow to feed the compute units efficiently.  Each design choice in a high-performance matmul kernel – tile sizes, number of stages, warp assignments – is ultimately about keeping operands as high in this hierarchy as possible, for as long as possible, so that tensor cores are never starved for data.</p>
+</section>
+</section>
+<section id="pipelining">
+<h2>Pipelining<a class="headerlink" href="#pipelining" title="Link to this heading">¶</a></h2>
+<p>The key to writing efficient kernels is pipelining. A well designed kernel uses this technique to overlap asynchronous operations like memory transfers and computation so that they are executed in parallel. Thus, the compute units are never starved of data.</p>
+<p><img alt="software-pipelining" src="_images/software_pipelining.png" /></p>
+<p>For more details about software pipelineing, check out the Pallas documentation[3].</p>
+</section>
+<section id="designing-a-matrix-multiplication-kernel">
+<h2>Designing a Matrix Multiplication Kernel<a class="headerlink" href="#designing-a-matrix-multiplication-kernel" title="Link to this heading">¶</a></h2>
+<p>First, we can store A and B in HBM / GMEM and allocate memory in HBM for our output C. Then we can load small chunks of A and B into the register, multiply them, and write each finished chunk back out to C in the correct location. Here’s a rough sketch of the algorithm:</p>
+<ol class="arabic simple">
+<li><p>Pick a tile size by timing a few candidate configurations on the current input shapes, then keep the fastest one.</p></li>
+<li><p>Launch a tiled matmul kernel using that chosen configuration.</p></li>
+<li><p>For each output tile (a block of rows and columns in C), create a local accumulator initialized to zero.</p></li>
+<li><p>Walk through K in chunks (BK): load one A tile and one B tile for the current K chunk.</p></li>
+<li><p>Multiply the two tiles and add the result into the accumulator.</p></li>
+<li><p>After all K chunks are processed, write the accumulator into the corresponding output tile in C.</p></li>
+</ol>
+<p>Here is an implementation in Pallas:</p>
+<div class="cell tag_no-execute tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">BLOCK_M</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">BLOCK_N</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">BLOCK_K</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">NUM_WARPS</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">NUM_STAGES</span> <span class="o">=</span> <span class="mi">3</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here, I have chosen a good configuration for an NVIDIA RTX 5000.</p>
+<p>Next, let’s write the kernel. In addition to Pallas our implementation also uses the Triton bindings for Pallas for executing memory transfers.</p>
+<div class="cell tag_no-execute tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.experimental</span><span class="w"> </span><span class="kn">import</span> <span class="n">pallas</span> <span class="k">as</span> <span class="n">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.experimental.pallas</span><span class="w"> </span><span class="kn">import</span> <span class="n">triton</span> <span class="k">as</span> <span class="n">plgpu</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_matmul_kernel</span><span class="p">(</span><span class="n">a_ref</span><span class="p">,</span> <span class="n">b_ref</span><span class="p">,</span> <span class="n">c_ref</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">K</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_k_tiles</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="n">acc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">BLOCK_M</span><span class="p">,</span> <span class="n">BLOCK_N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">acc</span><span class="p">):</span>
+        <span class="n">k_idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_K</span><span class="p">,</span> <span class="n">BLOCK_K</span><span class="p">)</span>
+        <span class="n">a_tile</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">a_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[:,</span> <span class="n">k_idx</span><span class="p">])</span>
+        <span class="n">b_tile</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">b_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">k_idx</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="k">return</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a_tile</span><span class="p">,</span> <span class="n">b_tile</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="n">acc</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_k_tiles</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">acc</span><span class="p">)</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">c_ref</span><span class="p">,</span> <span class="n">acc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">c_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">matmul</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
+    <span class="n">M</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">K2</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">K</span> <span class="o">==</span> <span class="n">K2</span>
+    <span class="k">assert</span> <span class="n">M</span> <span class="o">%</span> <span class="n">BLOCK_M</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">N</span> <span class="o">%</span> <span class="n">BLOCK_N</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">K</span> <span class="o">%</span> <span class="n">BLOCK_K</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">BLOCK_M</span><span class="p">),</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">BLOCK_N</span><span class="p">))</span>
+    <span class="n">num_k_tiles</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">BLOCK_K</span><span class="p">)</span>
+    <span class="n">out_shape</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">a</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
+        <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">_matmul_kernel</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">,</span> <span class="n">num_k_tiles</span><span class="o">=</span><span class="n">num_k_tiles</span><span class="p">),</span>
+        <span class="n">out_shape</span><span class="o">=</span><span class="n">out_shape</span><span class="p">,</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="n">BLOCK_M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>  <span class="c1"># A</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="n">K</span><span class="p">,</span> <span class="n">BLOCK_N</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">)),</span>  <span class="c1"># B</span>
+        <span class="p">],</span>
+        <span class="n">out_specs</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="n">BLOCK_M</span><span class="p">,</span> <span class="n">BLOCK_N</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)),</span>  <span class="c1"># C</span>
+        <span class="n">interpret</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span>
+            <span class="n">num_warps</span><span class="o">=</span><span class="n">NUM_WARPS</span><span class="p">,</span>
+            <span class="n">num_stages</span><span class="o">=</span><span class="n">NUM_STAGES</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>So how well does this work? Let’s compare our implementation with the out-of-the-box one.</p>
+<div class="cell tag_no-execute tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bench</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">):</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+        <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">M</span> <span class="o">=</span> <span class="n">N</span> <span class="o">=</span> <span class="n">K</span> <span class="o">=</span> <span class="mi">1024</span> 
+
+<span class="n">a</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+
+<span class="n">jax_mm_jit</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">@</span> <span class="n">y</span><span class="p">)</span> <span class="c1"># out of the box implementation</span>
+
+<span class="c1">#warmup</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">jax_mm_jit</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+
+<span class="n">t_pallas</span> <span class="o">=</span> <span class="n">_bench</span><span class="p">(</span><span class="n">matmul</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="n">t_jax</span> <span class="o">=</span> <span class="n">_bench</span><span class="p">(</span><span class="n">jax_mm_jit</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pallas matmul: </span><span class="si">{</span><span class="n">t_pallas</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;JAX   matmul: </span><span class="si">{</span><span class="n">t_jax</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Speedup (baseline / pallas): </span><span class="si">{</span><span class="n">t_jax</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">t_pallas</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>W0102 13:41:34.586199    4376 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn&#39;t support extracting fabric info or NVLink is not used by the device.
+W0102 13:41:34.588776    4072 cuda_executor.cc:1802] GPU interconnect information not available: INTERNAL: NVML doesn&#39;t support extracting fabric info or NVLink is not used by the device.
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Pallas matmul: 0.11 ms
+JAX   matmul: 0.12 ms
+Speedup (baseline / pallas): 1.08x
+</pre></div>
+</div>
+</div>
+</div>
+<p>It performs comparably with the out-of-the-box implementation, which is encouraging, considering that the NVIDIA supplied kernels are highly tuned. Needless to say, it becomes difficult to do better for kernels that are more involved than a simple matrix multiplication.</p>
+<p>In the next iteration, we’ll use profiling tools to understand the performance of our implementation and find out if the pipelining works as per our theory.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>CUDO Compute. (n.d.). A beginner’s guide to NVIDIA GPUs. CUDO Compute Blog. <a class="reference external" href="https://www.cudocompute.com/blog/a-beginners-guide-to-nvidia-gpus">https://www.cudocompute.com/blog/a-beginners-guide-to-nvidia-gpus</a></p></li>
+<li><p>Gordić, A. (n.d.). Matrix multiplication (matmul) explained. Aleksa Gordić Blog. <a class="reference external" href="https://www.aleksagordic.com/blog/matmul">https://www.aleksagordic.com/blog/matmul</a></p></li>
+<li><p>JAX Contributors. (n.d.). Software Pipelining — Pallas. JAX Documentation. <a class="reference external" href="https://docs.jax.dev/en/latest/pallas/pipelining.html">https://docs.jax.dev/en/latest/pallas/pipelining.html</a>  ￼</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst Data Science Blog"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst Data Science Blog</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Explorations in Data Science</a></li>
+      <li>Next: <a href="how-mixture-of-experts-works-part-1.html" title="next chapter">How do Mixture of Experts Layers Work? Part 1</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/pallas-matmul.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
