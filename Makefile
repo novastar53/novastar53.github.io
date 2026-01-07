@@ -22,10 +22,11 @@ venv:
 init:
 	. $(VENV) && uv sync
 
-build: 
+build:
 	export PATH="$(PATH):/Library/TeX/texbin/latex"
 	. $(VENV) && jupyter-book build site/ --verbose
-	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir 
+	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir
+	cp CNAME site/_build/html/  # Preserve custom domain for GitHub Pages 
 
 deploy-local:
 	. $(VENV) && python -m http.server 8000 --directory site/_build/html
