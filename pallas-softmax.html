@@ -57,7 +57,7 @@
   <section class="tex2jax_ignore mathjax_ignore" id="how-to-write-a-softmax-kernel-in-pallas">
 <h1>How to Write a Softmax Kernel in Pallas<a class="headerlink" href="#how-to-write-a-softmax-kernel-in-pallas" title="Link to this heading">¶</a></h1>
 <div style="display:flex; gap:16px; align-items:center; justify-content:center;">
-    <img src="_images/softmax_2d.png" alt="softmax-2d" style="width:60%; height:auto;"/>
+    <img src="_images/softmax_2d.png" alt="softmax-2d" style="width:66%; height:auto;"/>
 </div>
 <p>The softmax function is fundamental to neural network training because it converts raw model outputs (logits) into valid probability distributions. This is essential for classification tasks where we need to interpret network predictions as probabilities over discrete classes. Additionally, softmax is differentiable, allowing gradients to flow effectively through the network during training, which is why it’s the standard choice for the output layer in multi-class classification models.</p>
 <p>In the <a class="reference external" href="https://vikrampawar.com/pallas-matmul.html">previous post</a>, we wrote a GPU kernel in Pallas for performing efficient matrix multiplication. In this post, we’ll build on this by writing a GPU kernel for the softmax function. We will also write the backward pass and test it with a neural network training run.</p>
