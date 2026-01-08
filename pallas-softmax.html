@@ -60,7 +60,7 @@
     <img src="_images/softmax_2d.png" alt="softmax-2d" style="width:66%; height:auto;"/>
 </div>
 <p>The softmax function is fundamental to neural network training because it converts raw model outputs (logits) into valid probability distributions. This is essential for classification tasks where we need to interpret network predictions as probabilities over discrete classes. Additionally, softmax is differentiable, allowing gradients to flow effectively through the network during training, which is why it’s the standard choice for the output layer in multi-class classification models.</p>
-<p>In the <a class="reference external" href="https://vikrampawar.com/pallas-matmul.html">previous post</a>, we wrote a GPU kernel in Pallas for performing efficient matrix multiplication. In this post, we’ll build on this by writing a GPU kernel for the softmax function. We will also write the backward pass and test it with a neural network training run.</p>
+<p>In the <a class="reference external" href="https://blog.vikrampawar.com/pallas-matmul.html">previous post</a>, we wrote a GPU kernel in Pallas for performing efficient matrix multiplication. In this post, we’ll build on this by writing a GPU kernel for the softmax function. We will also write the backward pass and test it with a neural network training run.</p>
 <section id="softmax-operation">
 <h2>Softmax Operation<a class="headerlink" href="#softmax-operation" title="Link to this heading">¶</a></h2>
 <p>Given an input vector <span class="math notranslate nohighlight">\(z = (z_1, ..., z_n) \in R^n\)</span>, the softmax function <span class="math notranslate nohighlight">\(σ : R^n → (0,1)^n\)</span> produces a probability distribution over the n entries:</p>
