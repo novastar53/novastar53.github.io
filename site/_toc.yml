@@ -4,6 +4,7 @@
 format: jb-article
 root: intro
 sections:
+- file: how-mixture-of-experts-works-part-2
 - file: pallas-softmax.ipynb
 - file: pallas-matmul.ipynb
 - file: how-mixture-of-experts-works-part-1
