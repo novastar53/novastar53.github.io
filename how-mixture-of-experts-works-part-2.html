@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How do Mixture of Experts Layers Work? Part 2 &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to Write a Softmax Kernel in Pallas" href="pallas-softmax.html" />
+    <link rel="prev" title="Explorations in Data Science" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-do-mixture-of-experts-layers-work-part-2">
+<h1>How do Mixture of Experts Layers Work? Part 2<a class="headerlink" href="#how-do-mixture-of-experts-layers-work-part-2" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>In <a class="reference external" href="https://blog.vikrampawar.com/how-mixture-of-experts-works-part-1.html">Part 1</a>, we introduced the Mixtures of Experts layer and attempted a naive implementation, where we trained a simple neural network with an expert router and two experts. The model learned to route each datapoint to one of two regression models. We used a synthetic dataset tailored for our model.</p>
+<p>In this post, we’ll build upon that basic design and explore how to scale MoE layers across multiple GPUs.</p>
+</section>
+<section id="why-mixture-of-experts">
+<h2>Why Mixture of Experts?<a class="headerlink" href="#why-mixture-of-experts" title="Link to this heading">¶</a></h2>
+<p>The main reason that Mixture of Experts is used is because it can scale model parameters with sublinear compute scaling. In a dense model, every parameter is used for every input. Double the parameters, double the FLOPs. MoE breaks this relationship by only activating a subset of parameters for each input. In modern MoE models, each token is routed to K of N experts (typically K = 1 or 2). This means per-token FLOPs in the expert layers are reduced to K/N of what a dense network would require, without a large performance penalty.</p>
+<p>As a result, we can train much larger models while keeping the compute budget under control.</p>
+</section>
+<section id="the-parallelism-challenge">
+<h2>The Parallelism Challenge<a class="headerlink" href="#the-parallelism-challenge" title="Link to this heading">¶</a></h2>
+<p>The parallelism challenge in MoE is about what happens when we try to distribute experts across multiple GPUs. In our naive implementation, we ran every token through every expert and then weighted the outputs. This is actually dense computation masquerading as MoE.</p>
+<p>To get actual sparse computation, we need to only send each token to its assigned K experts. But when experts live on different GPUs, this creates a coordination problem. Token A on GPU 0 might need Expert 2 on GPU 2. Token B on GPU 1 might need Expert 0 on GPU 0. Every GPU potentially needs to send tokens to every other GPU, creating a many-to-many communication pattern.</p>
+<p><img alt="token-routing" src="_images/token-routing.png" /></p>
+<p>This introduces several challenges. First, all-to-all communication is expensive. Second, if the router sends many tokens to one expert, that GPU becomes a bottleneck while others sit idle. Third, each GPU needs memory to buffer incoming and outgoing tokens during the shuffle. Finally, we need two shuffles, one to dispatch tokens to experts, and another to combine results back to their original positions.</p>
+</section>
+<section id="expert-parallelism-explained">
+<h2>Expert Parallelism Explained<a class="headerlink" href="#expert-parallelism-explained" title="Link to this heading">¶</a></h2>
+<p>Expert parallelism solves the routing problem by distributing experts across GPUs and using all-to-all communication to shuffle tokens to their assigned experts. The sharding strategy has three components: expert weights are sharded on the expert dimension so that GPU i holds expert i, non-expert layers (attention, embeddings, normalization) are replicated across all GPUs, and data batches are sharded on the batch dimension so that GPU i processes batch slice i. This combines data parallelism with expert parallelism.</p>
+<p><strong>MoE Sharding Strategy</strong></p>
+<p><img alt="moe-sharding-strategy" src="_images/moe-sharding-strategy-v2.png" /></p>
+</section>
+<section id="token-routing-dispatch-and-combine">
+<h2>Token Routing - Dispatch and Combine<a class="headerlink" href="#token-routing-dispatch-and-combine" title="Link to this heading">¶</a></h2>
+<p>The token flow works in four phases:
+First, each GPU gathers its tokens into expert-specific buffers. After this local gathering step, each GPU has organized its tokens which expert they are assigned. Second, during the all-to-all dispatch, the expert buffers are redistributed across GPUs so that each expert’s tokens are collected on their respective GPU. GPU 0 receives all tokens destined for expert 0, GPU 1 receives all tokens for expert 1, and so on. Third, each GPU runs its local expert on the tokens it received. Fourth, during the all-to-all combine, the processed tokens are routed back to their original GPUs and reassembled in the correct sequence positions.</p>
+<p><img alt="token-dispatch-combine" src="_images/token-dispatch-combine.png" /></p>
+<p>In JAX, the all-to-all communication emerges implicitly from sharding constraints. We specify how tensors should be partitioned (e.g., tokens sharded by batch, expert weights sharded by expert index), and XLA’s compiler inserts the necessary collectives when an operation requires data that lives on another device. For MoE, this means the dispatch and combine shuffles happen automatically when the sharding layout changes between “tokens grouped by batch” and “tokens grouped by expert.”</p>
+<p>The dispatch and combine phases come with real costs. MoE trades compute savings (activating only K of N experts) for communication overhead. Each token must be sent to its assigned expert and the result returned, roughly <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">×</span> <span class="pre">num_tokens</span> <span class="pre">×</span> <span class="pre">hidden_dim</span></code> bytes moved per MoE layer. All-to-all is also a synchronization barrier: every GPU must wait for the slowest one to finish sending and receiving, so load imbalance amplifies latency. Finally, each GPU needs buffer memory to stage outgoing tokens (grouped by destination) and incoming tokens (from all other GPUs), increasing peak memory usage beyond what the expert weights alone require.</p>
+</section>
+<section id="capacity-factor-token-dropping-and-load-balancing">
+<h2>Capacity Factor, Token Dropping and Load Balancing<a class="headerlink" href="#capacity-factor-token-dropping-and-load-balancing" title="Link to this heading">¶</a></h2>
+<p>The router doesn’t distribute tokens evenly; one expert might receive 80% of tokens while another gets 5%. To handle this, MoE implementations define an expert capacity: <code class="docutils literal notranslate"><span class="pre">capacity</span> <span class="pre">=</span> <span class="pre">(batch_tokens</span> <span class="pre">/</span> <span class="pre">num_experts)</span> <span class="pre">×</span> <span class="pre">capacity_factor</span></code>, where capacity factor (typically 1.0 to 2.0) controls how much slack each expert has. When more tokens are routed to an expert than its capacity allows, the excess tokens are dropped.</p>
+<p>The capacity factor controls a tradeoff: higher values mean fewer dropped tokens but more buffer memory and wasted compute on padding; lower values keep memory tight but risk dropping tokens. To minimize dropping without inflating capacity, MoE models use auxiliary load balancing losses that penalize uneven routing, pushing the router toward balanced assignments.</p>
+</section>
+<section id="putting-it-together-a-sparse-moe-layer">
+<h2>Putting It Together: A Sparse MoE Layer<a class="headerlink" href="#putting-it-together-a-sparse-moe-layer" title="Link to this heading">¶</a></h2>
+<p>The implementation below demonstrates sparse token routing without sharding. The <code class="docutils literal notranslate"><span class="pre">Experts</span></code> class holds all expert weights in a single tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_experts,</span> <span class="pre">n_embed,</span> <span class="pre">n_embed)</span></code>, indexing into the appropriate slice when called. The <code class="docutils literal notranslate"><span class="pre">MOE</span></code> class implements the full dispatch-compute-combine pattern: a router produces per-token logits, <code class="docutils literal notranslate"><span class="pre">jax.lax.top_k</span></code> selects the top-k experts for each token, and a masked softmax computes the expert weights. Each expert then processes only its gathered tokens.</p>
+<section id="setup-and-imports">
+<h3>Setup and Imports<a class="headerlink" href="#setup-and-imports" title="Link to this heading">¶</a></h3>
+<p>First, we set up the environment and import all necessary libraries. Since we’re training on a CPU, we can emulate multiple devices by setting some environment variables for the XLA compiler.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;XLA_FLAGS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;--xla_force_host_platform_device_count=2&#39;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">PartitionSpec</span><span class="p">,</span> <span class="n">NamedSharding</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">flax.nnx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nnx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="device-mesh-and-sharding-configuration">
+<h3>Device Mesh and Sharding Configuration<a class="headerlink" href="#device-mesh-and-sharding-configuration" title="Link to this heading">¶</a></h3>
+<p>Here we create a device mesh and sharding specifications that will be used throughout the MoE implementation. Device mesh is a logical arrangement of devices along at least one axis. We’ll use a single axis and shard both our data and our experts along this axis. The other model weights will be replicated.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set up device mesh - all devices along a single &quot;devices&quot; axis</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Devices: </span><span class="si">{</span><span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">Mesh</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">(),</span> <span class="p">[</span><span class="s2">&quot;devices&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+<span class="n">num_devices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">devices</span><span class="p">())</span>
+
+<span class="c1"># Sharding spec for expert-parallel tensors</span>
+<span class="n">expert_spec</span> <span class="o">=</span> <span class="n">PartitionSpec</span><span class="p">(</span><span class="s2">&quot;devices&quot;</span><span class="p">,)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Devices: [CpuDevice(id=0), CpuDevice(id=1)]
+Mesh(&#39;devices&#39;: 2, axis_types=(Auto,))
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-configuration">
+<h3>Model Configuration<a class="headerlink" href="#model-configuration" title="Link to this heading">¶</a></h3>
+<p>The configuration defines all hyperparameters for our Mixture of Experts toy model. Key parameters:</p>
+<ul class="simple">
+<li><p><strong>n_experts</strong>: Number of experts</p></li>
+<li><p><strong>top_k</strong>: Number of experts each token can be routed to</p></li>
+<li><p><strong>load_factor</strong>: Controls buffer size for expert capacity</p></li>
+<li><p><strong>load_balancing_loss_coefficient</strong>: Coefficient for the load-balancing loss</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">unsafe_hash</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">():</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MoE&quot;</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">param_dtype</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span>
+    <span class="n">top_k</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">load_factor</span> <span class="o">=</span> <span class="mf">1.10</span>
+    <span class="n">load_balancing_loss_coeff</span> <span class="o">=</span> <span class="mf">0.01</span>
+    <span class="n">n_experts</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">n_embed</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">n_mlp_hidden</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">mlp_bias</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="sharded-experts">
+<h3>Sharded Experts<a class="headerlink" href="#sharded-experts" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">with_sharding_constraint</span></code> calls ensure tensors are properly distributed during forward pass.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">Experts</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
+        <span class="c1"># Use sharding annotations for expert weights</span>
+        <span class="n">init</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">with_partitioning</span><span class="p">(</span>
+            <span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">stddev</span><span class="o">=</span><span class="mf">0.02</span><span class="p">),</span>
+            <span class="n">sharding</span><span class="o">=</span><span class="n">expert_spec</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="n">init</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">default</span><span class="p">(),</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embed</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embed</span><span class="p">)))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># x: (n_experts, tokens_per_expert, n_embed)</span>
+        <span class="c1"># Apply sharding constraint to input</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">with_sharding_constraint</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">expert_spec</span><span class="p">)</span>
+        <span class="c1"># Each expert processes its slice: einsum over expert dimension</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;eti,eio-&gt;eto&#39;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w1</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">with_sharding_constraint</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">expert_spec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="moe-layer-with-router-and-load-balancing-loss">
+<h3>MoE Layer with Router and Load Balancing Loss<a class="headerlink" href="#moe-layer-with-router-and-load-balancing-loss" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">MOE</span></code> class combines routing and expert computation. First, a linear layer (the router) predicts which experts should process each token. This is executed for every sharded batch independently. Then, the top-k experts are picked for each token along with the corresponding expert weights. The dispatch operation then performs and all-to-all and gathers each expert’s tokens. Once each expert processes its respective set of tokens, they are scattered back to their original positions.</p>
+<p>The load balancing loss is computed as the coefficient of variation between two distributions:</p>
+<ol class="arabic simple">
+<li><p>frac_tokens: The actual fraction of tokens sent to each expert</p></li>
+<li><p>frac_router_probs: The average router probabilities assigned to each expert</p></li>
+</ol>
+<p>The loss encourages these two distributions to match:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">load_balance_loss</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">frac_tokens</span> <span class="o">*</span> <span class="n">frac_router_probs</span><span class="p">)</span> <span class="o">*</span> <span class="n">n_experts</span>
+</pre></div>
+</div>
+<p>This prevents any single expert from becoming a bottleneck and ensures all experts receive meaningful training signals. The coefficient <code class="docutils literal notranslate"><span class="pre">load_balance_loss_coeff</span></code> controls how strongly we penalize imbalance.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MOE</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
+        <span class="c1"># Router is replicated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">router_gate</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_embed</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,</span>
+            <span class="n">kernel_init</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">stddev</span><span class="o">=</span><span class="mf">0.02</span><span class="p">),</span>
+            <span class="n">bias_init</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>
+            <span class="n">use_bias</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">mlp_bias</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">experts</span> <span class="o">=</span> <span class="n">Experts</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="p">)</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">top_k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">n_experts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_factor</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_noise</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_balance_loss</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span> <span class="o">=</span> <span class="n">rngs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">x_flat</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+        
+        <span class="c1"># Router produces expert logits for each token</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">router_gate</span><span class="p">(</span><span class="n">x_flat</span><span class="p">)</span>  <span class="c1"># (B*T, n_experts)</span>
+        
+        <span class="c1"># Select top-k experts per token</span>
+        <span class="n">top_k_logits</span><span class="p">,</span> <span class="n">expert_indices</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">top_k</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">)</span>
+        
+        <span class="c1"># Create sparse logits for softmax (only top-k positions have real values)</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+        <span class="n">sparse_logits</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">put_along_axis</span><span class="p">(</span>
+            <span class="n">zeros</span><span class="p">,</span> <span class="n">expert_indices</span><span class="p">,</span> <span class="n">top_k_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">expert_weights</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">sparse_logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Gather tokens into expert buffers</span>
+        <span class="n">expert_capacity</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">load_factor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span> <span class="o">*</span> <span class="n">B</span> <span class="o">*</span> <span class="n">T</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span><span class="p">)</span>
+        <span class="n">expert_inputs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,</span> <span class="n">expert_capacity</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
+        <span class="n">input_counters</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update_expert_inputs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">carry</span><span class="p">):</span>
+            <span class="n">expert_inputs</span><span class="p">,</span> <span class="n">counters</span> <span class="o">=</span> <span class="n">carry</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">):</span>
+                <span class="n">expert_idx</span> <span class="o">=</span> <span class="n">expert_indices</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">token_pos</span> <span class="o">=</span> <span class="n">counters</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">]</span>
+                <span class="n">expert_inputs</span> <span class="o">=</span> <span class="n">expert_inputs</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">,</span> <span class="n">token_pos</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">x_flat</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">counters</span> <span class="o">=</span> <span class="n">counters</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">expert_inputs</span><span class="p">,</span> <span class="n">counters</span>
+
+        <span class="n">expert_inputs</span><span class="p">,</span> <span class="n">input_counters</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">B</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="n">update_expert_inputs</span><span class="p">,</span> <span class="p">(</span><span class="n">expert_inputs</span><span class="p">,</span> <span class="n">input_counters</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply sharding constraint to trigger all-to-all dispatch</span>
+        <span class="c1"># This moves tokens from batch-sharded to expert-sharded layout</span>
+        <span class="n">expert_inputs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">with_sharding_constraint</span><span class="p">(</span><span class="n">expert_inputs</span><span class="p">,</span> <span class="n">expert_spec</span><span class="p">)</span>
+
+        <span class="c1"># #ach expert processes its tokens</span>
+        <span class="n">expert_outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">experts</span><span class="p">(</span><span class="n">expert_inputs</span><span class="p">)</span>
+
+        <span class="c1"># Scatter results back to original positions</span>
+        <span class="n">output_counters</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x_flat</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">update_expert_outputs</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">carry</span><span class="p">):</span>
+            <span class="n">y_pred</span><span class="p">,</span> <span class="n">output_counters</span> <span class="o">=</span> <span class="n">carry</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">):</span>
+                <span class="n">expert_idx</span> <span class="o">=</span> <span class="n">expert_indices</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">token_pos</span> <span class="o">=</span> <span class="n">output_counters</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">]</span>
+                <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                    <span class="n">expert_outputs</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">,</span> <span class="n">token_pos</span><span class="p">]</span> <span class="o">*</span> <span class="n">expert_weights</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">expert_idx</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="n">output_counters</span> <span class="o">=</span> <span class="n">output_counters</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">expert_idx</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">output_counters</span>
+
+        <span class="n">y_pred</span><span class="p">,</span> <span class="n">output_counters</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">B</span> <span class="o">*</span> <span class="n">T</span><span class="p">,</span> <span class="n">update_expert_outputs</span><span class="p">,</span> <span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">output_counters</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply sharding constraint to trigger all-to-all combine</span>
+        <span class="c1"># This moves results from expert-sharded back to batch-sharded layout</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">with_sharding_constraint</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">expert_spec</span><span class="p">)</span>
+
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+        
+        <span class="c1"># Calculate load balancing loss</span>
+        <span class="c1"># Calculate fraction of tokens assigned to each expert</span>
+        <span class="n">frac_tokens</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">expert_indices</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">B</span> <span class="o">*</span> <span class="n">T</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_k</span><span class="p">)</span>
+        <span class="c1"># Calculate fraction of router probabilities assigned to each expert</span>
+        <span class="n">frac_router_probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">expert_weights</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">B</span> <span class="o">*</span> <span class="n">T</span><span class="p">)</span>
+        <span class="c1"># Load balancing loss encourages equal token distribution across experts</span>
+        <span class="n">load_balance_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">frac_tokens</span> <span class="o">*</span> <span class="n">frac_router_probs</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_experts</span>
+        <span class="k">return</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">load_balance_loss</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="training-setup">
+<h3>Training Setup<a class="headerlink" href="#training-setup" title="Link to this heading">¶</a></h3>
+<p>Now we set up the trainer. Since this is a regression task, we used an MSE loss with Adam as the optimizer.
+The synthetic data creates a clear routing signal: positive inputs go to expert 0, negative inputs go to expert 1. This tests whether the MoE learns to route correctly.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">load_balance_loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="n">total_loss</span> <span class="o">+</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">load_balance_loss</span>  <span class="c1"># Add small weight for load balancing</span>
+    <span class="k">return</span> <span class="n">total_loss</span><span class="p">,</span> <span class="n">y_pred</span>
+
+
+<span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">total_loss</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">),</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span>
+        <span class="n">loss_fn</span><span class="p">,</span> <span class="n">has_aux</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">total_loss</span>
+
+
+<span class="c1"># Training setup</span>
+<span class="n">D</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embed</span> 
+   
+<span class="n">default</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">69</span><span class="p">)</span>
+<span class="n">gate_noise</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span> <span class="n">gate_noise</span><span class="o">=</span><span class="n">gate_noise</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-creation">
+<h3>Model Creation<a class="headerlink" href="#model-creation" title="Link to this heading">¶</a></h3>
+<p>Next, we create the sharded model. The expert weights need to be sharded along the experts axis while the gate weights need to be replicated.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create model within mesh context for proper sharding</span>
+<span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_sharded_model</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">pspecs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">get_partition_spec</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">sharded_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">with_sharding_constraint</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">pspecs</span><span class="p">)</span>
+    <span class="n">nnx</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">sharded_state</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+
+<span class="k">with</span> <span class="n">mesh</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">create_sharded_model</span><span class="p">(</span><span class="n">MOE</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">rngs</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="mf">1e-2</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tx</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
+
+    <span class="c1"># Create data sharding for batch dimension</span>
+    <span class="n">data_sharding</span> <span class="o">=</span> <span class="n">NamedSharding</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">PartitionSpec</span><span class="p">(</span><span class="s2">&quot;devices&quot;</span><span class="p">,))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expert Layer Sharding:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">experts</span><span class="o">.</span><span class="n">w1</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">sharding</span><span class="o">.</span><span class="n">spec</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">experts</span><span class="o">.</span><span class="n">w1</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">sharding</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Router Sharding:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">router_gate</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">sharding</span><span class="o">.</span><span class="n">spec</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">router_gate</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">sharding</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Expert Layer Sharding:
+PartitionSpec(&#39;devices&#39;,)
+NamedSharding(mesh=Mesh(&#39;devices&#39;: 2, axis_types=(Auto,)), spec=PartitionSpec(&#39;devices&#39;,), memory_kind=unpinned_host)
+Router Sharding:
+PartitionSpec()
+NamedSharding(mesh=Mesh(&#39;devices&#39;: 2, axis_types=(Auto,)), spec=PartitionSpec(), memory_kind=unpinned_host)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="dataset-generation">
+<h3>Dataset Generation<a class="headerlink" href="#dataset-generation" title="Link to this heading">¶</a></h3>
+<p>We create a synthetic dataset where each sample has shape <code class="docutils literal notranslate"><span class="pre">(B,</span> <span class="pre">T,</span> <span class="pre">C)</span></code> representing a batch of sequences with <code class="docutils literal notranslate"><span class="pre">C</span></code>-dimensional embeddings. The target transformation depends on the sign of the first feature dimension.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span> <span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
+<span class="n">expert_ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">t</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">2000</span><span class="p">),</span> <span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">C</span><span class="p">)),</span>
+    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">3000</span><span class="p">),</span> <span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">C</span><span class="p">)),</span>
+<span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">eid</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">eid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xi</span> <span class="o">@</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xi</span> <span class="o">@</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">xi</span><span class="p">,</span> <span class="n">ei</span><span class="p">:</span> <span class="n">transform</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">ei</span><span class="p">))(</span><span class="n">x</span><span class="p">,</span> <span class="n">expert_ids</span><span class="p">)</span>
+
+<span class="c1"># Training indices</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">D</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="training">
+<h3>Training<a class="headerlink" href="#training" title="Link to this heading">¶</a></h3>
+<p>Finally, let’s overfit the model on our toy dataset.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Training loop</span>
+<span class="k">with</span> <span class="n">mesh</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+            <span class="c1"># Shard data across devices</span>
+            <span class="n">x_batch</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data_sharding</span><span class="p">)</span>
+            <span class="n">y_batch</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">device_put</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">data_sharding</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">x_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Epoch: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, Loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">:</span><span class="s2">0.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch: 0, Loss: 2.7100
+Epoch: 1, Loss: 0.0981
+Epoch: 2, Loss: 0.0763
+Epoch: 3, Loss: 0.0608
+Epoch: 4, Loss: 0.0492
+Epoch: 5, Loss: 0.0409
+Epoch: 6, Loss: 0.0355
+Epoch: 7, Loss: 0.0321
+Epoch: 8, Loss: 0.0301
+Epoch: 9, Loss: 0.0289
+</pre></div>
+</div>
+</div>
+</div>
+<p>The model was able to successfully overfit on our dataset.</p>
+<p>This basic design can be used to create and train much larger models. I trained a large scale transformer model with 30 layers on on the HuggingFace Smol LM Corpus <a class="reference external" href="https://github.com/novastar53/tiny_moe">here</a>. We will cover that in our next post on this topic.</p>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Jacobs, R. A., Jordan, M. I., Nowlan, S. J., &amp; Hinton, G. E. (1991). <em>Adaptive Mixtures of Local Experts</em>. Neural Computation.</p></li>
+<li><p>Shazeer, N., Mirhoseini, A., Maziarz, K., Davis, A., Le, Q., Hinton, G., &amp; Dean, J. (2017). <em>Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer</em>. ICLR.</p></li>
+<li><p>Lepikhin, D., Lee, H., Xu, Y., Chen, D., Firat, O., Huang, Y., … &amp; Chen, Z. (2021). <em>GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding</em>. ICLR.</p></li>
+<li><p>Fedus, W., Zoph, B., &amp; Shazeer, N. (2022). <em>Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity</em>. JMLR.</p></li>
+<li><p>Du, N., Huang, Y., Dai, A. M., Tong, S., Lepikhin, D., Xu, Y., … &amp; Le, Q. V. (2022). <em>GLaM: Efficient Scaling of Language Models with Mixture-of-Experts</em>. ICML.</p></li>
+<li><p>Riquelme, C., Puigcerver, J., Mustafa, B., Neumann, M., Jenatton, R., Susano Pinto, A., … &amp; Houlsby, N. (2021). <em>Scaling Vision with Sparse Mixture of Experts</em>. NeurIPS.</p></li>
+<li><p>Jiang, A. Q., Sablayrolles, A., Roux, A., Mensch, A., Savary, B., Bamford, C., … &amp; Sayed, W. E. (2024). <em>Mixtral of Experts</em>. arXiv.</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst Data Science Blog"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst Data Science Blog</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Explorations in Data Science</a></li>
+      <li>Next: <a href="pallas-softmax.html" title="next chapter">How to Write a Softmax Kernel in Pallas</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/how-mixture-of-experts-works-part-2.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
