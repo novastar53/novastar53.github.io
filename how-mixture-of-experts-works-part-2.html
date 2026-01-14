@@ -102,9 +102,7 @@ First, each GPU gathers its tokens into expert-specific buffers. After this loca
 
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;XLA_FLAGS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;--xla_force_host_platform_device_count=2&#39;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -148,7 +146,7 @@ Mesh(&#39;devices&#39;: 2, axis_types=(Auto,))
 <li><p><strong>n_experts</strong>: Number of experts</p></li>
 <li><p><strong>top_k</strong>: Number of experts each token can be routed to</p></li>
 <li><p><strong>load_factor</strong>: Controls buffer size for expert capacity</p></li>
-<li><p><strong>load_balancing_loss_coefficient</strong>: Coefficient for the load-balancing loss</p></li>
+<li><p><strong>load_balancing_loss_coeff</strong>: Coefficient for the load-balancing loss</p></li>
 </ul>
 <div class="cell tag_skip-execution docutils container">
 <div class="cell_input docutils container">
@@ -322,25 +320,19 @@ The synthetic data creates a clear routing signal: positive inputs go to expert 
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
     <span class="n">y_pred</span><span class="p">,</span> <span class="n">load_balance_loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">total_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">total_loss</span> <span class="o">=</span> <span class="n">total_loss</span> <span class="o">+</span> <span class="mf">0.01</span> <span class="o">*</span> <span class="n">load_balance_loss</span>  <span class="c1"># Add small weight for load balancing</span>
-    <span class="k">return</span> <span class="n">total_loss</span><span class="p">,</span> <span class="n">y_pred</span>
-
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">loss</span> <span class="o">+=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_balancing_loss_coeff</span> <span class="o">*</span> <span class="n">load_balance_loss</span>  
+    <span class="k">return</span> <span class="n">loss</span>
 
 <span class="nd">@nnx</span><span class="o">.</span><span class="n">jit</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-    <span class="p">(</span><span class="n">total_loss</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">),</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span>
-        <span class="n">loss_fn</span><span class="p">,</span> <span class="n">has_aux</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">total_loss</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
     <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">grads</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">total_loss</span>
 
-
-<span class="c1"># Training setup</span>
 <span class="n">D</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_experts</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embed</span> 
-   
-<span class="n">default</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">69</span><span class="p">)</span>
-<span class="n">gate_noise</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span> <span class="n">gate_noise</span><span class="o">=</span><span class="n">gate_noise</span><span class="p">)</span>
+<span class="n">default</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">rngs</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -367,8 +359,6 @@ The synthetic data creates a clear routing signal: positive inputs go to expert 
     <span class="n">tx</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="mf">1e-2</span><span class="p">)</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tx</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
 
-    <span class="c1"># Create data sharding for batch dimension</span>
-    <span class="n">data_sharding</span> <span class="o">=</span> <span class="n">NamedSharding</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">PartitionSpec</span><span class="p">(</span><span class="s2">&quot;devices&quot;</span><span class="p">,))</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expert Layer Sharding:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">experts</span><span class="o">.</span><span class="n">w1</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">sharding</span><span class="o">.</span><span class="n">spec</span><span class="p">)</span>
@@ -423,6 +413,8 @@ NamedSharding(mesh=Mesh(&#39;devices&#39;: 2, axis_types=(Auto,)), spec=Partitio
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Training loop</span>
 <span class="k">with</span> <span class="n">mesh</span><span class="p">:</span>
+    <span class="c1"># Create data sharding for batch dimension</span>
+    <span class="n">data_sharding</span> <span class="o">=</span> <span class="n">NamedSharding</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">PartitionSpec</span><span class="p">(</span><span class="s2">&quot;devices&quot;</span><span class="p">,))</span>
     <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
             <span class="c1"># Shard data across devices</span>
@@ -435,22 +427,22 @@ NamedSharding(mesh=Mesh(&#39;devices&#39;: 2, axis_types=(Auto,)), spec=Partitio
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch: 0, Loss: 2.7100
-Epoch: 1, Loss: 0.0981
-Epoch: 2, Loss: 0.0763
-Epoch: 3, Loss: 0.0608
-Epoch: 4, Loss: 0.0492
-Epoch: 5, Loss: 0.0409
-Epoch: 6, Loss: 0.0355
-Epoch: 7, Loss: 0.0321
-Epoch: 8, Loss: 0.0301
-Epoch: 9, Loss: 0.0289
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Epoch: 0, Loss: 2.7845
+Epoch: 1, Loss: 0.0999
+Epoch: 2, Loss: 0.0780
+Epoch: 3, Loss: 0.0624
+Epoch: 4, Loss: 0.0505
+Epoch: 5, Loss: 0.0419
+Epoch: 6, Loss: 0.0361
+Epoch: 7, Loss: 0.0325
+Epoch: 8, Loss: 0.0303
+Epoch: 9, Loss: 0.0290
 </pre></div>
 </div>
 </div>
 </div>
 <p>The model was able to successfully overfit on our dataset.</p>
-<p>This basic design can be used to create and train much larger models. I trained a large scale transformer model with 30 layers on on the HuggingFace Smol LM Corpus <a class="reference external" href="https://github.com/novastar53/tiny_moe">here</a>. We will cover that in our next post on this topic.</p>
+<p>This basic design can be used to create and train much larger models. I trained a large scale transformer model with 30 layers and around 400mm paramters on 8GPUs <a class="reference external" href="https://github.com/novastar53/tiny_moe">here</a>. We will cover that in our next post on this topic.</p>
 </section>
 </section>
 <section id="references">
