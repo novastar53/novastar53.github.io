@@ -140,7 +140,7 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Loaded IMDb dataset with 25000 train samples and 25000 test samples.
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2026-01-02 05:48:52.616670: W tensorflow/core/kernels/data/cache_dataset_ops.cc:916] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2026-01-14 08:35:57.556178: W tensorflow/core/kernels/data/cache_dataset_ops.cc:916] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 </pre></div>
 </div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
@@ -416,9 +416,9 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="intro.html">
-              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst Data Science Blog"/>
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
             </a></p>
-<h1 class="logo"><a href="intro.html">Starburst Data Science Blog</a></h1>
+<h1 class="logo"><a href="intro.html">Starburst</a></h1>
 
 
 
@@ -429,6 +429,8 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 
 <h3>Navigation</h3>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
