@@ -8,7 +8,7 @@ description: A blog exploring AI and Machine Learning
 
 sphinx:
   config:
-    project: 'Starburst Data Science Blog'
+    project: 'Starburst'
     author: 'Vikram Pawar'
     copyright: 'Vikram Pawar [novastar53.github.io]'
     html_theme: alabaster #sphinx_book_theme 
