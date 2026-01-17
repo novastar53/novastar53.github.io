@@ -4,13 +4,14 @@
 format: jb-article
 root: intro
 sections:
+- file: pallas-flash-attn
 - file: how-mixture-of-experts-works-part-2
-- file: pallas-softmax.ipynb
-- file: pallas-matmul.ipynb
+- file: pallas-matmul
+- file: pallas-softmax
 - file: how-mixture-of-experts-works-part-1
 - file: how-batchnorm-works-part-2
-- file: how-residual-connections-work
 - file: how-positional-embeddings-work
+- file: how-residual-connections-work
 - file: how-dropout-works
 - file: how-batchnorm-works
 - file: nadaraya-watson-kernel-regression

@@ -24,9 +24,11 @@ init:
 
 build:
 	export PATH="$(PATH):/Library/TeX/texbin/latex"
+	. $(VENV) && python generate_sidebar.py
 	. $(VENV) && jupyter-book build site/ --verbose
+	cp -r site/_static/* site/_build/html/_static/  # Ensure latest static files are used
 	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir
-	cp CNAME site/_build/html/  # Preserve custom domain for GitHub Pages 
+	cp CNAME site/_build/html/  # Preserve custom domain for GitHub Pages
 
 deploy-local:
 	. $(VENV) && python -m http.server 8000 --directory site/_build/html

@@ -1,0 +1,57 @@
+.sphinxsidebarwrapper > .caption {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #404040;
+  background-color: #e6e6e6;
+  border-bottom: 1px solid #ccc;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  margin: 0;
+}
+
+.sphinxsidebarwrapper > .caption:hover {
+  background-color: #d0d0d0;
+}
+
+.sphinxsidebarwrapper > .caption::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.5rem;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid #404040;
+  transition: transform 0.2s ease;
+}
+
+.sphinxsidebarwrapper > .caption.expanded::before {
+  transform: rotate(90deg);
+}
+
+.sphinxsidebarwrapper > ul > section,
+.sphinxsidebarwrapper > section {
+  display: none;
+}
+
+.sphinxsidebarwrapper > ul > .caption + section,
+.sphinxsidebarwrapper > .caption + section {
+  display: none;
+}
+
+.sphinxsidebarwrapper > ul > .caption.expanded + section,
+.sphinxsidebarwrapper > .caption.expanded + section {
+  display: block;
+}
+
+.sphinxsidebarwrapper > section ul {
+  margin-left: 0.5rem;
+}
+
+.sphinxsidebarwrapper > section li {
+  padding: 0.2rem 0;
+}

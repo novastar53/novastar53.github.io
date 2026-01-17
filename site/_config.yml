@@ -17,6 +17,10 @@ sphinx:
       body_max_width: 1024
       sidebar_width: 25%
       page_width: 99%
+    html_css_files:
+      - css/custom.css
+    html_js_files:
+      - js/custom.js
     nb_execution_show_tb: true
     nb_execution_timeout: 3600
   #extra_extensions:
