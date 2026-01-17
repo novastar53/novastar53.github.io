@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How to Write a Flash Attention Kernel in Pallas &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=a74bd6dc" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script src="_static/js/custom.js?v=aee3bb7e"></script>
+    <script src="_static/js/sidebar_template.js?v=b5ee7a45"></script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How do Mixture of Experts Layers Work? Part 2" href="how-mixture-of-experts-works-part-2.html" />
+    <link rel="prev" title="Machine Learning Blog" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-to-write-a-flash-attention-kernel-in-pallas">
+<h1>How to Write a Flash Attention Kernel in Pallas<a class="headerlink" href="#how-to-write-a-flash-attention-kernel-in-pallas" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Link back to the softmax post (this builds on online softmax)</p></li>
+<li><p>Why attention is a bottleneck: O(N²) memory for the attention matrix</p></li>
+<li><p>Flash attention’s promise: O(N) memory, same result</p></li>
+</ul>
+</section>
+<section id="standard-attention">
+<h2>Standard Attention<a class="headerlink" href="#standard-attention" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Mathematical definition: <code class="docutils literal notranslate"><span class="pre">softmax(QK^T</span> <span class="pre">/</span> <span class="pre">√d)</span> <span class="pre">&#64;</span> <span class="pre">V</span></code></p></li>
+<li><p>Naive JAX implementation with einsum</p></li>
+<li><p>The memory problem: for sequence length N, we materialize an N×N matrix</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mha_reference</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reference multi-head attention: softmax(Q @ K^T / sqrt(d)) @ V&quot;&quot;&quot;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="n">logits</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;bhqd,bhkd-&gt;bhqk&#39;</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">scale</span>
+    <span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">o</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;bhqk,bhkd-&gt;bhqd&#39;</span><span class="p">,</span> <span class="n">probs</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">o</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="the-flash-attention-algorithm">
+<h2>The Flash Attention Algorithm<a class="headerlink" href="#the-flash-attention-algorithm" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Key insight: we never need the full attention matrix</p></li>
+<li><p>Combine online softmax with output accumulation</p></li>
+<li><p>Walk through the algorithm:</p>
+<ul>
+<li><p>Tile Q (outer parallel loop)</p></li>
+<li><p>Tile K, V (inner sequential loop)</p></li>
+<li><p>Maintain running max <code class="docutils literal notranslate"><span class="pre">m</span></code>, sum <code class="docutils literal notranslate"><span class="pre">l</span></code>, and output accumulator <code class="docutils literal notranslate"><span class="pre">o</span></code></p></li>
+<li><p>Correction factor when max changes</p></li>
+<li><p>Final normalization</p></li>
+</ul>
+</li>
+<li><p>Python reference implementation (like your <code class="docutils literal notranslate"><span class="pre">online_softmax</span></code> function)</p></li>
+</ul>
+</section>
+<section id="forward-pass-kernel">
+<h2>Forward Pass Kernel<a class="headerlink" href="#forward-pass-kernel" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>BlockSpec design: Q tiled, K/V full sequence for inner loop</p></li>
+<li><p>The kernel implementation</p></li>
+<li><p>Storing logsumexp for backward pass</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.experimental</span><span class="w"> </span><span class="kn">import</span> <span class="n">pallas</span> <span class="k">as</span> <span class="n">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jax.experimental.pallas</span><span class="w"> </span><span class="kn">import</span> <span class="n">triton</span> <span class="k">as</span> <span class="n">plgpu</span>
+
+<span class="n">INTERPRET_MODE</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Set to False on GPU</span>
+
+<span class="n">BLOCK_T</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">NUM_WARPS</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">NUM_STAGES</span> <span class="o">=</span> <span class="mi">2</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_fwd_kernel</span><span class="p">(</span><span class="n">q_ref</span><span class="p">,</span> <span class="n">k_ref</span><span class="p">,</span> <span class="n">v_ref</span><span class="p">,</span> <span class="n">o_ref</span><span class="p">,</span> <span class="n">logsumexp_ref</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">num_k_blocks</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention forward kernel.&quot;&quot;&quot;</span>
+    <span class="n">q_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">q_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">o_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">q_reg</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">max_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">BLOCK_T</span><span class="p">,),</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">l_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">BLOCK_T</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">)</span>
+        <span class="n">k_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">k_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">v_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">v_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">s_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">q_reg</span><span class="p">,</span> <span class="n">k_blk</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+        <span class="n">max_blk</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">max_reg</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">s_blk</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">s_blk</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s_blk</span> <span class="o">-</span> <span class="n">max_blk</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span>
+        <span class="n">l_blk</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">s_blk</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">o_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">s_blk</span><span class="p">,</span> <span class="n">v_blk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">max_blk</span><span class="p">,</span> 
+                <span class="n">l_reg</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">max_reg</span> <span class="o">-</span> <span class="n">max_blk</span><span class="p">)</span> <span class="o">+</span> <span class="n">l_blk</span><span class="p">,</span> 
+                <span class="n">o_reg</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">max_reg</span> <span class="o">-</span> <span class="n">max_blk</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">o_blk</span><span class="p">)</span>
+
+    <span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_k_blocks</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span><span class="p">))</span>
+    <span class="n">o_reg</span> <span class="o">=</span> <span class="n">o_reg</span> <span class="o">/</span> <span class="n">l_reg</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">logsumexp_reg</span> <span class="o">=</span> <span class="n">max_reg</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">l_reg</span><span class="p">)</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">o_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">o_reg</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">o_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">logsumexp_reg</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention forward pass.&quot;&quot;&quot;</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">B_flat</span> <span class="o">=</span> <span class="n">B</span><span class="o">*</span><span class="n">H</span>
+    <span class="n">q_flat</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">k_flat</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">v_flat</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+    <span class="n">num_k_blocks</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">)</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">))</span>
+
+    <span class="n">out_flat</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
+        <span class="n">partial</span><span class="p">(</span><span class="n">flash_attention_fwd_kernel</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span> <span class="n">num_k_blocks</span><span class="o">=</span><span class="n">num_k_blocks</span><span class="p">),</span>
+        <span class="n">out_shape</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">(</span><span class="n">q_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">q_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">((</span><span class="n">B</span><span class="o">*</span><span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="n">q_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="p">],</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="p">],</span>
+        <span class="n">out_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+        <span class="p">],</span>
+        <span class="n">interpret</span><span class="o">=</span><span class="n">INTERPRET_MODE</span><span class="p">,</span>
+        <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span>
+            <span class="n">num_warps</span><span class="o">=</span><span class="n">NUM_WARPS</span><span class="p">,</span>
+            <span class="n">num_stages</span><span class="o">=</span><span class="n">NUM_STAGES</span>
+        <span class="p">)</span>
+    <span class="p">)(</span><span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">out_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">logsumexp</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="performance">
+<h2>Performance<a class="headerlink" href="#performance" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Benchmark against JAX’s standard attention</p></li>
+<li><p>Memory comparison (if possible to demonstrate)</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">bench</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>  <span class="c1"># warmup</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">):</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">()</span>
+        <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="backward-pass">
+<h2>Backward Pass<a class="headerlink" href="#backward-pass" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Mathematical derivation of gradients dQ, dK, dV</p></li>
+<li><p>The recomputation strategy: recompute attention weights from logsumexp</p></li>
+<li><p>Two-pass approach: one for dK/dV, one for dQ (as in the reference)</p></li>
+<li><p>Kernel implementation</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_kernel</span><span class="p">(</span><span class="n">q_ref</span><span class="p">,</span> <span class="n">k_ref</span><span class="p">,</span> <span class="n">v_ref</span><span class="p">,</span> <span class="n">o_ref</span><span class="p">,</span> <span class="n">do_ref</span><span class="p">,</span> <span class="n">logsumexp_ref</span><span class="p">,</span>
+                                <span class="n">dq_ref</span><span class="p">,</span> <span class="n">dk_ref</span><span class="p">,</span> <span class="n">dv_ref</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_kv_blocks</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention backward kernel.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+
+<span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">,</span> <span class="n">do</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention backward pass.&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="custom-vjp-integration">
+<h2>Custom VJP Integration<a class="headerlink" href="#custom-vjp-integration" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Wiring up forward and backward with <code class="docutils literal notranslate"><span class="pre">jax.custom_vjp</span></code></p></li>
+<li><p>The residuals needed (Q, K, V, O, logsumexp)</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@jax</span><span class="o">.</span><span class="n">custom_vjp</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention with custom backward pass.&quot;&quot;&quot;</span>
+    <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">o</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_fwd_rule</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Forward rule for custom_vjp.&quot;&quot;&quot;</span>
+    <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">o</span><span class="p">,</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_rule</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">do</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Backward rule for custom_vjp.&quot;&quot;&quot;</span>
+    <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">res</span>
+    <span class="n">dq</span><span class="p">,</span> <span class="n">dk</span><span class="p">,</span> <span class="n">dv</span> <span class="o">=</span> <span class="n">flash_attention_bwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">,</span> <span class="n">do</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dq</span><span class="p">,</span> <span class="n">dk</span><span class="p">,</span> <span class="n">dv</span>
+
+
+<span class="n">flash_attention</span><span class="o">.</span><span class="n">defvjp</span><span class="p">(</span><span class="n">flash_attention_fwd_rule</span><span class="p">,</span> <span class="n">flash_attention_bwd_rule</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="evaluation">
+<h2>Evaluation<a class="headerlink" href="#evaluation" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Gradient correctness check against JAX autodiff</p></li>
+<li><p>Train a small transformer or attention layer to verify end-to-end</p></li>
+</ul>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">64</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">q</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">k</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">do</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="c1"># Forward check</span>
+<span class="n">o_ref</span> <span class="o">=</span> <span class="n">mha_reference</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reference output shape: </span><span class="si">{</span><span class="n">o_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">o_flash</span> <span class="o">=</span> <span class="n">flash_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Flash attention output shape: </span><span class="si">{</span><span class="n">o_flash</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Forward pass matches: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">o_flash</span><span class="p">,</span><span class="w"> </span><span class="n">o_ref</span><span class="p">,</span><span class="w"> </span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span><span class="w"> </span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Reference output shape: (2, 4, 256, 64)
+Flash attention output shape: (2, 4, 256, 64)
+Forward pass matches: True
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Backward check (reference)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">loss_ref</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mha_reference</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">do</span><span class="p">)</span>
+
+<span class="n">dq_ref</span><span class="p">,</span> <span class="n">dk_ref</span><span class="p">,</span> <span class="n">dv_ref</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">loss_ref</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reference gradient shapes: dq=</span><span class="si">{</span><span class="n">dq_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dk=</span><span class="si">{</span><span class="n">dk_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dv=</span><span class="si">{</span><span class="n">dv_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># TODO: Uncomment once backward pass is implemented</span>
+<span class="c1"># def loss_flash(q, k, v):</span>
+<span class="c1">#     return jnp.sum(flash_attention(q, k, v) * do)</span>
+<span class="c1">#</span>
+<span class="c1"># dq_flash, dk_flash, dv_flash = jax.grad(loss_flash, argnums=(0, 1, 2))(q, k, v)</span>
+<span class="c1"># print(f&quot;Flash attention gradient shapes: dq={dq_flash.shape}, dk={dk_flash.shape}, dv={dv_flash.shape}&quot;)</span>
+<span class="c1"># print(f&quot;dQ matches: {jnp.allclose(dq_flash, dq_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
+<span class="c1"># print(f&quot;dK matches: {jnp.allclose(dk_flash, dk_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
+<span class="c1"># print(f&quot;dV matches: {jnp.allclose(dv_flash, dv_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Reference gradient shapes: dq=(2, 4, 256, 64), dk=(2, 4, 256, 64), dv=(2, 4, 256, 64)
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Recap of key ideas</p></li>
+<li><p>Potential extensions: causal masking, multi-query attention</p></li>
+<li><p>Link to further resources (FlashAttention paper, JAX Pallas docs)</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Dao, T. (2023). FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning. <em>arXiv preprint arXiv:2307.08691</em>. <a class="reference external" href="https://arxiv.org/abs/2307.08691">https://arxiv.org/abs/2307.08691</a></p></li>
+</ul>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to Write a Flash Attention Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_layernorm_works.html">How and Why Does Layer Normalization Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work-part-2.html">How Positional Embeddings Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+<li class="toctree-l1"><a class="reference internal" href="why-tokenize.html">Why Tokenize?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-self-attention-works.html">How and Why does Self Attention Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rope-embeddings.html">What are RopE Embeddings?</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Machine Learning Blog</a></li>
+      <li>Next: <a href="how-mixture-of-experts-works-part-2.html" title="next chapter">How do Mixture of Experts Layers Work? Part 2</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/pallas-flash-attn.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
