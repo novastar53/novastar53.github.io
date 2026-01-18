@@ -43,9 +43,7 @@
       });
 
       if (section.querySelectorAll('li').length > 0) {
-        if (year === years[years.length - 1]) {
-          header.classList.add('expanded');
-        }
+        header.classList.add('expanded');
 
         header.addEventListener('click', function() {
           this.classList.toggle('expanded');
@@ -53,9 +51,7 @@
         });
 
         const stored = localStorage.getItem('sidebar_year_' + year);
-        if (stored === 'true') {
-          header.classList.add('expanded');
-        } else if (stored === 'false' && year !== years[years.length - 1]) {
+        if (stored === 'false') {
           header.classList.remove('expanded');
         }
 
