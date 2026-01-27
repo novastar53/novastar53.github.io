@@ -30,6 +30,8 @@
     <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/custom.js?v=8606884e"></script>
     <script src="_static/js/sidebar_template.js?v=e363622b"></script>
     <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
@@ -123,7 +125,8 @@
 
 <span class="n">INTERPRET_MODE</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Set to False on GPU</span>
 
-<span class="n">BLOCK_T</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">BLOCK_R</span> <span class="o">=</span> <span class="mi">64</span>  <span class="c1"># Block size for rows (Q blocks)</span>
+<span class="n">BLOCK_C</span> <span class="o">=</span> <span class="mi">64</span>  <span class="c1"># Block size for columns (KV blocks)</span>
 <span class="n">NUM_WARPS</span> <span class="o">=</span> <span class="mi">4</span>
 <span class="n">NUM_STAGES</span> <span class="o">=</span> <span class="mi">2</span>
 </pre></div>
@@ -136,12 +139,13 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention forward kernel.&quot;&quot;&quot;</span>
     <span class="n">q_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">q_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">o_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">q_reg</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">max_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">BLOCK_T</span><span class="p">,),</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="n">l_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">BLOCK_T</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">max_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">BLOCK_R</span><span class="p">,),</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">l_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">BLOCK_R</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">logsumexp_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">BLOCK_R</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span> <span class="o">=</span> <span class="n">args</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">)</span>
         <span class="n">k_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">k_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">v_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">v_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">s_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">q_reg</span><span class="p">,</span> <span class="n">k_blk</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
@@ -154,8 +158,8 @@
                 <span class="n">o_reg</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">max_reg</span> <span class="o">-</span> <span class="n">max_blk</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">o_blk</span><span class="p">)</span>
 
     <span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_k_blocks</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">max_reg</span><span class="p">,</span> <span class="n">l_reg</span><span class="p">,</span> <span class="n">o_reg</span><span class="p">))</span>
-    <span class="n">o_reg</span> <span class="o">=</span> <span class="n">o_reg</span> <span class="o">/</span> <span class="n">l_reg</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="n">logsumexp_reg</span> <span class="o">=</span> <span class="n">max_reg</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">l_reg</span><span class="p">)</span>
+    <span class="n">o_reg</span> <span class="o">=</span> <span class="n">o_reg</span> <span class="o">/</span> <span class="n">l_reg</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
     <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">o_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">o_reg</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">o_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
     <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">logsumexp_reg</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
 </pre></div>
@@ -173,9 +177,8 @@
     <span class="n">k_flat</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
     <span class="n">v_flat</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
-    <span class="n">num_k_blocks</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">)</span>
-
-    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">))</span>
+    <span class="n">num_k_blocks</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">))</span>
 
     <span class="n">out_flat</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
         <span class="n">partial</span><span class="p">(</span><span class="n">flash_attention_fwd_kernel</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span> <span class="n">num_k_blocks</span><span class="o">=</span><span class="n">num_k_blocks</span><span class="p">),</span>
@@ -185,13 +188,13 @@
         <span class="p">],</span>
         <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
         <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
-            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
             <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
             <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
         <span class="p">],</span>
         <span class="n">out_specs</span><span class="o">=</span><span class="p">[</span>
-            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
-            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_T</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
         <span class="p">],</span>
         <span class="n">interpret</span><span class="o">=</span><span class="n">INTERPRET_MODE</span><span class="p">,</span>
         <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span>
@@ -207,12 +210,14 @@
 </div>
 </div>
 </section>
-<section id="performance">
-<h2>Performance<a class="headerlink" href="#performance" title="Link to this heading">¶</a></h2>
-<ul class="simple">
-<li><p>Benchmark against JAX’s standard attention</p></li>
-<li><p>Memory comparison (if possible to demonstrate)</p></li>
-</ul>
+<section id="performance-comparison">
+<h2>Performance Comparison<a class="headerlink" href="#performance-comparison" title="Link to this heading">¶</a></h2>
+<p>We compare our Pallas flash attention implementation against:</p>
+<ol class="arabic simple">
+<li><p><strong>JAX cuDNN</strong>: <code class="docutils literal notranslate"><span class="pre">jax.nn.dot_product_attention(implementation='cudnn')</span></code> - NVIDIA’s highly optimized implementation</p></li>
+<li><p><strong>Reference (materialized)</strong>: Standard attention that materializes the full N×N attention matrix</p></li>
+</ol>
+<p>Note: The cuDNN implementation requires a GPU with cuDNN installed and uses float16 for optimal performance. Set <code class="docutils literal notranslate"><span class="pre">INTERPRET_MODE</span> <span class="pre">=</span> <span class="pre">False</span></code> to run on GPU.</p>
 <div class="cell tag_skip-execution docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -238,27 +243,351 @@
 </div>
 </div>
 </div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Performance benchmark (requires GPU with cuDNN)</span>
+<span class="c1"># Skip this cell if running on CPU</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">benchmark_attention</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark attention implementations.&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+    
+    <span class="c1"># Use float16 for cuDNN compatibility</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">64</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+    
+    <span class="n">q</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+    <span class="n">do</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Benchmark shape: B=</span><span class="si">{</span><span class="n">B</span><span class="si">}</span><span class="s2">, H=</span><span class="si">{</span><span class="n">H</span><span class="si">}</span><span class="s2">, T=</span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2">, D=</span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">, dtype=float16&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">bench_fwd</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="c1"># Warmup</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="c1"># Bench</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">):</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>  <span class="c1"># ms</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">bench_bwd</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">do</span><span class="p">,</span> <span class="n">iters</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="c1"># Warmup</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">grads</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">do</span><span class="p">),</span> <span class="n">argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">grads</span><span class="p">)</span>
+        <span class="c1"># Bench</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">):</span>
+            <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+            <span class="n">grads</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="k">lambda</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">do</span><span class="p">),</span> <span class="n">argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">block_until_ready</span><span class="p">(</span><span class="n">grads</span><span class="p">)</span>
+            <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>  <span class="c1"># ms</span>
+
+    <span class="c1"># JAX cuDNN (requires GPU)</span>
+    <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">jax_cudnn_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="c1"># Transpose from (B, H, T, D) to (B, T, H, D) for jax.nn.dot_product_attention</span>
+        <span class="n">q_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">k_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">v_t</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dot_product_attention</span><span class="p">(</span><span class="n">q_t</span><span class="p">,</span> <span class="n">k_t</span><span class="p">,</span> <span class="n">v_t</span><span class="p">,</span> <span class="n">implementation</span><span class="o">=</span><span class="s1">&#39;cudnn&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="c1"># Our Pallas implementation</span>
+    <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pallas_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">flash_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+    <span class="c1"># Reference (materialized attention matrix)</span>
+    <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">reference_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">mha_reference</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Forward pass:&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">t_cudnn</span> <span class="o">=</span> <span class="n">bench_fwd</span><span class="p">(</span><span class="n">jax_cudnn_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  JAX cuDNN:              </span><span class="si">{</span><span class="n">t_cudnn</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  JAX cuDNN:              N/A (cuDNN not available)&quot;</span><span class="p">)</span>
+        <span class="n">t_cudnn</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="n">t_pallas</span> <span class="o">=</span> <span class="n">bench_fwd</span><span class="p">(</span><span class="n">pallas_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Our Pallas:             </span><span class="si">{</span><span class="n">t_pallas</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    
+    <span class="n">t_ref</span> <span class="o">=</span> <span class="n">bench_fwd</span><span class="p">(</span><span class="n">reference_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reference (materialized): </span><span class="si">{</span><span class="n">t_ref</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">t_cudnn</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  Pallas vs cuDNN: </span><span class="si">{</span><span class="n">t_pallas</span><span class="o">/</span><span class="n">t_cudnn</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x slower&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Backward pass:&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">t_cudnn_bwd</span> <span class="o">=</span> <span class="n">bench_bwd</span><span class="p">(</span><span class="n">jax_cudnn_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">do</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  JAX cuDNN:              </span><span class="si">{</span><span class="n">t_cudnn_bwd</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  JAX cuDNN:              N/A (cuDNN not available)&quot;</span><span class="p">)</span>
+        <span class="n">t_cudnn_bwd</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="n">t_pallas_bwd</span> <span class="o">=</span> <span class="n">bench_bwd</span><span class="p">(</span><span class="n">pallas_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">do</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Our Pallas:             </span><span class="si">{</span><span class="n">t_pallas_bwd</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    
+    <span class="n">t_ref_bwd</span> <span class="o">=</span> <span class="n">bench_bwd</span><span class="p">(</span><span class="n">reference_attention</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">do</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reference (materialized): </span><span class="si">{</span><span class="n">t_ref_bwd</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">t_cudnn_bwd</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  Pallas vs cuDNN: </span><span class="si">{</span><span class="n">t_pallas_bwd</span><span class="o">/</span><span class="n">t_cudnn_bwd</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x slower&quot;</span><span class="p">)</span>
+
+<span class="c1"># Uncomment to run benchmark (requires GPU):</span>
+<span class="c1"># benchmark_attention()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="example-results-rtx-4000-ada">
+<h3>Example Results (RTX 4000 Ada)<a class="headerlink" href="#example-results-rtx-4000-ada" title="Link to this heading">¶</a></h3>
+<p>When run on an NVIDIA RTX 4000 Ada GPU, typical results are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Benchmark</span> <span class="n">shape</span><span class="p">:</span> <span class="n">B</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float16</span>
+<span class="o">============================================================</span>
+
+<span class="n">Forward</span> <span class="k">pass</span><span class="p">:</span>
+  <span class="n">JAX</span> <span class="n">cuDNN</span><span class="p">:</span>                <span class="mf">0.368</span> <span class="n">ms</span>
+  <span class="n">Our</span> <span class="n">Pallas</span><span class="p">:</span>               <span class="mf">0.433</span> <span class="n">ms</span>
+  <span class="n">Reference</span> <span class="p">(</span><span class="n">materialized</span><span class="p">):</span> <span class="mf">1.647</span> <span class="n">ms</span>
+
+  <span class="n">Pallas</span> <span class="n">vs</span> <span class="n">cuDNN</span><span class="p">:</span> <span class="mf">1.18</span><span class="n">x</span> <span class="n">slower</span>
+
+<span class="n">Backward</span> <span class="k">pass</span><span class="p">:</span>
+  <span class="n">JAX</span> <span class="n">cuDNN</span><span class="p">:</span>                <span class="mf">3.230</span> <span class="n">ms</span>
+  <span class="n">Our</span> <span class="n">Pallas</span><span class="p">:</span>               <span class="mf">5.728</span> <span class="n">ms</span>
+  <span class="n">Reference</span> <span class="p">(</span><span class="n">materialized</span><span class="p">):</span> <span class="mf">6.339</span> <span class="n">ms</span>
+
+  <span class="n">Pallas</span> <span class="n">vs</span> <span class="n">cuDNN</span><span class="p">:</span> <span class="mf">1.77</span><span class="n">x</span> <span class="n">slower</span>
+</pre></div>
+</div>
+<p><strong>Key observations:</strong></p>
+<ul class="simple">
+<li><p>Our forward pass is ~18% slower than cuDNN</p></li>
+<li><p>Our backward pass is ~77% slower than cuDNN (due to 3 separate kernel launches)</p></li>
+<li><p>Both are significantly faster than materializing the full attention matrix</p></li>
+</ul>
+</section>
 </section>
 <section id="backward-pass">
 <h2>Backward Pass<a class="headerlink" href="#backward-pass" title="Link to this heading">¶</a></h2>
+<p>The backward pass computes gradients dQ, dK, dV given the upstream gradient dO. The key insight is that we can recompute the attention weights P from the stored logsumexp values rather than storing them:</p>
+<div class="math notranslate nohighlight">
+\[P = \exp(QK^T / \sqrt{d} - \text{logsumexp})\]</div>
+<p>We use three separate kernels to avoid atomic operations:</p>
+<ol class="arabic simple">
+<li><p><strong>Preprocess</strong>: Compute <span class="math notranslate nohighlight">\(D = \text{rowsum}(O \odot dO)\)</span> which is used in the softmax backward</p></li>
+<li><p><strong>dK/dV kernel</strong>: Outer loop over KV blocks, inner loop over Q blocks</p></li>
+<li><p><strong>dQ kernel</strong>: Outer loop over Q blocks, inner loop over KV blocks</p></li>
+</ol>
+<p>The gradient formulas are:</p>
 <ul class="simple">
-<li><p>Mathematical derivation of gradients dQ, dK, dV</p></li>
-<li><p>The recomputation strategy: recompute attention weights from logsumexp</p></li>
-<li><p>Two-pass approach: one for dK/dV, one for dQ (as in the reference)</p></li>
-<li><p>Kernel implementation</p></li>
+<li><p><span class="math notranslate nohighlight">\(dP = dO \cdot V^T\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(dS = P \odot (dP - D) / \sqrt{d}\)</span> (softmax backward with scaling)</p></li>
+<li><p><span class="math notranslate nohighlight">\(dQ = dS \cdot K\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(dK = dS^T \cdot Q\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(dV = P^T \cdot dO\)</span></p></li>
 </ul>
 <div class="cell tag_skip-execution docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_kernel</span><span class="p">(</span><span class="n">q_ref</span><span class="p">,</span> <span class="n">k_ref</span><span class="p">,</span> <span class="n">v_ref</span><span class="p">,</span> <span class="n">o_ref</span><span class="p">,</span> <span class="n">do_ref</span><span class="p">,</span> <span class="n">logsumexp_ref</span><span class="p">,</span>
-                                <span class="n">dq_ref</span><span class="p">,</span> <span class="n">dk_ref</span><span class="p">,</span> <span class="n">dv_ref</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_kv_blocks</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention backward kernel.&quot;&quot;&quot;</span>
-    <span class="k">pass</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Kernel 1: Preprocess - compute D = rowsum(O * dO)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_preprocess_kernel</span><span class="p">(</span><span class="n">o_ref</span><span class="p">,</span> <span class="n">do_ref</span><span class="p">,</span> <span class="n">d_ref</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute D = rowsum(O * dO) for backward pass.&quot;&quot;&quot;</span>
+    <span class="n">o_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">o_ref</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">do_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">do_ref</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">d_reg</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">o_reg</span> <span class="o">*</span> <span class="n">do_reg</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">d_ref</span><span class="p">,</span> <span class="n">d_reg</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">d_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_preprocess</span><span class="p">(</span><span class="n">o_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocess for backward: compute D = rowsum(O * dO).&quot;&quot;&quot;</span>
+    <span class="n">B_flat</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">o_flat</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">))</span>
+
+    <span class="n">d_flat</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
+        <span class="n">flash_attention_bwd_preprocess_kernel</span><span class="p">,</span>
+        <span class="n">out_shape</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">((</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+        <span class="p">],</span>
+        <span class="n">out_specs</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">)),</span>
+        <span class="n">interpret</span><span class="o">=</span><span class="n">INTERPRET_MODE</span><span class="p">,</span>
+        <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span><span class="n">num_warps</span><span class="o">=</span><span class="n">NUM_WARPS</span><span class="p">,</span> <span class="n">num_stages</span><span class="o">=</span><span class="n">NUM_STAGES</span><span class="p">)</span>
+    <span class="p">)(</span><span class="n">o_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d_flat</span>
+
+
+<span class="c1"># Kernel 2: dK/dV - outer loop over KV blocks, inner loop over Q blocks</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_dkv_kernel</span><span class="p">(</span>
+    <span class="n">q_ref</span><span class="p">,</span> <span class="n">k_ref</span><span class="p">,</span> <span class="n">v_ref</span><span class="p">,</span> <span class="n">do_ref</span><span class="p">,</span> <span class="n">logsumexp_ref</span><span class="p">,</span> <span class="n">d_ref</span><span class="p">,</span>
+    <span class="n">dk_ref</span><span class="p">,</span> <span class="n">dv_ref</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">num_q_blocks</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute dK and dV gradients.&quot;&quot;&quot;</span>
+    <span class="n">k_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">k_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">v_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">v_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="n">dk_acc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dk_ref</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">dv_acc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dv_ref</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">carry</span><span class="p">):</span>
+        <span class="n">dk_acc</span><span class="p">,</span> <span class="n">dv_acc</span> <span class="o">=</span> <span class="n">carry</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">)</span>
+        <span class="n">q_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">q_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">do_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">do_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">logsumexp_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">d_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">d_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># Recompute P = softmax(Q @ K^T / scale)</span>
+        <span class="n">s_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">q_blk</span><span class="p">,</span> <span class="n">k_reg</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+        <span class="n">p_blk</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s_blk</span> <span class="o">-</span> <span class="n">logsumexp_blk</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>
+        <span class="c1"># dP = dO @ V^T, dS = P * (dP - D) / scale</span>
+        <span class="n">dp_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">do_blk</span><span class="p">,</span> <span class="n">v_reg</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">ds_blk</span> <span class="o">=</span> <span class="n">p_blk</span> <span class="o">*</span> <span class="p">(</span><span class="n">dp_blk</span> <span class="o">-</span> <span class="n">d_blk</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">/</span> <span class="n">scale</span>
+        <span class="c1"># Accumulate: dV += P^T @ dO, dK += dS^T @ Q</span>
+        <span class="n">dv_acc</span> <span class="o">+=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">p_blk</span><span class="p">,</span> <span class="n">do_blk</span><span class="p">,</span> <span class="n">trans_a</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">dk_acc</span> <span class="o">+=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ds_blk</span><span class="p">,</span> <span class="n">q_blk</span><span class="p">,</span> <span class="n">trans_a</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dk_acc</span><span class="p">,</span> <span class="n">dv_acc</span>
+        
+    <span class="n">dk_acc</span><span class="p">,</span> <span class="n">dv_acc</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_q_blocks</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="p">(</span><span class="n">dk_acc</span><span class="p">,</span> <span class="n">dv_acc</span><span class="p">))</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">dk_ref</span><span class="p">,</span> <span class="n">dk_acc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dk_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">dv_ref</span><span class="p">,</span> <span class="n">dv_acc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dv_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_dkv</span><span class="p">(</span><span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute dK and dV using pallas_call.&quot;&quot;&quot;</span>
+    <span class="n">B_flat</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">q_flat</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">num_q_blocks</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">))</span>
+
+    <span class="n">dk_flat</span><span class="p">,</span> <span class="n">dv_flat</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
+        <span class="n">partial</span><span class="p">(</span><span class="n">flash_attention_bwd_dkv_kernel</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span> <span class="n">num_q_blocks</span><span class="o">=</span><span class="n">num_q_blocks</span><span class="p">),</span>
+        <span class="n">out_shape</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">(</span><span class="n">k_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">k_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">(</span><span class="n">v_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">v_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="p">],</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>       <span class="c1"># q (full)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="c1"># k (blocked)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="c1"># v (blocked)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>       <span class="c1"># do (full)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>             <span class="c1"># logsumexp (full)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>             <span class="c1"># d (full)</span>
+        <span class="p">],</span>
+        <span class="n">out_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+        <span class="p">],</span>
+        <span class="n">interpret</span><span class="o">=</span><span class="n">INTERPRET_MODE</span><span class="p">,</span>
+        <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span><span class="n">num_warps</span><span class="o">=</span><span class="n">NUM_WARPS</span><span class="p">,</span> <span class="n">num_stages</span><span class="o">=</span><span class="n">NUM_STAGES</span><span class="p">)</span>
+    <span class="p">)(</span><span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dk_flat</span><span class="p">,</span> <span class="n">dv_flat</span>
+
+
+<span class="c1"># Kernel 3: dQ - outer loop over Q blocks, inner loop over KV blocks</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_dq_kernel</span><span class="p">(</span>
+    <span class="n">q_ref</span><span class="p">,</span> <span class="n">k_ref</span><span class="p">,</span> <span class="n">v_ref</span><span class="p">,</span> <span class="n">do_ref</span><span class="p">,</span> <span class="n">logsumexp_ref</span><span class="p">,</span> <span class="n">d_ref</span><span class="p">,</span>
+    <span class="n">dq_ref</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">num_kv_blocks</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute dQ gradient.&quot;&quot;&quot;</span>
+    <span class="n">q_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">q_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">do_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">do_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">logsumexp_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">logsumexp_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">d_reg</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">d_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">dq_acc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dq_ref</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">body</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">carry</span><span class="p">):</span>
+        <span class="n">dq_acc</span> <span class="o">=</span> <span class="n">carry</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dslice</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">BLOCK_C</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">)</span>
+        <span class="n">k_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">k_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">v_blk</span> <span class="o">=</span> <span class="n">plgpu</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">v_ref</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="c1"># Recompute P</span>
+        <span class="n">s_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">q_reg</span><span class="p">,</span> <span class="n">k_blk</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+        <span class="n">p_blk</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">s_blk</span> <span class="o">-</span> <span class="n">logsumexp_reg</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span>
+        <span class="c1"># dP = dO @ V^T, dS = P * (dP - D) / scale</span>
+        <span class="n">dp_blk</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">do_reg</span><span class="p">,</span> <span class="n">v_blk</span><span class="p">,</span> <span class="n">trans_b</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">ds_blk</span> <span class="o">=</span> <span class="n">p_blk</span> <span class="o">*</span> <span class="p">(</span><span class="n">dp_blk</span> <span class="o">-</span> <span class="n">d_reg</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">/</span> <span class="n">scale</span>
+        <span class="c1"># Accumulate: dQ += dS @ K</span>
+        <span class="n">dq_acc</span> <span class="o">+=</span> <span class="n">pl</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">ds_blk</span><span class="p">,</span> <span class="n">k_blk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dq_acc</span>
+
+    <span class="n">dq_acc</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">fori_loop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_kv_blocks</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">dq_acc</span><span class="p">)</span>
+    <span class="n">plgpu</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">dq_ref</span><span class="p">,</span> <span class="n">dq_acc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dq_ref</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_dq</span><span class="p">(</span><span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute dQ using pallas_call.&quot;&quot;&quot;</span>
+    <span class="n">B_flat</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">q_flat</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">num_kv_blocks</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_C</span><span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">B_flat</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">cdiv</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">))</span>
+
+    <span class="n">dq_flat</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">pallas_call</span><span class="p">(</span>
+        <span class="n">partial</span><span class="p">(</span><span class="n">flash_attention_bwd_dq_kernel</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span> <span class="n">num_kv_blocks</span><span class="o">=</span><span class="n">num_kv_blocks</span><span class="p">),</span>
+        <span class="n">out_shape</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">ShapeDtypeStruct</span><span class="p">(</span><span class="n">q_flat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">q_flat</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">in_specs</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="c1"># q (blocked)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>       <span class="c1"># k (full)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">_</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>       <span class="c1"># v (full)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="c1"># do (blocked)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">)),</span>       <span class="c1"># logsumexp (blocked)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">)),</span>       <span class="c1"># d (blocked)</span>
+        <span class="p">],</span>
+        <span class="n">out_specs</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">BlockSpec</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">BLOCK_R</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+        <span class="n">interpret</span><span class="o">=</span><span class="n">INTERPRET_MODE</span><span class="p">,</span>
+        <span class="n">compiler_params</span><span class="o">=</span><span class="n">plgpu</span><span class="o">.</span><span class="n">CompilerParams</span><span class="p">(</span><span class="n">num_warps</span><span class="o">=</span><span class="n">NUM_WARPS</span><span class="p">,</span> <span class="n">num_stages</span><span class="o">=</span><span class="n">NUM_STAGES</span><span class="p">)</span>
+    <span class="p">)(</span><span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dq_flat</span>
 
 
 <span class="nd">@jax</span><span class="o">.</span><span class="n">jit</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">,</span> <span class="n">do</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention backward pass.&quot;&quot;&quot;</span>
-    <span class="k">pass</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention backward pass using 3 separate kernels.&quot;&quot;&quot;</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>
+
+    <span class="c1"># Flatten batch and head dimensions</span>
+    <span class="n">q_flat</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">k_flat</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">v_flat</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">o_flat</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">do_flat</span> <span class="o">=</span> <span class="n">do</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+    <span class="n">logsumexp_flat</span> <span class="o">=</span> <span class="n">logsumexp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
+    <span class="c1"># Kernel 1: Preprocess - compute D = rowsum(O * dO)</span>
+    <span class="n">d_flat</span> <span class="o">=</span> <span class="n">flash_attention_bwd_preprocess</span><span class="p">(</span><span class="n">o_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">)</span>
+
+    <span class="c1"># Kernel 2: Compute dK, dV</span>
+    <span class="n">dk_flat</span><span class="p">,</span> <span class="n">dv_flat</span> <span class="o">=</span> <span class="n">flash_attention_bwd_dkv</span><span class="p">(</span>
+        <span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">,</span> <span class="n">scale</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Kernel 3: Compute dQ</span>
+    <span class="n">dq_flat</span> <span class="o">=</span> <span class="n">flash_attention_bwd_dq</span><span class="p">(</span>
+        <span class="n">q_flat</span><span class="p">,</span> <span class="n">k_flat</span><span class="p">,</span> <span class="n">v_flat</span><span class="p">,</span> <span class="n">do_flat</span><span class="p">,</span> <span class="n">logsumexp_flat</span><span class="p">,</span> <span class="n">d_flat</span><span class="p">,</span> <span class="n">scale</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">dq_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+        <span class="n">dk_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+        <span class="n">dv_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -275,18 +604,25 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@jax</span><span class="o">.</span><span class="n">custom_vjp</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flash_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flash attention with custom backward pass.&quot;&quot;&quot;</span>
-    <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="n">o</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">o</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_fwd_rule</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Forward rule for custom_vjp.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Forward rule for custom_vjp.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns the output and residuals needed for backward pass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">flash_attention_fwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">o</span><span class="p">,</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">flash_attention_bwd_rule</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">do</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Backward rule for custom_vjp.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Backward rule for custom_vjp.</span>
+<span class="sd">    </span>
+<span class="sd">    Takes residuals from forward and upstream gradient dO,</span>
+<span class="sd">    returns gradients (dQ, dK, dV).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span> <span class="o">=</span> <span class="n">res</span>
     <span class="n">dq</span><span class="p">,</span> <span class="n">dk</span><span class="p">,</span> <span class="n">dv</span> <span class="o">=</span> <span class="n">flash_attention_bwd</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">logsumexp</span><span class="p">,</span> <span class="n">do</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dq</span><span class="p">,</span> <span class="n">dk</span><span class="p">,</span> <span class="n">dv</span>
@@ -342,20 +678,22 @@ Forward pass matches: True
 <span class="n">dq_ref</span><span class="p">,</span> <span class="n">dk_ref</span><span class="p">,</span> <span class="n">dv_ref</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">loss_ref</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reference gradient shapes: dq=</span><span class="si">{</span><span class="n">dq_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dk=</span><span class="si">{</span><span class="n">dk_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dv=</span><span class="si">{</span><span class="n">dv_ref</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="c1"># TODO: Uncomment once backward pass is implemented</span>
-<span class="c1"># def loss_flash(q, k, v):</span>
-<span class="c1">#     return jnp.sum(flash_attention(q, k, v) * do)</span>
-<span class="c1">#</span>
-<span class="c1"># dq_flash, dk_flash, dv_flash = jax.grad(loss_flash, argnums=(0, 1, 2))(q, k, v)</span>
-<span class="c1"># print(f&quot;Flash attention gradient shapes: dq={dq_flash.shape}, dk={dk_flash.shape}, dv={dv_flash.shape}&quot;)</span>
-<span class="c1"># print(f&quot;dQ matches: {jnp.allclose(dq_flash, dq_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
-<span class="c1"># print(f&quot;dK matches: {jnp.allclose(dk_flash, dk_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
-<span class="c1"># print(f&quot;dV matches: {jnp.allclose(dv_flash, dv_ref, atol=1e-2, rtol=1e-2)}&quot;)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Reference gradient shapes: dq=(2, 4, 256, 64), dk=(2, 4, 256, 64), dv=(2, 4, 256, 64)
+<span class="c1"># Flash attention backward pass</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">loss_flash</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">flash_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">do</span><span class="p">)</span>
+
+<span class="n">dq_flash</span><span class="p">,</span> <span class="n">dk_flash</span><span class="p">,</span> <span class="n">dv_flash</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">loss_flash</span><span class="p">,</span> <span class="n">argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Flash attention gradient shapes: dq=</span><span class="si">{</span><span class="n">dq_flash</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dk=</span><span class="si">{</span><span class="n">dk_flash</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, dv=</span><span class="si">{</span><span class="n">dv_flash</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dQ matches: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dq_flash</span><span class="p">,</span><span class="w"> </span><span class="n">dq_ref</span><span class="p">,</span><span class="w"> </span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span><span class="w"> </span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dK matches: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dk_flash</span><span class="p">,</span><span class="w"> </span><span class="n">dk_ref</span><span class="p">,</span><span class="w"> </span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span><span class="w"> </span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dV matches: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dv_flash</span><span class="p">,</span><span class="w"> </span><span class="n">dv_ref</span><span class="p">,</span><span class="w"> </span><span class="n">atol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span><span class="w"> </span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Print max differences for debugging</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Max differences:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  dQ: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dq_flash</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dq_ref</span><span class="p">))</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  dK: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dk_flash</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dk_ref</span><span class="p">))</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  dV: </span><span class="si">{</span><span class="n">jnp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dv_flash</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dv_ref</span><span class="p">))</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -363,16 +701,73 @@ Forward pass matches: True
 </section>
 <section id="conclusion">
 <h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<p>We’ve implemented a complete Flash Attention kernel in JAX Pallas with both forward and backward passes. The key ideas are:</p>
+<ol class="arabic simple">
+<li><p><strong>Online softmax</strong>: Computing softmax in tiles without materializing the full N×N attention matrix</p></li>
+<li><p><strong>Correction factors</strong>: Rescaling partial results when the running maximum changes</p></li>
+<li><p><strong>Recomputation</strong>: Storing only logsumexp and recomputing attention weights in the backward pass</p></li>
+<li><p><strong>Three backward kernels</strong>: Separate passes for D (preprocess), dK/dV, and dQ to avoid atomic operations</p></li>
+</ol>
+<p>The implementation achieves correctness and demonstrates the core Flash Attention algorithm clearly. While it doesn’t match cuDNN performance, it serves as an excellent educational resource for understanding how memory-efficient attention works.</p>
+</section>
+<section id="limitations-and-future-work">
+<h2>Limitations and Future Work<a class="headerlink" href="#limitations-and-future-work" title="Link to this heading">¶</a></h2>
+<section id="performance-gap">
+<h3>Performance Gap<a class="headerlink" href="#performance-gap" title="Link to this heading">¶</a></h3>
+<p>Our Pallas implementation achieves correctness but runs approximately 1.5-2x slower than NVIDIA’s cuDNN flash attention on the forward pass, and the gap widens on the backward pass. The primary reasons for this performance gap are:</p>
+<ol class="arabic simple">
+<li><p><strong>Lack of warp-level tiling</strong>: FlashAttention-2 uses sophisticated warp-level parallelism where different warps within a thread block handle different portions of the K/V matrices. This reduces shared memory traffic and improves tensor core utilization.</p></li>
+<li><p><strong>Three separate backward kernels</strong>: Our implementation uses three kernel launches (preprocess, dK/dV, dQ) to avoid atomic operations. Production implementations fuse these more aggressively with careful synchronization.</p></li>
+<li><p><strong>No causal masking optimization</strong>: Causal attention can skip computation for masked positions, but our implementation computes the full attention matrix.</p></li>
+</ol>
+</section>
+<section id="pallas-limitations">
+<h3>Pallas Limitations<a class="headerlink" href="#pallas-limitations" title="Link to this heading">¶</a></h3>
+<p>Pallas provides a high-level abstraction for writing GPU kernels, but it doesn’t expose certain low-level primitives needed for peak performance:</p>
 <ul class="simple">
-<li><p>Recap of key ideas</p></li>
-<li><p>Potential extensions: causal masking, multi-query attention</p></li>
-<li><p>Link to further resources (FlashAttention paper, JAX Pallas docs)</p></li>
+<li><p><strong>No warp-level programming</strong>: Pallas doesn’t provide access to <code class="docutils literal notranslate"><span class="pre">warp_id</span></code> or warp shuffle operations (<code class="docutils literal notranslate"><span class="pre">__shfl_sync</span></code>). You can configure <code class="docutils literal notranslate"><span class="pre">num_warps</span></code> but cannot coordinate work between warps within a block.</p></li>
+<li><p><strong>Limited shared memory control</strong>: Pallas manages shared memory implicitly through <code class="docutils literal notranslate"><span class="pre">BlockSpec</span></code>. You cannot explicitly allocate shared memory or control synchronization barriers.</p></li>
+<li><p><strong>No atomic operations</strong>: Pallas on GPU doesn’t expose <code class="docutils literal notranslate"><span class="pre">atomic_add</span></code> or similar primitives, requiring separate kernels for reductions.</p></li>
 </ul>
+</section>
+<section id="path-to-better-performance">
+<h3>Path to Better Performance<a class="headerlink" href="#path-to-better-performance" title="Link to this heading">¶</a></h3>
+<p>To close the gap with cuDNN, you would need to:</p>
+<ol class="arabic simple">
+<li><p><strong>Switch to Triton</strong>: Triton provides more control over memory access patterns, explicit masking with <code class="docutils literal notranslate"><span class="pre">tl.where</span></code>, and better autotuning. However, even Triton abstracts away some warp-level primitives.</p></li>
+<li><p><strong>Use CUDA C++</strong>: For full control over warp-level tiling, shared memory, and synchronization, CUDA C++ remains necessary. This is what cuDNN and the original FlashAttention implementations use.</p></li>
+<li><p><strong>Just use the built-in</strong>: For production workloads, <code class="docutils literal notranslate"><span class="pre">jax.nn.dot_product_attention(implementation='cudnn')</span></code> is the pragmatic choice. It’s highly optimized and well-tested.</p></li>
+</ol>
+</section>
+<section id="educational-value">
+<h3>Educational Value<a class="headerlink" href="#educational-value" title="Link to this heading">¶</a></h3>
+<p>Despite the performance gap, this Pallas implementation has significant educational value:</p>
+<ul class="simple">
+<li><p><strong>Algorithm clarity</strong>: The tiled computation with online softmax correction is clearly visible in the code</p></li>
+<li><p><strong>Gradient derivation</strong>: The backward pass shows exactly how gradients flow through attention</p></li>
+<li><p><strong>Pallas patterns</strong>: Demonstrates <code class="docutils literal notranslate"><span class="pre">BlockSpec</span></code>, <code class="docutils literal notranslate"><span class="pre">fori_loop</span></code>, and <code class="docutils literal notranslate"><span class="pre">custom_vjp</span></code> integration</p></li>
+<li><p><strong>Debugging</strong>: <code class="docutils literal notranslate"><span class="pre">INTERPRET_MODE=True</span></code> allows stepping through the algorithm on CPU</p></li>
+</ul>
+<p>For learning how flash attention works, this implementation is arguably better than optimized CUDA code where the algorithm is obscured by performance tricks.</p>
+</section>
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<p><strong>Papers:</strong></p>
 <ul class="simple">
+<li><p>Dao, T., Fu, D., Ermon, S., Rudra, A., &amp; Re, C. (2022). FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. <em>NeurIPS 2022</em>. <a class="reference external" href="https://arxiv.org/abs/2205.14135">https://arxiv.org/abs/2205.14135</a></p></li>
 <li><p>Dao, T. (2023). FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning. <em>arXiv preprint arXiv:2307.08691</em>. <a class="reference external" href="https://arxiv.org/abs/2307.08691">https://arxiv.org/abs/2307.08691</a></p></li>
+</ul>
+<p><strong>Reference Implementations:</strong></p>
+<ul class="simple">
+<li><p>JAX Official Flash Attention (TPU): <a class="reference external" href="https://github.com/jax-ml/jax/blob/main/jax/experimental/pallas/ops/tpu/flash_attention.py">https://github.com/jax-ml/jax/blob/main/jax/experimental/pallas/ops/tpu/flash_attention.py</a></p></li>
+<li><p>JAX Official Fused Attention (GPU): <a class="reference external" href="https://github.com/jax-ml/jax/blob/main/jax/experimental/pallas/ops/gpu/attention.py">https://github.com/jax-ml/jax/blob/main/jax/experimental/pallas/ops/gpu/attention.py</a></p></li>
+<li><p>Umar Jamil’s Triton Flash Attention: <a class="reference external" href="https://github.com/hkproj/triton-flash-attention">https://github.com/hkproj/triton-flash-attention</a></p></li>
+</ul>
+<p><strong>Documentation:</strong></p>
+<ul class="simple">
+<li><p>JAX Pallas Documentation: <a class="reference external" href="https://jax.readthedocs.io/en/latest/pallas/">https://jax.readthedocs.io/en/latest/pallas/</a></p></li>
+<li><p>Triton Documentation: <a class="reference external" href="https://triton-lang.org/">https://triton-lang.org/</a></p></li>
 </ul>
 </section>
 </section>

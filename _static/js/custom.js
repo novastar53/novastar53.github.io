@@ -1,6 +1,6 @@
 (function() {
   function initYearGroups() {
-    const yearGroups = {'2024': ['how-positional-embeddings-work', 'how-dropout-works', 'nadaraya-watson-kernel-regression'], '2025': ['how-mixture-of-experts-works-part-1', 'how-batchnorm-works-part-2', 'how-residual-connections-work', 'how-batchnorm-works'], '2026': ['how-mixture-of-experts-works-part-2', 'pallas-matmul', 'pallas-softmax']};
+    const yearGroups = {'2024': ['how-positional-embeddings-work', 'how-dropout-works', 'nadaraya-watson-kernel-regression'], '2025': ['how-mixture-of-experts-works-part-1', 'how-batchnorm-works-part-2', 'how-residual-connections-work', 'how-batchnorm-works'], '2026': ['pallas-flash-attn', 'how-mixture-of-experts-works-part-2', 'pallas-matmul', 'pallas-softmax']};
 
     const wrapper = document.querySelector('.sphinxsidebarwrapper');
     if (!wrapper) return;
