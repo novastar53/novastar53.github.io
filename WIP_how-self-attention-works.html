@@ -32,8 +32,8 @@
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="_static/js/custom.js?v=4bb8688c"></script>
-    <script src="_static/js/sidebar_template.js?v=537fe710"></script>
+    <script src="_static/js/custom.js?v=5af35df4"></script>
+    <script src="_static/js/sidebar_template.js?v=e363622b"></script>
     <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
@@ -143,7 +143,7 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Loaded IMDb dataset with 25000 train samples and 25000 test samples.
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2026-01-17 14:34:18.480204: W tensorflow/core/kernels/data/cache_dataset_ops.cc:916] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>2026-01-27 12:38:23.158654: W tensorflow/core/kernels/data/cache_dataset_ops.cc:916] The calling iterator did not fully read the dataset being cached. In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset  will be discarded. This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 </pre></div>
 </div>
 <div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
@@ -432,6 +432,7 @@ f(\bold{x}) = \sigma(\bold{Wx} + b)
 
 <h3>Navigation</h3>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="pallas-flash-attn.html">How to Write a Flash Attention Kernel in Pallas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
