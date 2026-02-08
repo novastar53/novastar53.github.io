@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../../high_performance_jax"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
