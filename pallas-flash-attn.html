@@ -10,10 +10,10 @@
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
     <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=a74bd6dc" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=8c9916cd" />
     <script src="_static/documentation_options.js?v=9eb32ce0"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -59,10 +59,7 @@
             
   <section class="tex2jax_ignore mathjax_ignore" id="how-to-write-a-flash-attention-kernel-in-pallas">
 <h1>How to Write a Flash Attention Kernel in Pallas<a class="headerlink" href="#how-to-write-a-flash-attention-kernel-in-pallas" title="Link to this heading">¶</a></h1>
-<section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
 <p>In the previous posts in this series, we learnt how to write a <a class="reference external" href="https://blog.vikrampawar.com/pallas-matmul.html">matrix multiplication kernel</a> and a <a class="reference external" href="https://blog.vikrampawar.com/pallas-softmax.html">softmax kernel</a> using Pallas. Building on these, we will design a fused self-attention kernel. Self-attention is a major bottleneck in deep learning architectures. In a naive implementation, materializing the full <span class="math notranslate nohighlight">\(T \times T\)</span> attention matrix requires <span class="math notranslate nohighlight">\(O(T^2)\)</span> memory bandwidth. This creates a severe bottleneck on GPUs, as the time to transfer this data from high-bandwidth memory (HBM) dominates over the actual computation time.</p>
-</section>
 <section id="self-attention">
 <h2>Self Attention<a class="headerlink" href="#self-attention" title="Link to this heading">¶</a></h2>
 <p>Mathematically, the self-attention operation is <span class="math notranslate nohighlight">\(\text{softmax}(QK^T/\sqrt{d}) V\)</span>, where <span class="math notranslate nohighlight">\(Q\)</span> is a set of queries, <span class="math notranslate nohighlight">\(K\)</span> is a set of keys and <span class="math notranslate nohighlight">\(V\)</span> is a set of values.</p>
