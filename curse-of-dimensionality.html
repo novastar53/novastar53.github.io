@@ -64,24 +64,16 @@
 <p>The answer lies in understanding both what the curse of dimensionality actually means and why real-world data often avoids its worst effects.</p>
 <section id="what-is-the-curse-of-dimensionality">
 <h2>What Is the Curse of Dimensionality?<a class="headerlink" href="#what-is-the-curse-of-dimensionality" title="Link to this heading">¶</a></h2>
-<p>The curse of dimensionality refers to the fact that the volume of a space grows exponentially with the number of dimensions. Imagine a line segment from 0 to 1. If we want to place points every 0.1 units, we need roughly 10 points. Now consider a square. To achieve the same resolution along both axes, we need $<span class="math notranslate nohighlight">\( 10 \times 10 =  100 \)</span><span class="math notranslate nohighlight">\( points. For a cube:
-\)</span><span class="math notranslate nohighlight">\(  
-10 \times 10 \times 10 = 1000  
-\)</span>$</p>
-<p>points. In (d) dimensions:</p>
-<div class="math notranslate nohighlight">
-\[  
-10^d  
-\]</div>
-<p>points are required. The number of samples needed grows exponentially with the dimensionality of the space. This exponential growth is the curse of dimensionality.</p>
+<p>The curse of dimensionality refers to the fact that the volume of a space grows exponentially with the number of dimensions. Imagine a line segment from 0 to 1. If we want to place points every 0.1 units, we need roughly 10 points. Now consider a square. To achieve the same resolution along both axes, we need <span class="math notranslate nohighlight">\( 10 \times 10 =  100 \)</span> points. For a cube, <span class="math notranslate nohighlight">\( 10 \times 10 \times 10 = 1000 \)</span> points. In (d) dimensions, <span class="math notranslate nohighlight">\(10^d\)</span> points are required. The number of samples needed thus grows exponentially with the dimensionality of the space. This exponential growth is the curse of dimensionality.</p>
 </section>
 <section id="why-are-we-sampling-the-space">
 <h2>Why Are We “Sampling” the Space?<a class="headerlink" href="#why-are-we-sampling-the-space" title="Link to this heading">¶</a></h2>
-<p>The idea of sampling comes from the need to learn how a function behaves throughout its input space. Suppose we are trying to learn a function:
-$<span class="math notranslate nohighlight">\(  
+<p>The idea of sampling comes from the need to learn how a function behaves throughout its input space. Suppose we are trying to learn a function:</p>
+<div class="math notranslate nohighlight">
+\[  
 y = f(x)  
-\)</span>$`
-where (x) has many features. The only information available to us comes from the examples in our dataset. These examples act as samples of the input space. If the input space is enormous and our samples cover only a tiny fraction of it, then we cannot reliably infer how the function behaves elsewhere. The curse of dimensionality tells us that covering a high-dimensional space requires an enormous number of examples.</p>
+\]</div>
+<p>where (x) has many features. The only information available to us comes from the examples in our dataset. These examples act as samples of the input space. If the input space is enormous and our samples cover only a tiny fraction of it, then we cannot reliably infer how the function behaves elsewhere. The curse of dimensionality tells us that covering a high-dimensional space requires an enormous number of examples.</p>
 </section>
 <section id="why-doesn-t-machine-learning-fail-completely">
 <h2>Why Doesn’t Machine Learning Fail Completely?<a class="headerlink" href="#why-doesn-t-machine-learning-fail-completely" title="Link to this heading">¶</a></h2>
@@ -114,7 +106,6 @@ where (x) has many features. The only information available to us comes from the
 <p>The curse of dimensionality becomes severe when there is little or no structure. Imagine a dataset where every feature is independent and equally important. No correlations exist. No lower-dimensional representation exists. No manifold structure exists. In this case, the data genuinely occupies the full high-dimensional space. To learn the underlying distribution, we must observe enough samples to cover that space. The number of required samples grows exponentially with dimension. This is the situation the curse of dimensionality describes. Fortunately, most real-world datasets are far more structured than this worst-case scenario.</p>
 <section id="kernel-density-estimation">
 <h3>Kernel Density Estimation<a class="headerlink" href="#kernel-density-estimation" title="Link to this heading">¶</a></h3>
-<p>One of the classic examples is <strong>kernel density estimation (KDE)</strong>.</p>
 <p>KDE estimates a probability density by placing a smooth kernel (often a Gaussian) around every data point and summing the contributions. In low dimensions, neighboring kernels overlap significantly, producing a smooth estimate. In high dimensions, points become extremely sparse. The kernels barely overlap. To obtain a reliable density estimate, exponentially more samples are required. This is one reason density estimation becomes difficult in high-dimensional spaces.</p>
 </section>
 <section id="nearest-neighbors-and-distance-concentration">
