@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The Curse of Dimensionality: Why It Matters Less Than You Think &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=8c9916cd" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/custom.js?v=62c49987"></script>
+    <script src="_static/js/sidebar_template.js?v=e363622b"></script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to Write a Flash Attention Kernel in Pallas" href="pallas-flash-attn.html" />
+    <link rel="prev" title="Machine Learning Blog" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="the-curse-of-dimensionality-why-it-matters-less-than-you-think">
+<h1>The Curse of Dimensionality: Why It Matters Less Than You Think<a class="headerlink" href="#the-curse-of-dimensionality-why-it-matters-less-than-you-think" title="Link to this heading">¶</a></h1>
+<p>One of the most frequently cited challenges in machine learning is the <strong>curse of dimensionality</strong>. The phrase sounds ominous, suggesting that high-dimensional data is inherently difficult to learn from. Yet modern machine learning systems routinely work with images containing hundreds of thousands of pixels, text represented by thousands of features, and neural network embeddings with thousands of dimensions.</p>
+<p>How is this possible?</p>
+<p>The answer lies in understanding both what the curse of dimensionality actually means and why real-world data often avoids its worst effects.</p>
+<section id="what-is-the-curse-of-dimensionality">
+<h2>What Is the Curse of Dimensionality?<a class="headerlink" href="#what-is-the-curse-of-dimensionality" title="Link to this heading">¶</a></h2>
+<p>The curse of dimensionality refers to the fact that the volume of a space grows exponentially with the number of dimensions. Imagine a line segment from 0 to 1. If we want to place points every 0.1 units, we need roughly 10 points. Now consider a square. To achieve the same resolution along both axes, we need $<span class="math notranslate nohighlight">\( 10 \times 10 =  100 \)</span><span class="math notranslate nohighlight">\( points. For a cube:
+\)</span><span class="math notranslate nohighlight">\(  
+10 \times 10 \times 10 = 1000  
+\)</span>$</p>
+<p>points. In (d) dimensions:</p>
+<div class="math notranslate nohighlight">
+\[  
+10^d  
+\]</div>
+<p>points are required. The number of samples needed grows exponentially with the dimensionality of the space. This exponential growth is the curse of dimensionality.</p>
+</section>
+<section id="why-are-we-sampling-the-space">
+<h2>Why Are We “Sampling” the Space?<a class="headerlink" href="#why-are-we-sampling-the-space" title="Link to this heading">¶</a></h2>
+<p>The idea of sampling comes from the need to learn how a function behaves throughout its input space. Suppose we are trying to learn a function:
+$<span class="math notranslate nohighlight">\(  
+y = f(x)  
+\)</span>$`
+where (x) has many features. The only information available to us comes from the examples in our dataset. These examples act as samples of the input space. If the input space is enormous and our samples cover only a tiny fraction of it, then we cannot reliably infer how the function behaves elsewhere. The curse of dimensionality tells us that covering a high-dimensional space requires an enormous number of examples.</p>
+</section>
+<section id="why-doesn-t-machine-learning-fail-completely">
+<h2>Why Doesn’t Machine Learning Fail Completely?<a class="headerlink" href="#why-doesn-t-machine-learning-fail-completely" title="Link to this heading">¶</a></h2>
+<p>At first glance, the curse of dimensionality appears devastating.  Consider an image with <span class="math notranslate nohighlight">\(  224 \times 224 \times 3  \)</span> pixels. This corresponds to roughly 150,000 dimensions. If the curse applied in its full force, learning from images would be impossible. Yet image classification works remarkably well.</p>
+<p>Why?</p>
+<p>The answer is that real-world data is not uniformly distributed throughout its ambient space.</p>
+</section>
+<section id="the-manifold-hypothesis">
+<h2>The Manifold Hypothesis<a class="headerlink" href="#the-manifold-hypothesis" title="Link to this heading">¶</a></h2>
+<p>A central idea in modern machine learning is the <strong>manifold hypothesis</strong>. The hypothesis states that real-world data occupies a low-dimensional manifold embedded within a much higher-dimensional space. Consider photographs of faces.  Although each image may contain hundreds of thousands of pixels, not every possible combination of pixel values corresponds to a valid face.</p>
+<p>Faces are constrained by:</p>
+<ul class="simple">
+<li><p>facial geometry</p></li>
+<li><p>lighting conditions</p></li>
+<li><p>pose</p></li>
+<li><p>expression</p></li>
+<li><p>camera viewpoint</p></li>
+</ul>
+<p>As a result, the set of all realistic face images occupies only a tiny region of the full pixel space.  The same is true for:</p>
+<ul class="simple">
+<li><p>natural images</p></li>
+<li><p>speech signals</p></li>
+<li><p>text</p></li>
+<li><p>biological measurements</p></li>
+</ul>
+<p>The effective dimensionality is often much smaller than the raw dimensionality.</p>
+</section>
+<section id="when-the-curse-is-real">
+<h2>When the Curse Is Real<a class="headerlink" href="#when-the-curse-is-real" title="Link to this heading">¶</a></h2>
+<p>The curse of dimensionality becomes severe when there is little or no structure. Imagine a dataset where every feature is independent and equally important. No correlations exist. No lower-dimensional representation exists. No manifold structure exists. In this case, the data genuinely occupies the full high-dimensional space. To learn the underlying distribution, we must observe enough samples to cover that space. The number of required samples grows exponentially with dimension. This is the situation the curse of dimensionality describes. Fortunately, most real-world datasets are far more structured than this worst-case scenario.</p>
+<section id="kernel-density-estimation">
+<h3>Kernel Density Estimation<a class="headerlink" href="#kernel-density-estimation" title="Link to this heading">¶</a></h3>
+<p>One of the classic examples is <strong>kernel density estimation (KDE)</strong>.</p>
+<p>KDE estimates a probability density by placing a smooth kernel (often a Gaussian) around every data point and summing the contributions. In low dimensions, neighboring kernels overlap significantly, producing a smooth estimate. In high dimensions, points become extremely sparse. The kernels barely overlap. To obtain a reliable density estimate, exponentially more samples are required. This is one reason density estimation becomes difficult in high-dimensional spaces.</p>
+</section>
+<section id="nearest-neighbors-and-distance-concentration">
+<h3>Nearest Neighbors and Distance Concentration<a class="headerlink" href="#nearest-neighbors-and-distance-concentration" title="Link to this heading">¶</a></h3>
+<p>The curse also affects nearest-neighbor methods. In low dimensions, nearby points are genuinely close. In high dimensions, something surprising happens:</p>
+<ul class="simple">
+<li><p>all points become far apart</p></li>
+<li><p>nearest neighbors are not much closer than distant points</p></li>
+<li><p>distance measurements become less informative</p></li>
+</ul>
+<p>As dimensionality increases, the distinction between “near” and “far” begins to disappear.
+Algorithms that rely heavily on distance measurements often struggle under these conditions.</p>
+</section>
+</section>
+<section id="why-deep-learning-works">
+<h2>Why Deep Learning Works<a class="headerlink" href="#why-deep-learning-works" title="Link to this heading">¶</a></h2>
+<p>Deep learning succeeds largely because it exploits structure. Neural networks do not attempt to model every possible input configuration. Instead, they learn useful representations that capture the underlying manifold on which the data resides. A network may transform a 150,000-dimensional image into a representation whose effective dimensionality is only a few hundred dimensions. The network discovers the directions that matter and ignores the directions that do not. This dramatically reduces the amount of data required.</p>
+</section>
+<section id="so-is-it-really-a-curse">
+<h2>So, is it Really a Curse?<a class="headerlink" href="#so-is-it-really-a-curse" title="Link to this heading">¶</a></h2>
+<p>The curse of doesn’t make high-dimensional learning impossible. It is only salient when data lacks structure. If data truly fills a high-dimensional space, learning becomes exponentially difficult. If, however, the data lies on a lower-dimensional manifold, the situation becomes much more manageable. The remarkable success of modern machine learning suggests that real-world data contains far more structure than raw dimensionality alone would indicate.</p>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Curse of Dimensionality: Why It Matters Less Than You Think</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-flash-attn.html">How to Write a Flash Attention Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Machine Learning Blog</a></li>
+      <li>Next: <a href="pallas-flash-attn.html" title="next chapter">How to Write a Flash Attention Kernel in Pallas</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/curse-of-dimensionality.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
