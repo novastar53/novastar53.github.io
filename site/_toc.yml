@@ -4,7 +4,7 @@
 format: jb-article
 root: intro
 sections:
-- file: why_unbiased_policy_gradients_learn_bad_policies
+- file: how-gradient-variance-shapes-policy-optimization
 - file: curse-of-dimensionality
 - file: pallas-flash-attn
 - file: how-mixture-of-experts-works-part-2
