@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How Gradient Variance Shapes Policy Optimization &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=8c9916cd" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/custom.js?v=410d3642"></script>
+    <script src="_static/js/sidebar_template.js?v=e363622b"></script>
+    <link rel="icon" href="_static/starburst (200 x 200 px).png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Curse of Dimensionality: Why It Matters Less Than You Think" href="curse-of-dimensionality.html" />
+    <link rel="prev" title="Machine Learning Blog" href="intro.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="how-gradient-variance-shapes-policy-optimization">
+<h1>How Gradient Variance Shapes Policy Optimization<a class="headerlink" href="#how-gradient-variance-shapes-policy-optimization" title="Link to this heading">¶</a></h1>
+<div style="display:flex; gap:16px; align-items:center; justify-content:center;">
+    <img src="_images/bandit_octopus.png" alt="Ten-armed bandit illustration" style="width:40%; height:auto;"/>
+</div>
+<p>In this article, we’ll investigate how reward baselines affect the learning dynamics of policy-gradient algorithms using a simple multi-armed bandit problem. Unlike value-based methods, which estimate the expected reward associated with each action, policy-gradient methods directly optimize the probabilities with which actions are selected.</p>
+<p>Our objective is to maximize the expected reward under a parameterized policy:</p>
+<div class="math notranslate nohighlight">
+\[
+J(\theta)=\mathbb{E}_{\pi_\theta}[R]
+\]</div>
+<p>Here, <span class="math notranslate nohighlight">\(\theta\)</span> denotes the policy parameters. We can optimize this objective using gradient ascent:</p>
+<div class="math notranslate nohighlight">
+\[
+\theta_{t+1}=\theta_t+\alpha\nabla_\theta J(\theta_t)
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\alpha\)</span> is the learning rate. However, since the reward distributions are unknown, we cannot calculate this gradient directly. Instead, we can use the log-derivative identity to estimate it from sampled actions and rewards.</p>
+<p>For a multi-armed bandit, we can write the objective as:</p>
+<div class="math notranslate nohighlight">
+\[
+J(\theta)=\sum_a\pi_\theta(a)q_*(a)
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(q_*(a)\)</span> is the true expected reward for action <span class="math notranslate nohighlight">\(a\)</span>. Taking the gradient:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\nabla_\theta J(\theta)
+&amp;=\sum_a q_*(a)\nabla_\theta\pi_\theta(a)\\
+&amp;=\sum_a\pi_\theta(a)q_*(a)\nabla_\theta\log\pi_\theta(a)\\
+&amp;=\mathbb{E}_{\pi_\theta}\left[R\nabla_\theta\log\pi_\theta(A)\right]
+\end{aligned}
+\end{split}\]</div>
+<p>This gives us an unbiased estimate of the policy gradient using a single sampled action and reward. The resulting update is:</p>
+<div class="math notranslate nohighlight">
+\[
+\theta_{t+1}=\theta_t+\alpha R_t\nabla_\theta\log\pi_{\theta_t}(A_t)
+\]</div>
+<section id="gradient-bandits">
+<h2>Gradient Bandits<a class="headerlink" href="#gradient-bandits" title="Link to this heading">¶</a></h2>
+<p>For our experiments, we’ll use a gradient-bandit agent. It maintains a preference <span class="math notranslate nohighlight">\(H_t(a)\)</span> for each action rather than an estimate of its expected reward. These preferences determine the action probabilities through a softmax policy:</p>
+<div class="math notranslate nohighlight">
+\[
+\pi_t(a)=\frac{\exp(H_t(a))}{\sum_b\exp(H_t(b))}
+\]</div>
+<p>The derivative of the log-probability of the selected action with respect to each preference is:</p>
+<div class="math notranslate nohighlight">
+\[
+\frac{\partial\log\pi_t(A_t)}{\partial H_t(a)}
+=\mathbb{1}[a=A_t]-\pi_t(a)
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbb{1}[a=A_t]\)</span> is 1 if <span class="math notranslate nohighlight">\(a\)</span> was selected and 0 otherwise. Substituting this into our gradient update gives:</p>
+<div class="math notranslate nohighlight">
+\[
+H_{t+1}(a)=H_t(a)+\alpha R_t\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>A positive reward increases the preference for the selected action and decreases the preferences for the others. A negative reward has the opposite effect.</p>
+<p>Let’s begin by implementing a <span class="math notranslate nohighlight">\(k\)</span>-armed bandit environment. Each action produces rewards with unit variance and a fixed expected value <span class="math notranslate nohighlight">\(q_*(a)\)</span>, sampled independently from:</p>
+<div class="math notranslate nohighlight">
+\[
+q_*(a)\sim\mathcal N(\mu,1)
+\]</div>
+<p>We’ll vary <span class="math notranslate nohighlight">\(\mu\)</span> to shift all the expected rewards by the same amount. Since this does not change the differences between action values or which action is optimal, it gives us a useful way to investigate whether the absolute magnitude of rewards affects learning.</p>
+<div class="cell tag_no-execute docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NamedTuple</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">KArmedBandit</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">q_star</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">+</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,))</span>
+        <span class="n">observation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">env_state</span> <span class="o">=</span> <span class="n">q_star</span>
+        <span class="k">return</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">observation</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+        <span class="n">reward</span> <span class="o">=</span> <span class="n">env_state</span><span class="p">[</span><span class="n">action</span><span class="p">]</span> <span class="o">+</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> 
+        <span class="n">observation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">terminated</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">return</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">info</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Next, we’ll implement the gradient-bandit agent using the softmax policy and preference update derived above.</p>
+<div class="cell tag_no-execute docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">GradientBanditState</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">H</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span>
+    <span class="n">N</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GradientBanditAgent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Initialize action preferences H to zeros</span>
+        <span class="k">return</span> <span class="n">GradientBanditState</span><span class="p">(</span>
+                <span class="n">H</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">),</span>
+                <span class="n">N</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">select_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">:</span> <span class="n">GradientBanditState</span><span class="p">):</span>
+        <span class="c1"># Sample an action from softmax(H)</span>
+        <span class="n">H</span><span class="p">,</span>  <span class="n">_</span> <span class="o">=</span> <span class="n">agent_state</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">probs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">action</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span><span class="p">):</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">agent_state</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">action</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">H</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">reward</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">mask</span> <span class="o">-</span> <span class="n">probs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">GradientBanditState</span><span class="p">(</span>
+            <span class="n">H</span><span class="o">=</span><span class="n">H</span><span class="p">,</span>
+            <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Let’s train the agent with reward offsets of <span class="math notranslate nohighlight">\(0\)</span>, <span class="math notranslate nohighlight">\(2\)</span>, <span class="math notranslate nohighlight">\(4\)</span>, and <span class="math notranslate nohighlight">\(8\)</span>. For each offset, we’ll run 2,000 independent bandit problems for 1,000 training steps each.</p>
+<div class="cell tag_no-execute docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_runs</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">num_steps</span> <span class="o">=</span> <span class="mi">1000</span>
+
+<span class="n">means</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">]</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">GradientBanditAgent</span><span class="p">(</span>
+    <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">env</span> <span class="o">=</span> <span class="n">KArmedBandit</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_experiment</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">reward_offset</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">env_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">env_key</span><span class="p">)</span>
+    <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="n">optimal_action</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">env_state</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span> <span class="o">=</span> <span class="n">carry</span>
+
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">agent_state</span><span class="o">.</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_probs</span><span class="p">)</span>
+        <span class="n">entropy</span> <span class="o">=</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probs</span> <span class="o">*</span> <span class="n">log_probs</span><span class="p">)</span>
+
+        <span class="n">key</span><span class="p">,</span> <span class="n">action_key</span><span class="p">,</span> <span class="n">reward_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">select_action</span><span class="p">(</span><span class="n">action_key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">)</span>
+
+        <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="n">reward_key</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">action</span>
+        <span class="p">)</span>
+
+        <span class="n">reward</span> <span class="o">=</span> <span class="n">reward</span> <span class="o">+</span> <span class="n">reward_offset</span>
+
+        <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span>
+        <span class="p">)</span>
+
+        <span class="n">is_optimal</span> <span class="o">=</span> <span class="n">action</span> <span class="o">==</span> <span class="n">optimal_action</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span>
+        <span class="p">),</span> <span class="p">(</span><span class="n">is_optimal</span><span class="p">,</span> <span class="n">entropy</span><span class="p">)</span>
+
+    <span class="n">initial_carry</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">optimal_actions</span><span class="p">,</span> <span class="n">entropies</span><span class="p">)</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+        <span class="n">training_step</span><span class="p">,</span>
+        <span class="n">initial_carry</span><span class="p">,</span>
+        <span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">num_steps</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">optimal_actions</span><span class="p">,</span> <span class="n">entropies</span>
+
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">num_runs</span><span class="p">)</span>
+
+<span class="n">means</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">])</span>
+
+<span class="n">batched_experiment</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span>
+    <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span>
+        <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">run_experiment</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span>
+        <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">optimal_actions</span><span class="p">,</span> <span class="n">entropies</span> <span class="o">=</span> <span class="n">batched_experiment</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">means</span><span class="p">)</span>
+
+<span class="n">mean_optimal</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optimal_actions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">mean_entropy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">entropies</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>First, let’s plot how often the agent selects the optimal action at each training step, averaged across the 2,000 runs.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">display</span><span class="p">,</span> <span class="n">HTML</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn-v0_8-darkgrid&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nb">float</span><span class="p">(</span><span class="n">mean</span><span class="p">):</span> <span class="n">mean_optimal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mean</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">means</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">steps</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">mean</span><span class="p">,</span> <span class="n">percentages</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">steps</span><span class="p">,</span>
+        <span class="n">percentages</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Mean reward offset = </span><span class="si">{</span><span class="n">mean</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+    <span class="n">y</span><span class="o">=</span><span class="mi">100</span> <span class="o">/</span> <span class="n">k</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Uniform random policy (10%)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Training steps&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;% Optimal actions&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Gradient Bandit Performance Across Reward Offsets&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/0ee3df66f535d9480efce9c68c663b3a1913c23d2ba1011cce865cadaa226fae.png" src="_images/0ee3df66f535d9480efce9c68c663b3a1913c23d2ba1011cce865cadaa226fae.png" />
+</div>
+</div>
+<p>We can observe that performance deteriorates as the reward offset increases. This is surprising because shifting every action’s expected reward by the same constant does not change the optimal action or the expected policy gradient. Let’s examine the distribution of optimal-action frequencies across individual runs to see where this difference comes from.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">final_optimal_pct</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">100</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optimal_actions</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">-</span><span class="mi">100</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">105</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">mean</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">means</span><span class="p">)):</span>
+    <span class="n">final_performance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">final_optimal_pct</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
+        <span class="n">final_performance</span><span class="p">,</span>
+        <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span>
+        <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+        <span class="n">final_performance</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Mean: </span><span class="si">{</span><span class="n">final_performance</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reward offset = </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;% Optimal actions (last 100 steps)&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Number of runs&quot;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+    <span class="s2">&quot;Distribution of Final Gradient-Bandit Performance&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/f89667a931125a7ace00a1c89f88da39b1ca3b148d2753ad0404673a53609714.png" src="_images/f89667a931125a7ace00a1c89f88da39b1ca3b148d2753ad0404673a53609714.png" />
+</div>
+</div>
+<p>The distributions are strongly bimodal. Most runs either select the optimal action almost all the time or rarely select it at all. As the reward offset increases, a larger proportion of runs end up in the second group.</p>
+<p>One possible explanation is that large preference updates cause the policy to concentrate on an action too early, sometimes before it has identified the optimal one. We can investigate this by measuring policy entropy.</p>
+<section id="measuring-policy-entropy">
+<h3>Measuring Policy Entropy<a class="headerlink" href="#measuring-policy-entropy" title="Link to this heading">¶</a></h3>
+<p>Policy entropy measures how spread out the action-selection probabilities are. For a policy <span class="math notranslate nohighlight">\(\pi_t\)</span>, it is defined as:</p>
+<div class="math notranslate nohighlight">
+\[
+\mathcal H(\pi_t)=-\sum_a\pi_t(a)\log\pi_t(a)
+\]</div>
+<p>Entropy is highest when all actions are equally likely. For our 10-armed bandit, the maximum is:</p>
+<div class="math notranslate nohighlight">
+\[
+\mathcal H_{\max}=\log(10)\approx2.303
+\]</div>
+<p>As the policy concentrates on a single action, its entropy approaches zero. Note that low entropy does not necessarily mean the policy has learned the optimal action. It only tells us that the policy strongly favors a particular action.</p>
+<p>We’ll calculate entropy from the softmax probabilities at every training step and average it across runs.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">steps</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">mean</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">means</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">steps</span><span class="p">,</span>
+        <span class="n">mean_entropy</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Reward offset = </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+    <span class="n">y</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">k</span><span class="p">)),</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Uniform policy entropy&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Training steps&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Mean policy entropy (nats)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Policy Entropy Across Reward Offsets&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/20d6f16cd4b1d1e93bfd1c3fcb9b66aa1425821a0f93f0354c496a0a36a5a79f.png" src="_images/20d6f16cd4b1d1e93bfd1c3fcb9b66aa1425821a0f93f0354c496a0a36a5a79f.png" />
+</div>
+</div>
+<p>We can observe that entropy decreases much faster for larger reward offsets. The agent is becoming increasingly confident in one action, even though its probability of selecting the optimal action is falling.</p>
+<p>A possible explanation is that larger rewards increase the variance of the stochastic gradient estimates. Let’s measure this directly.</p>
+</section>
+<section id="measuring-gradient-variance">
+<h3>Measuring Gradient Variance<a class="headerlink" href="#measuring-gradient-variance" title="Link to this heading">¶</a></h3>
+<p>Recall the preference update:</p>
+<div class="math notranslate nohighlight">
+\[
+H_{t+1}(a)=H_t(a)+\alpha R_t\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>The stochastic gradient estimate for preference <span class="math notranslate nohighlight">\(H_t(a)\)</span> is therefore:</p>
+<div class="math notranslate nohighlight">
+\[
+\hat g_t(a)=R_t\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>Since the gradient has one component for every action, we’ll measure its total variance by summing the variance of each component:</p>
+<div class="math notranslate nohighlight">
+\[
+V=\sum_a\mathbb{E}\left[\left(\hat g_t(a)-\mathbb{E}[\hat g_t(a)]\right)^2\right]
+\]</div>
+<p>For this experiment, we’ll hold the policy fixed at the uniform distribution and sample independent actions and rewards. Unlike the previous experiments, the agent will not update its preferences. This allows us to isolate the effect of the reward offset without introducing changes in the policy itself.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">100_000</span>
+<span class="n">reward_offsets</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">])</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="n">key</span><span class="p">,</span> <span class="n">values_key</span><span class="p">,</span> <span class="n">actions_key</span><span class="p">,</span> <span class="n">noise_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># Fix one bandit problem, with q*(a) ~ N(0, 1)</span>
+<span class="n">q_star</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">values_key</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,))</span>
+
+<span class="c1"># Fix a uniform policy throughout the experiment</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">/</span> <span class="n">k</span>
+
+<span class="c1"># Same actions and reward noise for all offsets</span>
+<span class="n">actions</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span>
+    <span class="n">actions_key</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,),</span> <span class="n">p</span><span class="o">=</span><span class="n">probs</span>
+<span class="p">)</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">noise_key</span><span class="p">,</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,))</span>
+
+<span class="c1"># Score function: grad_H log pi(A)</span>
+<span class="n">scores</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">actions</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">-</span> <span class="n">probs</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">gradient_variance</span><span class="p">(</span><span class="n">gradients</span><span class="p">):</span>
+    <span class="n">mean_gradient</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">centered</span> <span class="o">=</span> <span class="n">gradients</span> <span class="o">-</span> <span class="n">mean_gradient</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">centered</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">variances</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">offset</span> <span class="ow">in</span> <span class="n">reward_offsets</span><span class="p">:</span>
+    <span class="n">rewards</span> <span class="o">=</span> <span class="n">q_star</span><span class="p">[</span><span class="n">actions</span><span class="p">]</span> <span class="o">+</span> <span class="n">noise</span> <span class="o">+</span> <span class="n">offset</span>
+    <span class="n">gradients</span> <span class="o">=</span> <span class="n">rewards</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">scores</span>
+    <span class="n">variances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gradient_variance</span><span class="p">(</span><span class="n">gradients</span><span class="p">))</span>
+
+<span class="n">variances</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">variances</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reward_offsets</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variances</span><span class="p">),</span>
+    <span class="s2">&quot;o-&quot;</span><span class="p">,</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Reward offset&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Total gradient variance&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Effect of Reward Offset on Gradient Variance&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reward_offsets</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/5344eddf13c3bb1a664abb839201b7f9d3a9351b94c9175aba323e3df430e270.png" src="_images/5344eddf13c3bb1a664abb839201b7f9d3a9351b94c9175aba323e3df430e270.png" />
+</div>
+</div>
+<p>We can see that gradient variance increases rapidly as the reward offset grows. The relationship is approximately quadratic, even though the expected gradient and the differences between action values remain unchanged.</p>
+<p>This helps explain our earlier results. Large reward offsets produce noisier preference updates, which may cause the policy to concentrate on an action before it has explored the alternatives sufficiently. Can we reduce this variance without changing the expected policy gradient?</p>
+<p>A simple way to do this is to subtract a reward baseline.</p>
+</section>
+</section>
+<section id="introducing-a-reward-baseline">
+<h2>Introducing a Reward Baseline<a class="headerlink" href="#introducing-a-reward-baseline" title="Link to this heading">¶</a></h2>
+<p>Our current preference update is:</p>
+<div class="math notranslate nohighlight">
+\[
+H_{t+1}(a)=H_t(a)+\alpha R_t\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>When rewards are large and positive, even a suboptimal action can receive a large positive preference update whenever it is selected. Instead of using the absolute reward, we can subtract a reference value <span class="math notranslate nohighlight">\(b_t\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+H_{t+1}(a)=H_t(a)+\alpha(R_t-b_t)\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>We’ll use the average reward observed before the current step as our baseline:</p>
+<div class="math notranslate nohighlight">
+\[
+b_t=\bar R_t=\frac{1}{t-1}\sum_{i=1}^{t-1}R_i
+\]</div>
+<p>For the first step, we’ll initialize the baseline to zero. We can then update the running average incrementally:</p>
+<div class="math notranslate nohighlight">
+\[
+\bar R_{t+1}=\bar R_t+\frac{1}{t}(R_t-\bar R_t)
+\]</div>
+<p>Notice that the preference update uses the previous average, before incorporating the current reward. This means an action’s preference changes according to whether its reward is above or below the historical average, rather than according to the absolute reward.</p>
+<section id="why-doesn-t-a-baseline-change-the-expected-policy-gradient">
+<h3>Why Doesn’t a Baseline Change the Expected Policy Gradient?<a class="headerlink" href="#why-doesn-t-a-baseline-change-the-expected-policy-gradient" title="Link to this heading">¶</a></h3>
+<p>Recall that our objective is:</p>
+<div class="math notranslate nohighlight">
+\[
+J(\theta)=\mathbb{E}_{\pi_\theta}[R]
+\]</div>
+<p>Using the log-derivative identity, we obtained:</p>
+<div class="math notranslate nohighlight">
+\[
+\nabla_\theta J(\theta)=\mathbb{E}_{\pi_\theta}\left[R\nabla_\theta\log\pi_\theta(A)\right]
+\]</div>
+<p>Now consider subtracting a baseline <span class="math notranslate nohighlight">\(b\)</span> that does not depend on the sampled action:</p>
+<div class="math notranslate nohighlight">
+\[
+\mathbb{E}_{\pi_\theta}\left[(R-b)\nabla_\theta\log\pi_\theta(A)\right]
+\]</div>
+<p>Expanding this expression gives:</p>
+<div class="math notranslate nohighlight">
+\[
+\mathbb{E}_{\pi_\theta}\left[R\nabla_\theta\log\pi_\theta(A)\right]
+-b\mathbb{E}_{\pi_\theta}\left[\nabla_\theta\log\pi_\theta(A)\right]
+\]</div>
+<p>The second term is zero. To see why, recall that:</p>
+<div class="math notranslate nohighlight">
+\[
+\nabla_\theta\log\pi_\theta(a)=\frac{\nabla_\theta\pi_\theta(a)}{\pi_\theta(a)}
+\]</div>
+<p>Therefore:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\mathbb{E}_{\pi_\theta}\left[\nabla_\theta\log\pi_\theta(A)\right]
+&amp;=\sum_a\pi_\theta(a)\nabla_\theta\log\pi_\theta(a)\\
+&amp;=\sum_a\nabla_\theta\pi_\theta(a)\\
+&amp;=\nabla_\theta\sum_a\pi_\theta(a)\\
+&amp;=\nabla_\theta 1\\
+&amp;=0
+\end{aligned}
+\end{split}\]</div>
+<p>Consequently, subtracting an action-independent baseline leaves the expected gradient unchanged. This also applies to our running-average baseline because it only uses rewards observed before the current action is sampled.</p>
+<p>The two estimators therefore have the same expected value at a fixed policy, although their variances can be very different.</p>
+</section>
+</section>
+<section id="does-the-baseline-help">
+<h2>Does the Baseline Help?<a class="headerlink" href="#does-the-baseline-help" title="Link to this heading">¶</a></h2>
+<p>Let’s modify our gradient-bandit agent to maintain a running average reward and use it as a baseline in the preference update.</p>
+<div class="cell tag_no-execute docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">GradientBanditState</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">H</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span>
+    <span class="n">avg_reward</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span>
+    <span class="n">N</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GradientBanditAgent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">use_baseline</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_baseline</span> <span class="o">=</span> <span class="n">use_baseline</span>
+        
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Initialize action preferences H to zeros</span>
+        <span class="k">return</span> <span class="n">GradientBanditState</span><span class="p">(</span>
+                <span class="n">H</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">),</span>
+                <span class="n">avg_reward</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span>
+                <span class="n">N</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">select_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">:</span> <span class="n">GradientBanditState</span><span class="p">):</span>
+        <span class="c1"># Sample an action from softmax(H)</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">agent_state</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">probs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">action</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span><span class="p">):</span>
+        <span class="n">H</span><span class="p">,</span> <span class="n">avg_reward</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="n">agent_state</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">action</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">baseline</span> <span class="o">=</span> <span class="n">avg_reward</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_baseline</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">H</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">reward</span> <span class="o">-</span> <span class="n">avg_reward</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">mask</span> <span class="o">-</span> <span class="n">probs</span><span class="p">)</span>
+        <span class="n">avg_reward</span> <span class="o">=</span> <span class="n">avg_reward</span> <span class="o">+</span> <span class="p">(</span><span class="n">reward</span> <span class="o">-</span> <span class="n">baseline</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">GradientBanditState</span><span class="p">(</span>
+            <span class="n">H</span><span class="o">=</span><span class="n">H</span><span class="p">,</span>
+            <span class="n">avg_reward</span><span class="o">=</span><span class="n">avg_reward</span><span class="p">,</span>
+            <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We’ll compare agents with and without a baseline on bandit problems with a reward offset of <span class="math notranslate nohighlight">\(4\)</span>. As before, we’ll measure the frequency with which each agent selects the optimal action during training.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Same environment and experimental configuration</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">KArmedBandit</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">4.0</span><span class="p">)</span>
+
+<span class="n">configurations</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;Without baseline&quot;</span><span class="p">:</span> <span class="n">GradientBanditAgent</span><span class="p">(</span>
+        <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">use_baseline</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;With baseline&quot;</span><span class="p">:</span> <span class="n">GradientBanditAgent</span><span class="p">(</span>
+        <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">use_baseline</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_experiment</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">env_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">env_key</span><span class="p">)</span>
+    <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="n">optimal_action</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">env_state</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span> <span class="o">=</span> <span class="n">carry</span>
+
+        <span class="n">key</span><span class="p">,</span> <span class="n">action_key</span><span class="p">,</span> <span class="n">reward_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">select_action</span><span class="p">(</span><span class="n">action_key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">)</span>
+
+        <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="n">reward_key</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">action</span>
+        <span class="p">)</span>
+
+        <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span>
+        <span class="p">)</span>
+
+        <span class="n">is_optimal</span> <span class="o">=</span> <span class="n">action</span> <span class="o">==</span> <span class="n">optimal_action</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">),</span> <span class="n">is_optimal</span>
+
+    <span class="n">initial_carry</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">optimal_actions</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+        <span class="n">training_step</span><span class="p">,</span>
+        <span class="n">initial_carry</span><span class="p">,</span>
+        <span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">num_steps</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">optimal_actions</span>
+
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">num_runs</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">configurations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">batched_experiment</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span>
+        <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">run_key</span><span class="p">:</span> <span class="n">run_experiment</span><span class="p">(</span><span class="n">run_key</span><span class="p">,</span> <span class="n">agent</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="n">optimal_actions</span> <span class="o">=</span> <span class="n">batched_experiment</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optimal_actions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_no-execute docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">steps</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">percentages</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">steps</span><span class="p">,</span> <span class="n">percentages</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+    <span class="mi">100</span> <span class="o">/</span> <span class="n">k</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Uniform random policy&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Training steps&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;% Optimal actions&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Effect of Reward Baselines on Gradient Bandits&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="_images/bae9389ad75b480aba06762ca926dba541034fa0f0d39e15b163f6a342095c6e.png" src="_images/bae9389ad75b480aba06762ca926dba541034fa0f0d39e15b163f6a342095c6e.png" />
+</div>
+</div>
+<p>The agent using a reward baseline selects the optimal action considerably more often. Let’s check whether this improvement persists across different reward offsets.</p>
+</section>
+<section id="looking-across-reward-offsets">
+<h2>Looking Across Reward Offsets<a class="headerlink" href="#looking-across-reward-offsets" title="Link to this heading">¶</a></h2>
+<p>We’ll repeat the comparison with offsets of <span class="math notranslate nohighlight">\(0\)</span>, <span class="math notranslate nohighlight">\(2\)</span>, <span class="math notranslate nohighlight">\(4\)</span>, and <span class="math notranslate nohighlight">\(8\)</span>, keeping the training configuration unchanged.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_runs</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">num_steps</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<span class="n">reward_means</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_experiment</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">agent</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">env_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">env_key</span><span class="p">)</span>
+    <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span> <span class="o">=</span> <span class="n">carry</span>
+
+        <span class="n">key</span><span class="p">,</span> <span class="n">action_key</span><span class="p">,</span> <span class="n">reward_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">select_action</span><span class="p">(</span><span class="n">action_key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">)</span>
+
+        <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="n">reward_key</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">action</span>
+        <span class="p">)</span>
+
+        <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">),</span> <span class="n">action</span>
+
+    <span class="n">initial_carry</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">actions</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+        <span class="n">training_step</span><span class="p">,</span>
+        <span class="n">initial_carry</span><span class="p">,</span>
+        <span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">num_steps</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">optimal_action</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">env_state</span><span class="p">)</span>
+
+    <span class="c1"># Percentage of optimal actions in final 100 steps</span>
+    <span class="n">final_optimal_pct</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+        <span class="n">actions</span><span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">:]</span> <span class="o">==</span> <span class="n">optimal_action</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">final_optimal_pct</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">num_runs</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">mu</span> <span class="ow">in</span> <span class="n">reward_means</span><span class="p">:</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">KArmedBandit</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">mu</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">use_baseline</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">GradientBanditAgent</span><span class="p">(</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+            <span class="n">use_baseline</span><span class="o">=</span><span class="n">use_baseline</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batched_experiment</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">run_key</span><span class="p">:</span> <span class="n">run_experiment</span><span class="p">(</span>
+                    <span class="n">run_key</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">agent</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">final_pct</span> <span class="o">=</span> <span class="n">batched_experiment</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+
+        <span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">final_pct</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">means_with</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">means_without</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">mu</span> <span class="ow">in</span> <span class="n">reward_means</span><span class="p">:</span>
+    <span class="n">means_with</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="kc">True</span><span class="p">)])</span>
+    <span class="p">)</span>
+    <span class="n">means_without</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="kc">False</span><span class="p">)])</span>
+    <span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">reward_means</span><span class="p">,</span>
+    <span class="n">means_with</span><span class="p">,</span>
+    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;With baseline&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">reward_means</span><span class="p">,</span>
+    <span class="n">means_without</span><span class="p">,</span>
+    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Without baseline&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Reward offset (μ)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Mean % Optimal Actions (Last 100 Steps)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Effect of Reward Offset on Gradient Bandits&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/0b6e85e63ea782d7f2f51675f75695d8fb2a94b5dcc4af7544df1c68ff7766e9.png" src="_images/0b6e85e63ea782d7f2f51675f75695d8fb2a94b5dcc4af7544df1c68ff7766e9.png" />
+</div>
+</div>
+<p>The baseline agent maintains fairly consistent performance as the reward offset increases. In contrast, the agent without a baseline becomes progressively worse. Let’s examine the final optimal-action frequencies across individual runs rather than looking only at their averages.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+    <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">mu</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reward_means</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">use_baseline</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]):</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">)]</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span>
+            <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+            <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Mean: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;μ=</span><span class="si">{</span><span class="n">mu</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;baseline&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">use_baseline</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;no baseline&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">row</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;% Optimal Actions&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Number of Runs&quot;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+    <span class="s2">&quot;Distribution of Final Performance by Reward Offset&quot;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/262f15ad14a89ebf15e33bf8c3c8f158717f7cda6d968e31cfcd16889fb3ff27.png" src="_images/262f15ad14a89ebf15e33bf8c3c8f158717f7cda6d968e31cfcd16889fb3ff27.png" />
+</div>
+</div>
+<p>The distribution of optimal-action frequencies remains relatively stable with a baseline. Without one, it shifts sharply toward zero as the reward offset increases. At <span class="math notranslate nohighlight">\(\mu=8\)</span>, most runs rarely select the optimal action during the final 100 steps.</p>
+<p>Next, let’s compare the variance of the gradient estimates with and without a baseline, using the same reward offsets.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Configuration</span>
+<span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">100_000</span>
+<span class="n">reward_means</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">]</span>
+
+<span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># Fix a single bandit problem</span>
+<span class="n">key</span><span class="p">,</span> <span class="n">env_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="n">q_base</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">env_key</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">k</span><span class="p">,))</span>
+
+<span class="c1"># Fix the policy: all preferences initially zero</span>
+<span class="n">H</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+
+<span class="c1"># Generate shared action and reward randomness</span>
+<span class="n">key</span><span class="p">,</span> <span class="n">action_key</span><span class="p">,</span> <span class="n">noise_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="n">actions</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span>
+    <span class="n">action_key</span><span class="p">,</span>
+    <span class="n">a</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,),</span>
+    <span class="n">p</span><span class="o">=</span><span class="n">probs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">noise</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">noise_key</span><span class="p">,</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,))</span>
+
+<span class="c1"># Score-function gradients: ∇ log π(A)</span>
+<span class="n">one_hot</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">one_hot</span><span class="p">(</span><span class="n">actions</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+<span class="n">score_gradients</span> <span class="o">=</span> <span class="n">one_hot</span> <span class="o">-</span> <span class="n">probs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">measure_gradient_variance</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">):</span>
+    <span class="c1"># Same underlying action values, shifted by mu</span>
+    <span class="n">q_star</span> <span class="o">=</span> <span class="n">q_base</span> <span class="o">+</span> <span class="n">mu</span>
+
+    <span class="c1"># Observed rewards</span>
+    <span class="n">rewards</span> <span class="o">=</span> <span class="n">q_star</span><span class="p">[</span><span class="n">actions</span><span class="p">]</span> <span class="o">+</span> <span class="n">noise</span>
+
+    <span class="c1"># Exact expected reward under the fixed policy</span>
+    <span class="n">baseline</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">q_star</span><span class="p">)</span> <span class="k">if</span> <span class="n">use_baseline</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+    <span class="c1"># Stochastic gradient estimates</span>
+    <span class="n">gradients</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">rewards</span> <span class="o">-</span> <span class="n">baseline</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">score_gradients</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Mean gradient</span>
+    <span class="n">mean_gradient</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Total variance: sum of component variances</span>
+    <span class="n">total_variance</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+        <span class="n">jnp</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_variance</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean_gradient</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;With baseline&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;Without baseline&quot;</span><span class="p">:</span> <span class="p">[],</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">mu</span> <span class="ow">in</span> <span class="n">reward_means</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">use_baseline</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+        <span class="n">variance</span><span class="p">,</span> <span class="n">mean_grad</span> <span class="o">=</span> <span class="n">measure_gradient_variance</span><span class="p">(</span>
+            <span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span>
+        <span class="p">)</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;With baseline&quot;</span>
+            <span class="k">if</span> <span class="n">use_baseline</span>
+            <span class="k">else</span> <span class="s2">&quot;Without baseline&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">results</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot gradient variance</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">variances</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">reward_means</span><span class="p">,</span>
+        <span class="n">variances</span><span class="p">,</span>
+        <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Reward offset (μ)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Total gradient variance&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Effect of Reward Offset on Policy-Gradient Variance&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/647a1246d46af171dba95624ab8e0a19c3389baf5a1276fb39dc936cd09fe9c3.png" src="_images/647a1246d46af171dba95624ab8e0a19c3389baf5a1276fb39dc936cd09fe9c3.png" />
+</div>
+</div>
+<p>We can observe that the gradient variance remains relatively low with a baseline, while the variance without a baseline increases sharply with the reward offset. This is consistent with the differences we observed in learning performance.</p>
+<p>Finally, let’s compare policy entropy across reward offsets, including how entropy differs between successful and unsuccessful runs.</p>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">num_runs</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">num_steps</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<span class="n">reward_means</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">]</span>
+<span class="n">baseline_options</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+
+<span class="c1"># Successful = optimal action chosen at least 90%</span>
+<span class="c1"># of the time during the final 100 steps.</span>
+<span class="n">success_threshold</span> <span class="o">=</span> <span class="mf">90.0</span>
+<span class="n">evaluation_window</span> <span class="o">=</span> <span class="mi">100</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_experiment</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">agent</span><span class="p">):</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">env_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">env_key</span><span class="p">)</span>
+    <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="n">optimal_action</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">env_state</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span> <span class="o">=</span> <span class="n">carry</span>
+
+        <span class="n">key</span><span class="p">,</span> <span class="n">action_key</span><span class="p">,</span> <span class="n">reward_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+        <span class="c1"># Measure policy entropy BEFORE the action/update</span>
+        <span class="n">log_probs</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">agent_state</span><span class="o">.</span><span class="n">H</span><span class="p">)</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_probs</span><span class="p">)</span>
+
+        <span class="n">entropy</span> <span class="o">=</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probs</span> <span class="o">*</span> <span class="n">log_probs</span><span class="p">)</span>
+
+        <span class="c1"># Select action</span>
+        <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">select_action</span><span class="p">(</span><span class="n">action_key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">)</span>
+
+        <span class="c1"># Environment interaction</span>
+        <span class="n">env_state</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="n">reward_key</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">action</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Update preferences</span>
+        <span class="n">agent_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">agent_state</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">reward</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span>
+        <span class="p">),</span> <span class="p">(</span>
+            <span class="n">action</span><span class="p">,</span> <span class="n">entropy</span>
+        <span class="p">)</span>
+
+    <span class="n">initial_carry</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">agent_state</span><span class="p">,</span> <span class="n">env_state</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">actions</span><span class="p">,</span> <span class="n">entropies</span><span class="p">)</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+        <span class="n">training_step</span><span class="p">,</span>
+        <span class="n">initial_carry</span><span class="p">,</span>
+        <span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">num_steps</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">actions</span><span class="p">,</span> <span class="n">entropies</span><span class="p">,</span> <span class="n">optimal_action</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">num_runs</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">mu</span> <span class="ow">in</span> <span class="n">reward_means</span><span class="p">:</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">KArmedBandit</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">mu</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">use_baseline</span> <span class="ow">in</span> <span class="n">baseline_options</span><span class="p">:</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">GradientBanditAgent</span><span class="p">(</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+            <span class="n">use_baseline</span><span class="o">=</span><span class="n">use_baseline</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">batched_experiment</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">run_key</span><span class="p">:</span> <span class="n">run_experiment</span><span class="p">(</span>
+                    <span class="n">run_key</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">agent</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">actions</span><span class="p">,</span> <span class="n">entropies</span><span class="p">,</span> <span class="n">optimal_actions</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">batched_experiment</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Convert to NumPy for analysis and plotting</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span>
+        <span class="n">entropies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">entropies</span><span class="p">)</span>
+        <span class="n">optimal_actions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimal_actions</span><span class="p">)</span>
+
+        <span class="c1"># Evaluate each run over its final 100 steps</span>
+        <span class="n">final_optimal_pct</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+            <span class="n">actions</span><span class="p">[:,</span> <span class="o">-</span><span class="n">evaluation_window</span><span class="p">:]</span>
+            <span class="o">==</span> <span class="n">optimal_actions</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">successful</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">final_optimal_pct</span> <span class="o">&gt;=</span> <span class="n">success_threshold</span>
+        <span class="p">)</span>
+
+        <span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;entropies&quot;</span><span class="p">:</span> <span class="n">entropies</span><span class="p">,</span>
+            <span class="s2">&quot;final_optimal_pct&quot;</span><span class="p">:</span> <span class="n">final_optimal_pct</span><span class="p">,</span>
+            <span class="s2">&quot;successful&quot;</span><span class="p">:</span> <span class="n">successful</span><span class="p">,</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_no-execute docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+    <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">),</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">mean_entropy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;entropies&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+
+    <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;μ=</span><span class="si">{</span><span class="n">mu</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">, &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;baseline&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">use_baseline</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;no baseline&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">steps</span><span class="p">,</span>
+        <span class="n">mean_entropy</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Training step&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Mean policy entropy&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Mean Policy Entropy During Training&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">mu</span> <span class="o">=</span> <span class="mf">8.0</span>
+
+<span class="k">for</span> <span class="n">use_baseline</span> <span class="ow">in</span> <span class="n">baseline_options</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">results</span><span class="p">[(</span><span class="n">mu</span><span class="p">,</span> <span class="n">use_baseline</span><span class="p">)]</span>
+
+    <span class="n">entropies</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;entropies&quot;</span><span class="p">]</span>
+    <span class="n">successful</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;successful&quot;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">is_success</span><span class="p">,</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;successful&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;unsuccessful&quot;</span><span class="p">),</span>
+    <span class="p">]:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">successful</span> <span class="o">==</span> <span class="n">is_success</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">mean_entropy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+            <span class="n">entropies</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">label</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Baseline&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">use_baseline</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;No baseline&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; — </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2"> (n=</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">steps</span><span class="p">,</span>
+            <span class="n">mean_entropy</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Training step&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Mean policy entropy&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Entropy by Final Outcome (μ=8)&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+    <span class="s2">&quot;Gradient Bandits: Policy Entropy and Premature Concentration&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/7ab3b77cfe1cc1d4d20f68f8456b617557f5f24dfa33f2fd5d13b0e5ac4ead7d.png" src="_images/7ab3b77cfe1cc1d4d20f68f8456b617557f5f24dfa33f2fd5d13b0e5ac4ead7d.png" />
+</div>
+</div>
+<p>The left plot shows that policy entropy falls much faster without a baseline, while the baseline agent maintains a more spread-out policy for longer. The right plot shows a similar pattern in both successful and unsuccessful runs. The no-baseline agent concentrates its policy quickly, regardless of whether it has selected the optimal action.</p>
+</section>
+<section id="premature-policy-concentration-and-recovery">
+<h2>Premature Policy Concentration and Recovery<a class="headerlink" href="#premature-policy-concentration-and-recovery" title="Link to this heading">¶</a></h2>
+<p>A low-entropy policy is not necessarily a problem. In fact, if the agent has identified the best arm, we want it to select that arm most of the time. The problem occurs when the policy becomes highly concentrated on a suboptimal action early in training.</p>
+<section id="how-softmax-concentration-affects-exploration">
+<h3>How Softmax Concentration Affects Exploration<a class="headerlink" href="#how-softmax-concentration-affects-exploration" title="Link to this heading">¶</a></h3>
+<p>Recall that the softmax policy converts action preferences into probabilities:</p>
+<div class="math notranslate nohighlight">
+\[
+\pi(a)=\frac{\exp(H(a))}{\sum_b\exp(H(b))}
+\]</div>
+<p>For any two actions <span class="math notranslate nohighlight">\(a_1\)</span> and <span class="math notranslate nohighlight">\(a_2\)</span>, their probability ratio is:</p>
+<div class="math notranslate nohighlight">
+\[
+\frac{\pi(a_1)}{\pi(a_2)}=\exp(H(a_1)-H(a_2))
+\]</div>
+<p>This means small differences in preferences can produce large differences in selection probabilities. If one action’s preference is greater than another’s by <span class="math notranslate nohighlight">\(5\)</span>, it is about 148 times as likely to be selected. If the difference is <span class="math notranslate nohighlight">\(10\)</span>, it is about 22,026 times as likely.</p>
+<p>A few large stochastic updates can therefore make one action dominate the policy. However, the policy has no way of knowing whether that action is actually optimal. It simply reflects the preferences learned so far.</p>
+</section>
+<section id="why-recovery-becomes-slow">
+<h3>Why Recovery Becomes Slow<a class="headerlink" href="#why-recovery-becomes-slow" title="Link to this heading">¶</a></h3>
+<p>Recall the preference update with a baseline:</p>
+<div class="math notranslate nohighlight">
+\[
+H_{t+1}(a)=H_t(a)+\alpha(R_t-b_t)\left(\mathbb{1}[a=A_t]-\pi_t(a)\right)
+\]</div>
+<p>Suppose the policy has become concentrated on a suboptimal action <span class="math notranslate nohighlight">\(a_s\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+\pi_t(a_s)\approx1
+\]</div>
+<p>There are two reasons why it can take a long time to recover.</p>
+<p>First, the alternative actions are rarely sampled. If the probability of selecting the optimal action <span class="math notranslate nohighlight">\(a^*\)</span> is very small, the agent may take many steps before trying it again. For a fixed selection probability <span class="math notranslate nohighlight">\(p\)</span>, the expected number of trials before the action is selected is:</p>
+<div class="math notranslate nohighlight">
+\[
+\mathbb{E}[T]=\frac{1}{p}
+\]</div>
+<p>For example, if an action has probability <span class="math notranslate nohighlight">\(0.001\)</span>, we would expect to wait 1,000 steps before selecting it, assuming that probability remains fixed.</p>
+<p>Second, the preference updates themselves become small. When the dominant action is selected, its update is:</p>
+<div class="math notranslate nohighlight">
+\[
+\Delta H(a_s)=\alpha(R_t-b_t)(1-\pi_t(a_s))
+\]</div>
+<p>As <span class="math notranslate nohighlight">\(\pi_t(a_s)\)</span> approaches <span class="math notranslate nohighlight">\(1\)</span>, the factor <span class="math notranslate nohighlight">\(1-\pi_t(a_s)\)</span> approaches zero. For an action <span class="math notranslate nohighlight">\(a\)</span> that was not selected, the update is:</p>
+<div class="math notranslate nohighlight">
+\[
+\Delta H(a)=-\alpha(R_t-b_t)\pi_t(a)
+\]</div>
+<p>If that action has a very small selection probability, its update will also be small. The agent therefore enters a regime in which it repeatedly selects the dominant action, rarely explores the alternatives, and makes only small preference updates on most steps.</p>
+<p>This creates a feedback loop. The current policy determines which actions are sampled, and those samples determine how the policy is updated.</p>
+</section>
+<section id="connecting-this-to-our-experiments">
+<h3>Connecting This to Our Experiments<a class="headerlink" href="#connecting-this-to-our-experiments" title="Link to this heading">¶</a></h3>
+<p>We can now connect our results. Increasing the common reward offset increased gradient variance for the agent without a baseline, despite leaving the expected gradient unchanged. The larger stochastic updates were accompanied by a much faster reduction in policy entropy.</p>
+<p>At <span class="math notranslate nohighlight">\(\mu=8\)</span>, the no-baseline agent’s entropy fell rapidly within roughly the first 100 steps, both in runs that eventually succeeded and in runs that failed. This tells us that rapid policy concentration is not the same as learning the optimal action. In many runs, the agent became highly confident in an action before it had gathered enough evidence to determine whether that action was optimal.</p>
+<p>Once a suboptimal action dominated the policy, the dynamics described above made it difficult to recover within our 1,000-step training horizon. Subtracting the running-average reward reduced the effect of the common offset, leading to more gradual policy concentration and better optimal-action selection in our experiments.</p>
+</section>
+<section id="does-premature-concentration-mean-permanent-failure">
+<h3>Does Premature Concentration Mean Permanent Failure?<a class="headerlink" href="#does-premature-concentration-mean-permanent-failure" title="Link to this heading">¶</a></h3>
+<p>Not necessarily. As long as the action preferences are finite, softmax assigns a positive probability to every action. A suboptimal action does not become permanently inaccessible simply because the policy strongly favors another action.</p>
+<p>However, the probability of sampling an alternative can become so small that recovery takes much longer than the training horizon. Our experiments therefore demonstrate a finite-horizon learning problem, not permanent convergence to a suboptimal policy.</p>
+<p>The broader point is that two gradient estimators with the same expectation can produce very different learning trajectories. In our experiments, subtracting a reward baseline reduced gradient variance, slowed premature policy concentration, and made the agent much more likely to identify and consistently select the optimal action.</p>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="intro.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
+            </a></p>
+<h1 class="logo"><a href="intro.html">Starburst</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How Gradient Variance Shapes Policy Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curse-of-dimensionality.html">The Curse of Dimensionality: Why It Matters Less Than You Think</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-flash-attn.html">How to Write a Flash Attention Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="intro.html">Documentation overview</a><ul>
+      <li>Previous: <a href="intro.html" title="previous chapter">Machine Learning Blog</a></li>
+      <li>Next: <a href="curse-of-dimensionality.html" title="next chapter">The Curse of Dimensionality: Why It Matters Less Than You Think</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/how-gradient-variance-shapes-policy-optimization-rewritten.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
