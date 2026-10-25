@@ -4,7 +4,7 @@
 format: jb-article
 root: intro
 sections:
-- file: how-gradient-variance-shapes-policy-optimization
+- file: how-gradient-variance-shapes-policy-optimization-rewritten
 - file: curse-of-dimensionality
 - file: pallas-flash-attn
 - file: how-mixture-of-experts-works-part-2
