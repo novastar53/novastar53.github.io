@@ -4,6 +4,8 @@
 format: jb-article
 root: intro
 sections:
+- file: monte-carlo-vs-td-partial-observability
+- file: law-of-large-numbers-clt
 - file: how-gradient-variance-shapes-policy-optimization-rewritten
 - file: curse-of-dimensionality
 - file: pallas-flash-attn
