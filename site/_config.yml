@@ -8,6 +8,8 @@ description: A blog exploring AI and Machine Learning
 
 sphinx:
   config:
+    html_baseurl: "https://blog.vikrampawar.com/"  # canonical URL, used by the sitemap (trailing slash required)
+    sitemap_url_scheme: "{link}"  # site is single-language; don't insert /en/
     project: 'Starburst'
     author: 'Vikram Pawar'
     copyright: 'Vikram Pawar [novastar53.github.io]'
@@ -22,6 +24,7 @@ sphinx:
       - css/custom.css
     html_js_files:
       - js/custom.js
+      - js/analytics.js
     ogp_site_url: "https://blog.vikrampawar.com"
     ogp_image: "https://blog.vikrampawar.com/_static/starburst_narrow.png"
     ogp_use_first_image: true
@@ -30,6 +33,7 @@ sphinx:
     nb_execution_timeout: 3600
   extra_extensions:
     - sphinxext.opengraph
+    - sphinx_sitemap
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -51,8 +55,8 @@ bibtex_bibfiles:
 # Information about where the book exists on the web
 repository:
   url: https://github.com/novastar53/novastar53.github.io # Online location of your book
-  path_to_book: docs  # Optional path to your book, relative to the repository root
-  branch: gh-pages  # Which branch of the repository should be used when creating links (optional)
+  path_to_book: site  # Optional path to your book, relative to the repository root
+  branch: main  # Source notebooks live on main (gh-pages is the deployed site)
 
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository

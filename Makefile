@@ -31,6 +31,7 @@ build:
 	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir
 	cp CNAME site/_build/html/  # Preserve custom domain for GitHub Pages
 	. $(VENV) && python generate_rss.py site/_build/html https://blog.vikrampawar.com  # RSS feed + autodiscovery
+	. $(VENV) && python annotate_posts.py site/_build/html  # dates, reading time, prev/next nav
 
 deploy-local:
 	. $(VENV) && python -m http.server 8000 --directory site/_build/html
