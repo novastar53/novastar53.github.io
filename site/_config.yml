@@ -11,20 +11,25 @@ sphinx:
     project: 'Starburst'
     author: 'Vikram Pawar'
     copyright: 'Vikram Pawar [novastar53.github.io]'
-    html_theme: alabaster #sphinx_book_theme 
-    html_theme_options: 
-      body_min_width: 480 
+    html_theme: alabaster #sphinx_book_theme
+    html_theme_options:
+      body_min_width: 480
       body_max_width: 1024
       sidebar_width: 25%
       page_width: 99%
     html_css_files:
+      - css/fonts.css
       - css/custom.css
     html_js_files:
       - js/custom.js
+    ogp_site_url: "https://blog.vikrampawar.com"
+    ogp_image: "https://blog.vikrampawar.com/_static/starburst_narrow.png"
+    ogp_use_first_image: true
+    ogp_description_length: 200
     nb_execution_show_tb: true
     nb_execution_timeout: 3600
-  #extra_extensions:
-  #  - jupyterbook_patches
+  extra_extensions:
+    - sphinxext.opengraph
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -52,4 +57,4 @@ repository:
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
-  favicon: starburst (200 x 200 px).png
+  favicon: starburst.png

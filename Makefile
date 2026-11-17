@@ -30,6 +30,7 @@ build:
 	cp -r site/_images/* site/_build/html/_images/ 2>/dev/null || true  # Copy static images
 	cp -r site/media site/_build/html/ # TODO: Find a better way to include the manim media dir
 	cp CNAME site/_build/html/  # Preserve custom domain for GitHub Pages
+	. $(VENV) && python generate_rss.py site/_build/html https://blog.vikrampawar.com  # RSS feed + autodiscovery
 
 deploy-local:
 	. $(VENV) && python -m http.server 8000 --directory site/_build/html

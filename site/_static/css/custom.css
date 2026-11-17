@@ -1,32 +1,192 @@
+/* ===================================================================
+   Design tokens
+   =================================================================== */
+:root {
+  --bg:            #faf9f6;
+  --bg-code:       #f3f1ec;
+  --bg-code-out:   #f7f6f3;
+  --ink:           #2d2d2d;
+  --ink-soft:      #4a4a4a;
+  --ink-faint:     #888;
+  --accent:        #d9482b;
+  --accent-soft:   #f3ddd6;
+  --card:          #ffffff;
+  --rule:          #e2dfd8;
+  --radius:        6px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* sidebar headings — Alabaster defaults to Georgia here */
+div.sphinxsidebar h3,
+div.sphinxsidebar h4 {
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+/* ===================================================================
+   Typography
+   =================================================================== */
 body, div.body, div.document {
-  background-color: #faf9f6 !important;
+  background-color: var(--bg) !important;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 17.5px;
+  line-height: 1.7;
+  color: var(--ink);
 }
 
-/* Style images to stand out against off-white background */
-div.body img {
-  background-color: #fff;
-  padding: 10px;
+div.body p, div.body li, div.body dd {
+  font-size: 1rem;
+}
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+div.body h1 { font-size: 2rem;    font-weight: 800; }
+div.body h2 { font-size: 1.5rem;  font-weight: 700; }
+div.body h3 { font-size: 1.2rem;  font-weight: 700; }
+div.body h4 { font-size: 1.05rem; font-weight: 600; }
+
+div.body h2 {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3em;
+}
+
+/* Links — accent everywhere */
+div.body a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+}
+div.body a:hover {
+  border-bottom: 1px solid var(--accent);
+}
+
+/* ===================================================================
+   Code: inline + cells
+   =================================================================== */
+tt, code, pre {
+  font-family: 'JetBrains Mono', 'Menlo', monospace !important;
+  font-size: 0.85em;
+}
+
+/* inline code */
+div.body tt, div.body code {
+  background-color: var(--bg-code);
+  border: 1px solid var(--rule);
   border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 0.1em 0.35em;
 }
 
+/* input cells — darker panel, accent edge */
+div.cell_input div.highlight,
+div.body div.highlight {
+  background: transparent;
+}
+div.cell_input div.highlight pre,
+div.body div.highlight pre {
+  background-color: var(--bg-code);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.9em 1.1em;
+  line-height: 1.5;
+  box-shadow: none;
+  font-size: 0.82rem;
+}
+
+/* output cells — lighter, no accent edge */
+div.cell_output div.highlight pre,
+div.cell_output pre {
+  background-color: var(--bg-code-out);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.9em 1.1em;
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+/* strip the generic card treatment from any image inside cells */
+div.cell img,
+div.cell_output img {
+  background: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* blockquotes — visible but quiet */
+div.body blockquote {
+  border-left: 3px solid var(--rule);
+  background: transparent;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 1em 0;
+  padding: 0.2em 0 0.2em 1.2em;
+}
+
+/* ===================================================================
+   Figures — card treatment only for real figures
+   =================================================================== */
+div.body img {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+div.body .figure img,
+div.body img.align-center {
+  background-color: var(--card);
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+div.body .figure .caption,
+div.body figcaption,
+p.caption {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 0.5em;
+}
+
+/* ===================================================================
+   Sidebar year groups (unchanged behavior, retouched colors)
+   =================================================================== */
 .sphinxsidebarwrapper > .caption {
   cursor: pointer;
   display: flex;
   align-items: center;
   padding: 0.5rem 1rem;
+  font-family: 'Inter', -apple-system, sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
-  color: #404040;
-  background-color: #e6e6e6;
-  border-bottom: 1px solid #ccc;
+  color: var(--ink-soft);
+  background-color: var(--bg-code);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
   transition: background-color 0.2s ease;
   user-select: none;
-  margin: 0;
+  margin: 0.4rem 0;
 }
 
 .sphinxsidebarwrapper > .caption:hover {
-  background-color: #d0d0d0;
+  background-color: var(--accent-soft);
 }
 
 .sphinxsidebarwrapper > .caption::before {
@@ -37,7 +197,7 @@ div.body img {
   margin-right: 0.5rem;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 6px solid #404040;
+  border-left: 6px solid var(--accent);
   transition: transform 0.2s ease;
 }
 
@@ -66,4 +226,312 @@ div.body img {
 
 .sphinxsidebarwrapper > section li {
   padding: 0.2rem 0;
+}
+
+/* ===================================================================
+   Dark mode
+   =================================================================== */
+html[data-theme="dark"] {
+    --bg:           #1a1917;
+    --bg-code:      #242220;
+    --bg-code-out:  #201e1c;
+    --card:         #262422;
+    --ink:          #e8e4dc;
+    --ink-soft:     #c4bfb6;
+    --ink-faint:    #8f8a81;
+    --accent:       #ff6a45;
+    --accent-soft:  #4a2b1f;
+    --rule:         #3a362f;
+
+  body, div.body, div.document {
+    background-color: var(--bg) !important;
+    color: var(--ink);
+  }
+
+  /* Alabaster hardcodes light values for these */
+  hr { border-color: var(--rule); }
+  div.footer, div.footer a { color: var(--ink-faint); }
+  div.sphinxsidebar, div.sphinxsidebar a {
+    color: var(--ink-soft);
+  }
+  div.sphinxsidebar a {
+    border-bottom-color: var(--ink-faint);
+  }
+  div.sphinxsidebar a:hover {
+    border-bottom-color: var(--ink-soft);
+  }
+
+  /* MathJax v3 follows CSS color */
+  div.body mjx-container {
+    color: var(--ink);
+  }
+
+  /* admonitions — neutralize Sphinx's light panels */
+  div.body div.admonition, div.body div.admonition p.admonition-title {
+    background: var(--bg-code-out);
+    color: var(--ink-soft);
+  }
+
+  /* ----------------------------------------------------------------
+     Pygments: the built stylesheet is a light-background palette,
+     so retokenize for dark panels (warm-tinted github-dark style)
+     ---------------------------------------------------------------- */
+  div.highlight pre, div.cell_output pre {
+    color: #ddd8cf;
+  }
+  div.highlight .w  { color: #ddd8cf; }
+  div.highlight .c, div.highlight .cm, div.highlight .c1, div.highlight .cs,
+  div.highlight .cp, div.highlight .cpf, div.highlight .ch {
+    color: #8f8a81;
+    font-style: italic;
+  }
+  div.highlight .k, div.highlight .kc, div.highlight .kd, div.highlight .kn,
+  div.highlight .kp, div.highlight .kr, div.highlight .kt, div.highlight .ow {
+    color: #ff7a5c;
+  }
+  div.highlight .s, div.highlight .sa, div.highlight .sb, div.highlight .sc,
+  div.highlight .dl, div.highlight .sd, div.highlight .s2, div.highlight .sh,
+  div.highlight .sx, div.highlight .sr, div.highlight .s1, div.highlight .ss {
+    color: #d9b36c;
+  }
+  div.highlight .m, div.highlight .mb, div.highlight .mf, div.highlight .mh,
+  div.highlight .mi, div.highlight .il, div.highlight .mo {
+    color: #c8a6e8;
+  }
+  div.highlight .nb, div.highlight .bp, div.highlight .fm {
+    color: #f0a35e;
+  }
+  div.highlight .nf, div.highlight .na, div.highlight .nd, div.highlight .nt {
+    color: #e8b566;
+  }
+  div.highlight .nc, div.highlight .nn, div.highlight .no, div.highlight .ne {
+    color: #a8c8e8;
+  }
+  div.highlight .nv, div.highlight .vc, div.highlight .vg, div.highlight .vi,
+  div.highlight .vm, div.highlight .nl, div.highlight .ni, div.highlight .go {
+    color: #ddd8cf;
+  }
+  div.highlight .o, div.highlight .p {
+    color: #c4bfb6;
+  }
+  div.highlight .err {
+    color: #ff7a5c;
+    background: none;
+  }
+  div.highlight .gd { color: #ff7a5c; }
+  div.highlight .gi { color: #9ec89e; }
+  div.highlight .gh, div.highlight .gu { color: #a8c8e8; }
+  div.highlight .gr, div.highlight .gt { color: #ff7a5c; }
+  div.highlight .ge, div.highlight .gs { font-weight: bold; }
+  div.highlight .hll { background-color: #2e2b27; }
+}
+
+/* ===================================================================
+   Theme toggle
+   =================================================================== */
+button.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0 0 0.8rem 0;
+  padding: 0.45rem 1rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--bg-code);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button.theme-toggle:hover {
+  background: var(--accent-soft);
+}
+
+/* ===================================================================
+   Active page in sidebar
+   =================================================================== */
+.sphinxsidebarwrapper a.current {
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom: none;
+  border-left: 3px solid var(--accent);
+  padding-left: 0.5rem;
+  margin-left: -0.75rem;
+}
+
+/* ===================================================================
+   Landing page
+   =================================================================== */
+.landing-hero {
+  text-align: center;
+  padding: 2rem 0 1.5rem;
+}
+
+.landing-hero h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  border-bottom: none;
+  margin: 0.8rem 0 0.5rem;
+}
+
+.landing-tagline {
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  max-width: 34rem;
+  margin: 0 auto 1.5rem;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+div.body a.landing-button {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+div.body a.landing-button:hover {
+  border-bottom: 1px solid var(--accent);
+  filter: brightness(1.08);
+}
+
+div.body a.landing-button-ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+div.body a.landing-button-ghost:hover {
+  background: var(--accent-soft);
+  filter: none;
+}
+
+h2.landing-section {
+  margin-top: 2.5rem;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 1.2rem 0 0.5rem;
+}
+
+div.body a.post-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+div.body a.post-card:hover {
+  border-bottom: 1px solid var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.post-title {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+a.post-card:hover .post-title {
+  color: var(--accent);
+}
+
+.post-tag {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  align-self: flex-start;
+}
+
+.landing-archive-note {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+/* ===================================================================
+   Mobile: sidebar becomes an off-canvas drawer
+   =================================================================== */
+button.sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  button.sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1001;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    cursor: pointer;
+  }
+
+  div.bodywrapper {
+    margin-left: 0 !important;
+  }
+
+  div.body {
+    padding: 60px 16px 0 16px !important;
+  }
+
+  div.sphinxsidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 78% !important;
+    max-width: 320px;
+    margin: 0 !important;
+    background: var(--bg);
+    border-right: 1px solid var(--rule);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 1000;
+  }
+
+  body.sidebar-open div.sphinxsidebar {
+    transform: none;
+    box-shadow: 0 0 40px rgba(0,0,0,0.35);
+  }
 }
