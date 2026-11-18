@@ -20,11 +20,12 @@ jobs:
           cache: pip
 
       # Notebooks are frozen (no-execute), so the build only needs the
-      # docs toolchain — not the full jax/torch/tf stack or the local jaxpt wheel.
+      # docs toolchain — not the full jax/torch/tf stack, the local jaxpt
+      # wheel, or manim (no notebook uses the manim-slides directive).
       - name: Install build dependencies
         run: |
           pip install jupyter-book sphinxext-opengraph sphinx-sitemap \
-                      sphinx-comments ghp-import "manim-slides[sphinx-directive]"
+                      sphinx-comments ghp-import
 
       - name: Generate sidebar
         run: python generate_sidebar.py
@@ -46,7 +47,7 @@ jobs:
           python annotate_posts.py site/_build/html
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/_build/html
