@@ -22,10 +22,12 @@ jobs:
       # Notebooks are frozen (no-execute), so the build only needs the
       # docs toolchain — not the full jax/torch/tf stack, the local jaxpt
       # wheel, or manim (no notebook uses the manim-slides directive).
+      # jupyter-book is pinned to the local uv.lock version: the 2.x CLI
+      # silently no-ops on this build command.
       - name: Install build dependencies
         run: |
-          pip install jupyter-book sphinxext-opengraph sphinx-sitemap \
-                      sphinx-comments ghp-import
+          pip install "jupyter-book==1.0.4.post1" sphinxext-opengraph \
+                      sphinx-sitemap sphinx-comments ghp-import
 
       - name: Generate sidebar
         run: python generate_sidebar.py
