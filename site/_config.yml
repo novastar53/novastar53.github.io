@@ -41,6 +41,7 @@ execute:
   execute_notebooks: auto
   timeout: 3600
   allow_errors: true
+  exclude_patterns: ['WIP_*']  # drafts render from saved outputs, never executed
 
 
 # Define the name of the latex output file for PDF builds

@@ -30,7 +30,7 @@ python freeze_notebook.py site/notebook.ipynb           # Overwrite in place
 python freeze_notebook.py site/notebook.ipynb output.ipynb  # Save to new file
 ```
 
-This adds "no-execute" tags to all cells, useful for older notebooks with long-running computations.
+This adds "skip-execution" tags to all cells, useful for older notebooks with long-running computations.
 
 **Generate sidebar** (runs automatically during build):
 ```bash
@@ -77,5 +77,15 @@ Prefix notebooks with `WIP_` to exclude them from the sidebar while in developme
 ## Execution Behavior
 
 Notebooks execute automatically during build (1 hour timeout, `allow_errors: true`). To prevent execution:
-- Use `freeze_notebook.py` to add no-execute tags
-- Or add `"no-execute"` tag to specific cells manually
+- Use `freeze_notebook.py` to add skip-execution tags
+- Or add `"skip-execution"` tag to specific cells manually
+
+## Blog Plot Style
+
+To keep figures consistent across posts (and readable in dark mode), notebooks should apply the shared style:
+
+```python
+plt.style.use("../mplstyle/blog.mplstyle")
+```
+
+It sets transparent backgrounds (`savefig.transparent: True`), the brand accent (`#d9482b`) as the first color in the cycle, and blog-consistent typography. Figures saved with it blend into the page in both light and dark mode.

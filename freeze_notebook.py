@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-A script to add a "no-execute" tag to all cells in a Jupyter Notebook.
+A script to add a "skip-execution" tag to all cells in a Jupyter Notebook.
 
 This script:
 - Reads the notebook (JSON format).
 - Iterates over all cells.
 - For each cell, it checks if the metadata dictionary has a "tags" list.
-- If the tag "no-execute" is not already present, it appends it.
+- If the tag "skip-execution" is not already present, it appends it.
 - Writes the updated notebook back to disk.
 
 Usage:
@@ -21,7 +21,7 @@ import os
 
 def add_no_execute_tag(notebook_path, output_path=None):
     """
-    Reads a notebook, adds the "no-execute" tag to every cell, and saves the modified notebook.
+    Reads a notebook, adds the "skip-execution" tag to every cell, and saves the modified notebook.
     
     Args:
         notebook_path (str): Path to the notebook file to be modified.
@@ -42,9 +42,9 @@ def add_no_execute_tag(notebook_path, output_path=None):
         # Get the existing tags or initialize an empty list.
         tags = metadata.get("tags", [])
         
-        # If "no-execute" tag is not in the tags, add it.
-        if "no-execute" not in tags:
-            tags.append("no-execute")
+        # If "skip-execution" tag is not in the tags, add it.
+        if "skip-execution" not in tags:
+            tags.append("skip-execution")
         
         # Update the metadata for the cell.
         metadata["tags"] = tags
