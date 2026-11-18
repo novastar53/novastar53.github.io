@@ -1,28 +1,41 @@
 #!/usr/bin/env python3
-"""Generate sidebar year groupings from notebook file dates."""
+"""Generate sidebar year groupings from post dates.
+
+Dates come from site/post_dates.yml (the source of truth, since CI
+checkouts lose file-creation times); falls back to file birth time.
+"""
 
 import os
 import re
+from datetime import datetime
 from pathlib import Path
+
+import yaml
 
 SITE_DIR = Path(__file__).parent / "site"
 TOC_FILE = SITE_DIR / "_toc.yml"
+DATES_FILE = SITE_DIR / "post_dates.yml"
 JS_TEMPLATE_FILE = SITE_DIR / "_static" / "js" / "sidebar_template.js"
 JS_FILE = SITE_DIR / "_static" / "js" / "custom.js"
 
 
-def get_file_year(file_path: Path) -> str:
-    """Get the year from a file's creation date."""
-    import subprocess
-    from datetime import datetime
-    # Use stat to get birth time (creation date) on macOS
-    result = subprocess.run(
-        ["stat", "-f", "%B", str(file_path)],
-        capture_output=True,
-        text=True
-    )
-    timestamp = int(result.stdout.strip())
-    return datetime.fromtimestamp(timestamp).strftime("%Y")
+def load_post_dates() -> dict[str, str]:
+    """Map post name -> ISO date string."""
+    if DATES_FILE.exists():
+        data = yaml.safe_load(DATES_FILE.read_text()) or {}
+        return {k: str(v) for k, v in data.items() if not k.startswith("#")}
+    return {}
+
+
+def get_file_year(file_path: Path, post_dates: dict[str, str], name: str) -> str:
+    """Get the publication year for a post."""
+    date = post_dates.get(name)
+    if date:
+        return date[:4]
+    # Fallback: file creation time (st_birthtime on macOS)
+    st = file_path.stat()
+    ts = getattr(st, "st_birthtime", st.st_mtime)
+    return datetime.fromtimestamp(ts).strftime("%Y")
 
 
 def parse_toc(toc_file: Path) -> list[str]:
@@ -42,7 +55,8 @@ def parse_toc(toc_file: Path) -> list[str]:
 
 
 def generate_year_groups(site_dir: Path, notebooks: list[str]) -> dict[str, list[str]]:
-    """Group notebooks by their file modification year."""
+    """Group notebooks by their publication year."""
+    post_dates = load_post_dates()
     year_groups = {}
     for notebook in notebooks:
         # Skip WIP notebooks
@@ -50,7 +64,7 @@ def generate_year_groups(site_dir: Path, notebooks: list[str]) -> dict[str, list
             continue
         notebook_path = site_dir / f"{notebook}.ipynb"
         if notebook_path.exists():
-            year = get_file_year(notebook_path)
+            year = get_file_year(notebook_path, post_dates, notebook)
             if year not in year_groups:
                 year_groups[year] = []
             year_groups[year].append(notebook)

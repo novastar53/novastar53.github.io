@@ -1,0 +1,17 @@
+# Publication dates for blog posts, captured from file creation dates.
+# This file is the source of truth for dates (CI checkouts lose birth times).
+monte-carlo-vs-td-partial-observability: 2026-11-14
+law-of-large-numbers-clt: 2026-11-02
+how-gradient-variance-shapes-policy-optimization-rewritten: 2026-10-24
+curse-of-dimensionality: 2026-06-21
+pallas-flash-attn: 2026-02-07
+how-mixture-of-experts-works-part-2: 2026-01-14
+pallas-matmul: 2026-01-02
+pallas-softmax: 2026-01-07
+how-mixture-of-experts-works-part-1: 2025-08-01
+how-batchnorm-works-part-2: 2025-04-13
+how-positional-embeddings-work: 2024-10-14
+how-residual-connections-work: 2025-01-28
+how-dropout-works: 2024-10-13
+how-batchnorm-works: 2025-04-13
+nadaraya-watson-kernel-regression: 2024-09-25

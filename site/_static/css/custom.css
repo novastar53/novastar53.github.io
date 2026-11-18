@@ -678,3 +678,11 @@ a.colab-link {
     margin-left: 0;
   }
 }
+
+/* About page photo */
+img.about-photo {
+  border-radius: 50%;
+  border: 3px solid var(--rule);
+  display: block;
+  margin: 0 0 1.5rem;
+}
