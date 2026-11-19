@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-article
-root: intro
+root: index
 sections:
 - file: monte-carlo-vs-td-partial-observability
 - file: law-of-large-numbers-clt

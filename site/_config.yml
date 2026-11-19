@@ -6,9 +6,16 @@ author: Vikram Pawar
 logo: starburst_narrow.png
 description: A blog exploring AI and Machine Learning
 
+# Keep drafts and superseded notebooks out of the build entirely
+# (they'd otherwise be published and listed in the sitemap)
+exclude_patterns:
+  - WIP_*
+  - how-gradient-variance-shapes-policy-optimization.ipynb
+
 sphinx:
   config:
     html_baseurl: "https://blog.vikrampawar.com/"  # canonical URL, used by the sitemap (trailing slash required)
+    html_extra_path: ['robots.txt']
     sitemap_url_scheme: "{link}"  # site is single-language; don't insert /en/
     project: 'Starburst'
     author: 'Vikram Pawar'
