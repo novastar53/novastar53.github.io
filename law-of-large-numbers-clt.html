@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <link rel="alternate" type="application/rss+xml" title="RSS feed" href="https://blog.vikrampawar.com/feed.xml" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="The Law of Large Numbers and the Central Limit Theorem" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://blog.vikrampawar.com/law-of-large-numbers-clt.html" />
+<meta property="og:site_name" content="Starburst" />
+<meta property="og:description" content="Gaussian Inksplats Introduction: We often use an average to estimate an unknown quantity, such as the probability that a coin lands on heads. But an average calculated from one set of observations ..." />
+<meta property="og:image" content="https://blog.vikrampawar.com/_images/gaussian-ink.png" />
+<meta property="og:image:alt" content="Gaussian Inksplats" />
+<meta name="description" content="Gaussian Inksplats Introduction: We often use an average to estimate an unknown quantity, such as the probability that a coin lands on heads. But an average calculated from one set of observations ..." />
+
+    <title>The Law of Large Numbers and the Central Limit Theorem &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="_static/css/fonts.css?v=85143093" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3aaecbb0" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="_static/design-tabs.js?v=fcb327ea"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/custom.js?v=8a53aaa7"></script>
+    <script src="_static/js/analytics.js?v=6625d482"></script>
+    <script src="_static/js/sidebar_template.js?v=34db67b7"></script>
+    <link rel="canonical" href="https://blog.vikrampawar.com/law-of-large-numbers-clt.html" />
+    <link rel="icon" href="_static/starburst.png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How Gradient Variance Shapes Policy Optimization" href="how-gradient-variance-shapes-policy-optimization-rewritten.html" />
+    <link rel="prev" title="Why Monte Carlo Beats TD Learning in Some Partially Observable Environments" href="monte-carlo-vs-td-partial-observability.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="the-law-of-large-numbers-and-the-central-limit-theorem">
+<h1>The Law of Large Numbers and the Central Limit Theorem<a class="headerlink" href="#the-law-of-large-numbers-and-the-central-limit-theorem" title="Link to this heading">¶</a></h1><div class="post-meta">Nov 2026 &middot; 10 min read &middot; <a class="colab-link" href="https://colab.research.google.com/github/novastar53/novastar53.github.io/blob/main/site/law-of-large-numbers-clt.ipynb" target="_blank" rel="noopener">Open in Colab &#8599;</a></div>
+<p><img alt="Gaussian Inksplats" src="_images/gaussian-ink.png" /></p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>We often use an average to estimate an unknown quantity, such as the probability that a coin lands on heads. But an average calculated from one set of observations will differ from an average calculated from another. To use these estimates well, we need to understand how much they vary and what collecting more data actually improves.  The Law of Large Numbers and the Central Limit Theorem give us a foundation for understanding this behavior.  In this post, we’ll build that understanding through a sequence of coin-toss simulations. After each simulation, we’ll introduce the terminology and theory needed to explain the result. The aim is to understand what each theorem tells us about an estimate and what guarantees it provides.</p>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'seaborn-v0_8-darkgrid'</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">binom</span><span class="p">,</span> <span class="n">norm</span>
+
+<span class="n">random_generator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">2026</span><span class="p">)</span>
+<span class="n">heads_probability</span> <span class="o">=</span> <span class="mf">0.6</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+    <span class="s1">'figure.figsize'</span><span class="p">:</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+    <span class="s1">'axes.grid'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">'grid.alpha'</span><span class="p">:</span> <span class="mf">0.18</span><span class="p">,</span>
+    <span class="s1">'font.size'</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+</section>
+<section id="twenty-tosses">
+<h2>Twenty Tosses<a class="headerlink" href="#twenty-tosses" title="Link to this heading">¶</a></h2>
+<p>Let’s simulate 20 independent tosses. We already know that each toss has a fixed chance of producing heads, regardless of the previous results.  The fraction of heads is simply the number of heads divided by the number of tosses.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tosses</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">number_of_heads</span> <span class="o">=</span> <span class="n">tosses</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="n">fraction_of_heads</span> <span class="o">=</span> <span class="n">number_of_heads</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">tosses</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Tosses:'</span><span class="p">,</span> <span class="s1">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">'H'</span> <span class="k">if</span> <span class="n">outcome</span> <span class="k">else</span> <span class="s1">'T'</span> <span class="k">for</span> <span class="n">outcome</span> <span class="ow">in</span> <span class="n">tosses</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Heads: </span><span class="si">{</span><span class="n">number_of_heads</span><span class="si">}</span><span class="s1"> out of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tosses</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Fraction of heads: </span><span class="si">{</span><span class="n">fraction_of_heads</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Tosses: H H H H H T T T H T T H T T H H H T T H
+Heads: 11 out of 20
+Fraction of heads: 0.55
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">toss_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tosses</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">toss_numbers</span><span class="p">,</span> <span class="n">tosses</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span><span class="o">=</span><span class="n">toss_numbers</span><span class="p">,</span> <span class="n">yticks</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">yticklabels</span><span class="o">=</span><span class="p">[</span><span class="s1">'Tails'</span><span class="p">,</span> <span class="s1">'Heads'</span><span class="p">],</span>
+         <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">),</span> <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Toss number'</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'One experiment: 20 coin tosses'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/0e74bdc8581a250583c718d8ef93835e79d24858664ff93f6b9574b325ff2d9a.png" src="_images/0e74bdc8581a250583c718d8ef93835e79d24858664ff93f6b9574b325ff2d9a.png" />
+</div>
+</div>
+<p>Each toss produced a head or a tail, but their average can lie between 0 and 1. We obtained 11 heads from 20 tosses, giving a fraction of 0.55. This fraction is an estimate of the coin’s heads probability.</p>
+<section id="bernoulli-variables-and-the-sample-mean">
+<h3>Bernoulli Variables and the Sample Mean<a class="headerlink" href="#bernoulli-variables-and-the-sample-mean" title="Link to this heading">¶</a></h3>
+<p>A single toss recorded as 0 or 1 is a Bernoulli random variable. Writing <span class="math notranslate nohighlight">\(p\)</span> for the probability of heads,</p>
+<div class="math notranslate nohighlight">
+\[
+P(X=1)=p,\qquad P(X=0)=1-p.
+\]</div>
+<p>Its expected value is the probability-weighted average of the two outcomes:</p>
+<div class="math notranslate nohighlight">
+\[
+\mu=E[X]=1\cdot p+0\cdot(1-p) 
+\]</div>
+<p>The average calculated from a finite set of observations is called the sample mean. For <span class="math notranslate nohighlight">\(n\)</span> tosses,</p>
+<div class="math notranslate nohighlight">
+\[
+\bar X_n=\frac{1}{n}\sum_{i=1}^n X_i.
+\]</div>
+<p>Because heads is 1 and tails is 0, this is also the fraction of heads. In our first 20 tosses, <span class="math notranslate nohighlight">\(\bar X_{20}=0.55\)</span>. Let’s see how this sample mean changes when we keep collecting observations.</p>
+</section>
+</section>
+<section id="keep-tossing">
+<h2>Keep Tossing<a class="headerlink" href="#keep-tossing" title="Link to this heading">¶</a></h2>
+<p>We’ll extend this sequence to 10,000 tosses. After each new toss, we’ll calculate the fraction of heads seen so far. The two panels show the beginning of the sequence and the full run.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">additional_tosses</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10_000</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">tosses</span><span class="p">))</span>
+<span class="n">tosses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">tosses</span><span class="p">,</span> <span class="n">additional_tosses</span><span class="p">])</span>
+<span class="n">toss_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tosses</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">cumulative_heads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">tosses</span><span class="p">)</span>
+<span class="n">running_fractions</span> <span class="o">=</span> <span class="n">cumulative_heads</span> <span class="o">/</span> <span class="n">toss_numbers</span>
+
+<span class="k">for</span> <span class="n">number_of_tosses</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">]:</span>
+    <span class="n">current_fraction</span> <span class="o">=</span> <span class="n">running_fractions</span><span class="p">[</span><span class="n">number_of_tosses</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">number_of_tosses</span><span class="si">:</span><span class="s1">&gt;6,</span><span class="si">}</span><span class="s1"> tosses: fraction of heads = </span><span class="si">{</span><span class="n">current_fraction</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>    20 tosses: fraction of heads = 0.5500
+   100 tosses: fraction of heads = 0.5600
+ 1,000 tosses: fraction of heads = 0.5950
+10,000 tosses: fraction of heads = 0.6067
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">number_to_show</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">]):</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">toss_numbers</span><span class="p">[:</span><span class="n">number_to_show</span><span class="p">],</span> <span class="n">running_fractions</span><span class="p">[:</span><span class="n">number_to_show</span><span class="p">])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="s1">'Number of tosses so far'</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">'First </span><span class="si">{</span><span class="n">number_to_show</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> tosses'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Running fraction of heads'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/3da3599ac637674f35bec28efd4c41265440d8a62c9fab82c548a58083c72528.png" src="_images/3da3599ac637674f35bec28efd4c41265440d8a62c9fab82c548a58083c72528.png" />
+</div>
+</div>
+<p>The running fraction fluctuates substantially at the beginning and becomes more stable later. In this run, the estimate was 0.6100 after 100 tosses, moved to 0.5740 after 1,000, and reached 0.5943 after 10,000. Collecting more data improved the overall stability, but did not make the error decrease at every checkpoint.</p>
+<section id="the-law-of-large-numbers">
+<h3>The Law of Large Numbers<a class="headerlink" href="#the-law-of-large-numbers" title="Link to this heading">¶</a></h3>
+<p>The stabilization we just saw illustrates the Law of Large Numbers. For independent observations drawn from the same distribution, with a finite absolute expectation and mean <span class="math notranslate nohighlight">\(\mu\)</span>, the strong law states that</p>
+<div class="math notranslate nohighlight">
+\[
+\bar X_n\longrightarrow\mu\qquad\text{with probability 1 as }n\to\infty.
+\]</div>
+<p>Here, independent means that one toss does not affect the others, and identically distributed means that each toss uses the same heads probability.  The theorem describes the behavior as the sequence grows indefinitely. Next, let’s run this experiment many times and try to aggregate the results.</p>
+</section>
+</section>
+<section id="start-again-many-times">
+<h2>Start Again, Many Times<a class="headerlink" href="#start-again-many-times" title="Link to this heading">¶</a></h2>
+<p>This time, one experiment will consist of 25 tosses followed by a single calculation: the fraction of heads. We’ll repeat the whole experiment 10,000 times, starting afresh each time. The histogram will have one entry per experiment, showing the number of heads in that set of 25 tosses.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tosses_per_experiment</span> <span class="o">=</span> <span class="mi">25</span>
+<span class="n">number_of_experiments</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="c1"># Each row is a fresh experiment; each column is one toss.</span>
+<span class="n">experiments</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span>
+    <span class="mi">1</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">number_of_experiments</span><span class="p">,</span> <span class="n">tosses_per_experiment</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">head_counts</span> <span class="o">=</span> <span class="n">experiments</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">fractions_of_heads</span> <span class="o">=</span> <span class="n">head_counts</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+<span class="n">possible_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">count_frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">head_counts</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">observed_frequencies</span> <span class="o">=</span> <span class="n">count_frequencies</span> <span class="o">/</span> <span class="n">number_of_experiments</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">possible_counts</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'#5B8DB8'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="s1">'Number of heads'</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s1">'Fraction of experiments'</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'25 tosses per experiment'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/83f727fdf132959db6b820c5d98477568028e35467711ff1e34478aab4df29fa.png" src="_images/83f727fdf132959db6b820c5d98477568028e35467711ff1e34478aab4df29fa.png" />
+</div>
+</div>
+<p>The head counts differ from run to run. They cluster around 15 heads out of 25 tosses, corresponding to a fraction of 0.6. Fewer experiments produce counts far from that value.</p>
+<section id="counts-fractions-and-sampling-distributions">
+<h3>Counts, Fractions, and Sampling Distributions<a class="headerlink" href="#counts-fractions-and-sampling-distributions" title="Link to this heading">¶</a></h3>
+<p>The count of heads in <span class="math notranslate nohighlight">\(n\)</span> independent tosses has a binomial distribution:</p>
+<div class="math notranslate nohighlight">
+\[
+S_n=\sum_{i=1}^n X_i\sim\operatorname{Binomial}(n,p).
+\]</div>
+<p>The sample mean is the same count divided by <span class="math notranslate nohighlight">\(n\)</span>: <span class="math notranslate nohighlight">\(\bar X_n=S_n/n\)</span>. A count of 15 heads in 25 tosses gives a sample mean of 0.6. The distribution of sample means across fresh repetitions is called the sampling distribution of the mean. There are two sample sizes here: <span class="math notranslate nohighlight">\(n\)</span>, the number of tosses inside an experiment, and <span class="math notranslate nohighlight">\(K\)</span>, the number of times we repeat it. Each repetition produces one count and one sample mean. Let’s first change <span class="math notranslate nohighlight">\(K\)</span> while holding <span class="math notranslate nohighlight">\(n\)</span> fixed.</p>
+</section>
+</section>
+<section id="more-repetitions-same-number-of-tosses">
+<h2>More Repetitions, Same Number of Tosses<a class="headerlink" href="#more-repetitions-same-number-of-tosses" title="Link to this heading">¶</a></h2>
+<p>We’ll use only five tosses per experiment.  We’ll compare 100, 10,000, and 1,000,000 repetitions while keeping those five tosses per experiment fixed.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tosses_per_experiment</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">repetition_counts</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">,</span> <span class="mi">1_000_000</span><span class="p">]</span>
+<span class="n">possible_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">possible_fractions</span> <span class="o">=</span> <span class="n">possible_counts</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+<span class="n">frequencies_by_repetition_count</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">number_of_experiments</span> <span class="ow">in</span> <span class="n">repetition_counts</span><span class="p">:</span>
+    <span class="n">head_counts</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span>
+        <span class="n">tosses_per_experiment</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">number_of_experiments</span>
+    <span class="p">)</span>
+    <span class="n">count_frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">head_counts</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="n">count_frequencies</span> <span class="o">/</span> <span class="n">number_of_experiments</span>
+    <span class="n">frequencies_by_repetition_count</span><span class="p">[</span><span class="n">number_of_experiments</span><span class="p">]</span> <span class="o">=</span> <span class="n">observed_frequencies</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">number_of_experiments</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">repetition_counts</span><span class="p">):</span>
+    <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="n">frequencies_by_repetition_count</span><span class="p">[</span><span class="n">number_of_experiments</span><span class="p">]</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.13</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'#5B8DB8'</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span> <span class="n">xticks</span><span class="o">=</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Fraction of heads'</span><span class="p">,</span>
+             <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">number_of_experiments</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> experiments'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Fraction of experiments'</span><span class="p">)</span>
+<span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'Five tosses per experiment; different numbers of repetitions'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/0ae5bfd7fd737b8b76e2356610e3686355336b60e2d8578a683dfca43d999fc1.png" src="_images/0ae5bfd7fd737b8b76e2356610e3686355336b60e2d8578a683dfca43d999fc1.png" />
+</div>
+</div>
+<p>The last two plots are similar. More repetitions give us a clearer picture of how often each estimate occurs, but each estimate is still based on just five tosses. There are still only six possible fractions, with a substantial spread between experiments. Increasing the number of repetitions helps us see the sampling distribution more accurately. It does not make the estimate from any one five-toss experiment more reliable.</p>
+<section id="checking-the-frequencies-against-the-binomial-formula">
+<h3>Checking the Frequencies Against the Binomial Formula<a class="headerlink" href="#checking-the-frequencies-against-the-binomial-formula" title="Link to this heading">¶</a></h3>
+<p>The last plots suggest that the distribution settles into a fixed shape as we collect more repetitions. The binomial distribution gives the exact probabilities to compare against:</p>
+<div class="math notranslate nohighlight">
+\[
+P(S_n=k)=\binom nk p^k(1-p)^{n-k},\qquad k=0,\ldots,n.
+\]</div>
+<p>The factor <span class="math notranslate nohighlight">\(\binom nk\)</span> counts the ways to place <span class="math notranslate nohighlight">\(k\)</span> heads among <span class="math notranslate nohighlight">\(n\)</span> tosses. Each such sequence has probability <span class="math notranslate nohighlight">\(p^k(1-p)^{n-k}\)</span>.</p>
+<p>Dividing the count by <span class="math notranslate nohighlight">\(n\)</span> gives the corresponding sample mean, so</p>
+<div class="math notranslate nohighlight">
+\[
+P\left(\bar X_n=\frac{k}{n}\right)=\binom nk p^k(1-p)^{n-k}.
+\]</div>
+<p>This formula depends on the toss count <span class="math notranslate nohighlight">\(n\)</span> and heads probability <span class="math notranslate nohighlight">\(p\)</span>, but not the repetition count <span class="math notranslate nohighlight">\(K\)</span>. Let’s overlay it on the frequencies from the million five-toss experiments we just ran.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tosses_per_experiment</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">possible_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">possible_fractions</span> <span class="o">=</span> <span class="n">possible_counts</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+<span class="n">observed_frequencies</span> <span class="o">=</span> <span class="n">frequencies_by_repetition_count</span><span class="p">[</span><span class="mi">1_000_000</span><span class="p">]</span>
+<span class="n">exact_probabilities</span> <span class="o">=</span> <span class="n">binom</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="n">possible_counts</span><span class="p">,</span> <span class="n">tosses_per_experiment</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.13</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'#5B8DB8'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Observed frequency'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="n">exact_probabilities</span><span class="p">,</span> <span class="s1">'ko'</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Exact probability'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xticks</span><span class="o">=</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Fraction of heads'</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s1">'Probability / observed frequency'</span><span class="p">,</span>
+         <span class="n">title</span><span class="o">=</span><span class="s1">'Five tosses: simulation and the binomial formula'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/8e4bc1eb80dac0856acf5535f3b71f1928322f8acbd6ed0d3e39d63d263c77e9.png" src="_images/8e4bc1eb80dac0856acf5535f3b71f1928322f8acbd6ed0d3e39d63d263c77e9.png" />
+</div>
+</div>
+<p>The observed frequencies closely match the exact probabilities.</p>
+</section>
+</section>
+<section id="more-tosses-in-each-experiment">
+<h2>More Tosses in Each Experiment<a class="headerlink" href="#more-tosses-in-each-experiment" title="Link to this heading">¶</a></h2>
+<p>Now we’ll keep 50,000 repetitions and change the number of tosses inside each experiment: 5, 25, 100, and 1,000. We’ll also print the fraction of estimates more than 0.1 away from 0.6, giving us a concrete way to compare their accuracy.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">experiment_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span>
+<span class="n">number_of_experiments</span> <span class="o">=</span> <span class="mi">50_000</span>
+<span class="n">fractions_by_size</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">frequencies_by_size</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">large_error_rates</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Tosses per experiment    Fraction with error greater than 0.1'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">tosses_per_experiment</span> <span class="ow">in</span> <span class="n">experiment_sizes</span><span class="p">:</span>
+    <span class="n">head_counts</span> <span class="o">=</span> <span class="n">random_generator</span><span class="o">.</span><span class="n">binomial</span><span class="p">(</span>
+        <span class="n">tosses_per_experiment</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">number_of_experiments</span>
+    <span class="p">)</span>
+    <span class="n">fractions</span> <span class="o">=</span> <span class="n">head_counts</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+    <span class="n">fractions_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="n">fractions</span>
+    <span class="n">count_frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">head_counts</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">frequencies_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="n">count_frequencies</span> <span class="o">/</span> <span class="n">number_of_experiments</span>
+
+    <span class="c1"># Compare counts so floating-point rounding cannot move a boundary case.</span>
+    <span class="n">count_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">head_counts</span> <span class="o">-</span> <span class="n">tosses_per_experiment</span> <span class="o">*</span> <span class="n">heads_probability</span><span class="p">)</span>
+    <span class="n">error_threshold</span> <span class="o">=</span> <span class="n">tosses_per_experiment</span> <span class="o">*</span> <span class="mf">0.1</span>
+    <span class="n">large_error_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">count_errors</span> <span class="o">&gt;</span> <span class="n">error_threshold</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">)</span>
+    <span class="n">large_error_rates</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="n">large_error_rate</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">tosses_per_experiment</span><span class="si">:</span><span class="s1">&gt;10,</span><span class="si">}</span><span class="s1">                         </span><span class="si">{</span><span class="n">large_error_rate</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Tosses per experiment    Fraction with error greater than 0.1
+         5                         0.6554
+        25                         0.3050
+       100                         0.0320
+     1,000                         0.0000
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">tosses_per_experiment</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">experiment_sizes</span><span class="p">):</span>
+    <span class="n">possible_fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+    <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="n">frequencies_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">possible_fractions</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'#5B8DB8'</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.3</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">heads_probability</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">'--'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">'#D97706'</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">tosses_per_experiment</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> tosses per experiment'</span><span class="p">,</span>
+             <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Fraction of heads'</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s1">'Fraction of experiments'</span><span class="p">)</span>
+<span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'50,000 repetitions for each experiment size'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/00ca0e49ff2722c4ddb786faf0def432988979633eeb683a1999a73004040329.png" src="_images/00ca0e49ff2722c4ddb786faf0def432988979633eeb683a1999a73004040329.png" />
+</div>
+</div>
+<p>With more tosses in each experiment, the estimates cluster more tightly around 0.6. Large errors become less frequent. There are also more possible fractions: five tosses allow six values, while 1,000 tosses allow 1,001 values. The distribution becomes narrower even though there are more values it could take. These plots show the Law of Large Numbers from another perspective: across independent experiments, a large error becomes less likely as the toss count increases.</p>
+<section id="concentration-and-standard-error">
+<h3>Concentration and Standard Error<a class="headerlink" href="#concentration-and-standard-error" title="Link to this heading">¶</a></h3>
+<p>The previous plots showed that estimates cluster more tightly around 0.6 as the number of tosses increases. The weak Law of Large Numbers expresses this as</p>
+<div class="math notranslate nohighlight">
+\[
+P(|\bar X_n-\mu|&gt;\epsilon)\longrightarrow0
+\qquad\text{as }n\to\infty.
+\]</div>
+<p>For any fixed tolerance <span class="math notranslate nohighlight">\(\epsilon&gt;0\)</span>, the probability of exceeding that error approaches zero. Our table illustrated this with <span class="math notranslate nohighlight">\(\epsilon=0.1\)</span>.</p>
+<p>We can quantify the narrowing using variance. Each Bernoulli toss has variance <span class="math notranslate nohighlight">\(\sigma^2=p(1-p)=0.24\)</span>. For <span class="math notranslate nohighlight">\(n\)</span> independent tosses, the variance of the sum is <span class="math notranslate nohighlight">\(n\sigma^2\)</span>. Dividing by <span class="math notranslate nohighlight">\(n\)</span> to obtain the average divides the variance by <span class="math notranslate nohighlight">\(n^2\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+\operatorname{Var}(\bar X_n)
+=\frac{n\sigma^2}{n^2}
+=\frac{\sigma^2}{n}.
+\]</div>
+<p>The standard deviation of the sample mean is called its standard error:</p>
+<div class="math notranslate nohighlight">
+\[
+\operatorname{SE}(\bar X_n)
+=\frac{\sigma}{\sqrt n}
+=\sqrt{\frac{0.24}{n}}.
+\]</div>
+<p>It measures how much estimates vary across independent experiments of the same size. Four times as many tosses halve this spread. Let’s compare the predicted standard errors with those observed in our simulations.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sample_sizes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">])</span>
+<span class="n">individual_variance</span> <span class="o">=</span> <span class="n">heads_probability</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">heads_probability</span><span class="p">)</span>
+<span class="n">standard_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">individual_variance</span> <span class="o">/</span> <span class="n">sample_sizes</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Tosses    Theoretical standard error    Observed standard deviation'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sample_size</span> <span class="ow">in</span> <span class="n">experiment_sizes</span><span class="p">:</span>
+    <span class="n">standard_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">individual_variance</span> <span class="o">/</span> <span class="n">sample_size</span><span class="p">)</span>
+    <span class="n">observed_spread</span> <span class="o">=</span> <span class="n">fractions_by_size</span><span class="p">[</span><span class="n">sample_size</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">sample_size</span><span class="si">:</span><span class="s1">&gt;6,</span><span class="si">}</span><span class="s1">               </span><span class="si">{</span><span class="n">standard_error</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">                       </span><span class="si">{</span><span class="n">observed_spread</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Tosses    Theoretical standard error    Observed standard deviation
+     5               0.21909                       0.21980
+    25               0.09798                       0.09807
+   100               0.04899                       0.04905
+ 1,000               0.01549                       0.01549
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sample_sizes</span><span class="p">,</span> <span class="n">standard_errors</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">'o'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">'log'</span><span class="p">)</span>
+<span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlabel</span><span class="o">=</span><span class="s1">'Number of tosses (log scale)'</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s1">'SD of the sample mean'</span><span class="p">,</span>
+         <span class="n">title</span><span class="o">=</span><span class="s1">'Standard error decreases as the toss count increases'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/3d3184c9414a49b1e8e2620f29d13cff77748e497bbca60f54c96fb77616cf30.png" src="_images/3d3184c9414a49b1e8e2620f29d13cff77748e497bbca60f54c96fb77616cf30.png" />
+</div>
+</div>
+<p>The theoretical and observed spreads agree closely. For 100 tosses, the formula predicts about 0.04899, compared with 0.04905 in our simulation.  This explains the width of the sampling distribution. Next, we’ll remove the difference in width to compare its shape.</p>
+</section>
+</section>
+<section id="zoom-in-on-the-remaining-errors">
+<h2>Zoom In on the Remaining Errors<a class="headerlink" href="#zoom-in-on-the-remaining-errors" title="Link to this heading">¶</a></h2>
+<p>The last plots make the narrowing clear, but make the shape harder to compare. Let’s put the errors on a common scale.</p>
+<p>For each set of estimates, we’ll subtract the mean (0.6). Then we’ll divide by the observed standard deviation of that set, our empirical estimate of its standard error. An error of one on the new axis means one standard deviation above 0.6; an error of minus one means one standard deviation below it. We’ll use density histograms here: bar area represents the fraction of experiments, so the total area is one. This lets us compare shapes even when the spacing between possible values changes.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">observed_spreads</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">scaled_errors_by_size</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Tosses per experiment    Observed standard deviation of the fractions'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">tosses_per_experiment</span> <span class="ow">in</span> <span class="n">experiment_sizes</span><span class="p">:</span>
+    <span class="n">fractions</span> <span class="o">=</span> <span class="n">fractions_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span>
+    <span class="n">observed_spread</span> <span class="o">=</span> <span class="n">fractions</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">fractions</span> <span class="o">-</span> <span class="n">heads_probability</span>
+    <span class="n">scaled_errors</span> <span class="o">=</span> <span class="n">errors</span> <span class="o">/</span> <span class="n">observed_spread</span>
+    <span class="n">observed_spreads</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="n">observed_spread</span>
+    <span class="n">scaled_errors_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaled_errors</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">tosses_per_experiment</span><span class="si">:</span><span class="s1">&gt;10,</span><span class="si">}</span><span class="s1">                         </span><span class="si">{</span><span class="n">observed_spread</span><span class="si">:</span><span class="s1">.5f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Tosses per experiment    Observed standard deviation of the fractions
+         5                         0.21980
+        25                         0.09807
+       100                         0.04905
+     1,000                         0.01549
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">tosses_per_experiment</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">experiment_sizes</span><span class="p">):</span>
+    <span class="n">observed_spread</span> <span class="o">=</span> <span class="n">observed_spreads</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span>
+    <span class="n">scaled_errors</span> <span class="o">=</span> <span class="n">scaled_errors_by_size</span><span class="p">[</span><span class="n">tosses_per_experiment</span><span class="p">]</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">tosses_per_experiment</span> <span class="o">*</span> <span class="n">observed_spread</span><span class="p">)</span>
+    <span class="c1"># Keep separate bars for small samples; group nearby values for large samples.</span>
+    <span class="n">counts_per_bin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="mf">0.2</span> <span class="o">/</span> <span class="n">spacing</span><span class="p">)))</span>
+    <span class="n">count_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">tosses_per_experiment</span> <span class="o">+</span> <span class="n">counts_per_bin</span><span class="p">,</span> <span class="n">counts_per_bin</span><span class="p">)</span>
+    <span class="n">fraction_edges</span> <span class="o">=</span> <span class="n">count_edges</span> <span class="o">/</span> <span class="n">tosses_per_experiment</span>
+    <span class="n">scaled_edges</span> <span class="o">=</span> <span class="p">(</span><span class="n">fraction_edges</span> <span class="o">-</span> <span class="n">heads_probability</span><span class="p">)</span> <span class="o">/</span> <span class="n">observed_spread</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">scaled_errors</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">scaled_edges</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">4.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">),</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">),</span> <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Error / observed standard deviation'</span><span class="p">,</span>
+             <span class="n">ylabel</span><span class="o">=</span><span class="s1">'Density'</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">tosses_per_experiment</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> tosses per experiment'</span><span class="p">)</span>
+<span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'Errors viewed on a common scale'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/035230d4cdeb1ece92acff8ad655f44eb7a25f8097d03ecedc35657839eb2abe.png" src="_images/035230d4cdeb1ece92acff8ad655f44eb7a25f8097d03ecedc35657839eb2abe.png" />
+</div>
+</div>
+<p>After rescaling, the larger experiments have a similar bell-shaped pattern.</p>
+</section>
+<section id="the-central-limit-theorem">
+<h2>The Central Limit Theorem<a class="headerlink" href="#the-central-limit-theorem" title="Link to this heading">¶</a></h2>
+<p>Rescaling the errors suggested a bell-shaped pattern. The Law of Large Numbers tells us that the sample mean approaches the true mean. It doesn’t tell us the <em>shape</em> of the remaining fluctuations. That’s where the Central Limit Theorem (CLT) comes in.</p>
+<p>For independent, identically distributed observations with finite mean <span class="math notranslate nohighlight">\(\mu\)</span> and finite, nonzero variance <span class="math notranslate nohighlight">\(\sigma^2\)</span>, the CLT states that</p>
+<div class="math notranslate nohighlight">
+\[
+Z_n=\frac{\bar X_n-\mu}{\sigma/\sqrt n}\xrightarrow{d}\mathcal N(0,1)
+\]</div>
+<p>Notice that the theorem is about the centered and standardized sample mean, not the raw observations and not the unscaled sample mean.  For large but finite <span class="math notranslate nohighlight">\(n\)</span>, the same result motivates the practical approximation.
+$<span class="math notranslate nohighlight">\(
+\bar X_n\approx\mathcal N\left(\mu,\frac{\sigma^2}{n}\right).
+\)</span>$</p>
+<p>For our coin, that becomes <span class="math notranslate nohighlight">\(\mathcal N(0.6,0.24/n)\)</span>. Remember that it’s an approximation: the true distribution of <span class="math notranslate nohighlight">\(\bar X_n\)</span> is discrete for every finite <span class="math notranslate nohighlight">\(n\)</span>. Let’s plot the exact standardized distributions for increasing <span class="math notranslate nohighlight">\(n\)</span> against the standard Gaussian density.</p>
+<div class="cell tag_skip-execution docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">standardized_distributions</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">sample_size</span> <span class="ow">in</span> <span class="n">experiment_sizes</span><span class="p">:</span>
+    <span class="n">possible_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sample_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">possible_fractions</span> <span class="o">=</span> <span class="n">possible_counts</span> <span class="o">/</span> <span class="n">sample_size</span>
+    <span class="n">standard_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">individual_variance</span> <span class="o">/</span> <span class="n">sample_size</span><span class="p">)</span>
+    <span class="n">standardized_values</span> <span class="o">=</span> <span class="p">(</span><span class="n">possible_fractions</span> <span class="o">-</span> <span class="n">heads_probability</span><span class="p">)</span> <span class="o">/</span> <span class="n">standard_error</span>
+    <span class="n">probabilities</span> <span class="o">=</span> <span class="n">binom</span><span class="o">.</span><span class="n">pmf</span><span class="p">(</span><span class="n">possible_counts</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">,</span> <span class="n">heads_probability</span><span class="p">)</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">sample_size</span> <span class="o">*</span> <span class="n">standard_error</span><span class="p">)</span>
+    <span class="n">standardized_distributions</span><span class="p">[</span><span class="n">sample_size</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">standardized_values</span><span class="p">,</span> <span class="n">probabilities</span><span class="p">,</span> <span class="n">spacing</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">gaussian_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">4.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">,</span> <span class="mi">501</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">sample_size</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">experiment_sizes</span><span class="p">):</span>
+    <span class="n">standardized_values</span><span class="p">,</span> <span class="n">probabilities</span><span class="p">,</span> <span class="n">spacing</span> <span class="o">=</span> <span class="n">standardized_distributions</span><span class="p">[</span><span class="n">sample_size</span><span class="p">]</span>
+    <span class="n">density_heights</span> <span class="o">=</span> <span class="n">probabilities</span> <span class="o">/</span> <span class="n">spacing</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">standardized_values</span><span class="p">,</span> <span class="n">density_heights</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">spacing</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.65</span><span class="p">,</span>
+             <span class="n">color</span><span class="o">=</span><span class="s1">'#5B8DB8'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Exact binomial probabilities / spacing'</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">gaussian_grid</span><span class="p">,</span> <span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">gaussian_grid</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">'Standard Gaussian density'</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">4.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">),</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">),</span> <span class="n">xlabel</span><span class="o">=</span><span class="s1">'Standardized mean'</span><span class="p">,</span>
+             <span class="n">ylabel</span><span class="o">=</span><span class="s1">'Density (probability / spacing)'</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">sample_size</span><span class="si">:</span><span class="s1">,</span><span class="si">}</span><span class="s1"> tosses'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">'Standardized means compared with a Gaussian'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<img alt="_images/fc84022fe33890bb7ae10f2f9be422287f6cb14a84d891ba40a030388bd18e38.png" src="_images/fc84022fe33890bb7ae10f2f9be422287f6cb14a84d891ba40a030388bd18e38.png" />
+</div>
+</div>
+</section>
+<section id="confidence-intervals">
+<h2>Confidence Intervals<a class="headerlink" href="#confidence-intervals" title="Link to this heading">¶</a></h2>
+<p>The CLT gives us a way to quantify the uncertainty in a sample mean using a single observed dataset. We usually do not know the standard deviation <span class="math notranslate nohighlight">\(\sigma\)</span>, so we estimate it using the sample standard deviation, <span class="math notranslate nohighlight">\(s\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+s^2=\frac{1}{n-1}\sum_{i=1}^n(X_i-\bar X_n)^2.
+\]</div>
+<p>For a sufficiently large independent sample, an approximate 95% confidence interval for the true mean is</p>
+<div class="math notranslate nohighlight">
+\[
+\bar X_n\pm1.96\frac{s}{\sqrt n}.
+\]</div>
+<p>The number 1.96 comes from the standard Gaussian: about 95% of its probability lies between -1.96 and 1.96.</p>
+<p>For example, suppose a fresh set of 100 tosses gives 60 heads. The sample mean is 0.6, the sample standard deviation is approximately 0.492, and the estimated standard error is about 0.0492. The approximate interval is</p>
+<div class="math notranslate nohighlight">
+\[
+0.6\pm1.96(0.0492)\approx[0.504,0.696].
+\]</div>
+<p>If we repeatedly collected fresh datasets and constructed an interval this way, approximately 95% of the intervals would contain the fixed true mean.</p>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<p>We began with 20 tosses and a fraction of heads. Extending the sequence made that fraction more stable. Repeating fresh experiments showed how much the estimate varied from run to run.</p>
+<p>Changing the number of repetitions gave a clearer picture of the sampling distribution. Changing the number of tosses inside each experiment made that distribution concentrate near 0.6. Rescaling the remaining errors revealed an increasingly Gaussian shape. The Law of Large Numbers explains the concentration. The Central Limit Theorem describes the limiting shape of the standardized errors.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Wasserman, L. (2004). <em>All of Statistics: A Concise Course in Statistical Inference</em>. Springer.</p></li>
+<li><p>Casella, G., &amp; Berger, R. L. (2002). <em>Statistical Inference</em>, 2nd ed. Duxbury.</p></li>
+</ol>
+<script src="https://utteranc.es/client.js"
+        repo="novastar53/novastar53.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script></section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
+            </a></p>
+<h1 class="logo"><a href="index.html">Starburst</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="how-do-we-quantify-information.html">How Do We Quantify Information?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monte-carlo-vs-td-partial-observability.html">Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The Law of Large Numbers and the Central Limit Theorem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-gradient-variance-shapes-policy-optimization-rewritten.html">How Gradient Variance Shapes Policy Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curse-of-dimensionality.html">The Curse of Dimensionality: Why It Matters Less Than You Think</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-flash-attn.html">How to Write a Flash Attention Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="monte-carlo-vs-td-partial-observability.html" title="previous chapter">Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</a></li>
+      <li>Next: <a href="how-gradient-variance-shapes-policy-optimization-rewritten.html" title="next chapter">How Gradient Variance Shapes Policy Optimization</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="post-nav"><a class="post-nav-link post-nav-prev" href="monte-carlo-vs-td-partial-observability.html">&larr; Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</a><a class="post-nav-link post-nav-next" href="how-gradient-variance-shapes-policy-optimization-rewritten.html">How Gradient Variance Shapes Policy Optimization &rarr;</a></div>
+<div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/law-of-large-numbers-clt.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
