@@ -57,3 +57,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/_build/html
           publish_branch: gh-pages
+          # Replace the branch contents on every deploy so pages removed
+          # from the build (drafts, renamed posts) stop being served.
+          force_orphan: true

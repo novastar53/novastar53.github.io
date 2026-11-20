@@ -11,6 +11,10 @@ description: A blog exploring AI and Machine Learning
 exclude_patterns:
   - WIP_*
   - how-gradient-variance-shapes-policy-optimization.ipynb
+  - typical-sets-and-data-compression.ipynb  # superseded by how-do-we-quantify-information
+  - llm-evals.ipynb
+  - rl-bias-variance-tradeoff.ipynb
+  - vae-zero-to-hero.ipynb
 
 sphinx:
   config:
