@@ -25,6 +25,7 @@ init:
 build:
 	export PATH="$(PATH):/Library/TeX/texbin/latex"
 	. $(VENV) && python generate_sidebar.py
+	. $(VENV) && python generate_landing.py
 	. $(VENV) && jupyter-book build site/ --verbose
 	cp -r site/_static/* site/_build/html/_static/  # Ensure latest static files are used
 	cp -r site/_images/* site/_build/html/_images/ 2>/dev/null || true  # Copy static images

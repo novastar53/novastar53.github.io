@@ -1,0 +1,41 @@
+# Per-post overrides for the generated landing-page cards (generate_landing.py).
+# - tag:    topic chip shown on the card (omit to show no chip)
+# - image:  thumbnail file; use "_static/..." for assets outside _images
+#           (default: first markdown image in the notebook)
+# - teaser: featured-card teaser text
+#           (default: opening paragraph of the post, truncated)
+
+how-do-we-quantify-information:
+  tag: Information theory
+monte-carlo-vs-td-partial-observability:
+  tag: Reinforcement learning
+law-of-large-numbers-clt:
+  tag: Statistics
+how-gradient-variance-shapes-policy-optimization-rewritten:
+  tag: Reinforcement learning
+  image: bandit_octopus.png
+curse-of-dimensionality:
+  tag: Theory
+  image: _static/starburst-transparent.png
+pallas-flash-attn:
+  tag: JAX & GPU kernels
+how-mixture-of-experts-works-part-2:
+  tag: Deep learning
+how-mixture-of-experts-works-part-1:
+  tag: Deep learning
+pallas-matmul:
+  tag: JAX & GPU kernels
+pallas-softmax:
+  tag: JAX & GPU kernels
+how-batchnorm-works-part-2:
+  tag: Deep learning
+how-positional-embeddings-work:
+  tag: Deep learning
+how-residual-connections-work:
+  tag: Deep learning
+how-dropout-works:
+  tag: Deep learning
+how-batchnorm-works:
+  tag: Deep learning
+nadaraya-watson-kernel-regression:
+  tag: Machine learning

@@ -32,6 +32,9 @@ jobs:
       - name: Generate sidebar
         run: python generate_sidebar.py
 
+      - name: Generate landing page
+        run: python generate_landing.py
+
       - name: Build site
         run: jupyter-book build site/
 
