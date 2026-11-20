@@ -4,7 +4,7 @@ Post-build annotation of blog HTML pages:
 
 1. Post pages: insert a date + reading-time line under the post's <h1>.
 2. Post pages: insert prev/next post navigation at the bottom of the article.
-3. intro.html: append date + reading time to each landing-page card.
+3. index.html: append date + reading time to each landing-page card.
 
 Post order, titles, and dates come from _toc.yml + macOS creation dates —
 the same sources generate_sidebar.py and generate_rss.py use.
@@ -112,10 +112,10 @@ def annotate_post_page(html_path: Path, post, prev_post, next_post) -> None:
 
 
 def annotate_landing(build_dir: Path, posts) -> None:
-    intro = build_dir / "intro.html"
-    if not intro.exists():
+    index = build_dir / "index.html"
+    if not index.exists():
         return
-    text = intro.read_text(encoding="utf-8")
+    text = index.read_text(encoding="utf-8")
 
     def add_date(m):
         card = m.group(0)
@@ -130,7 +130,7 @@ def annotate_landing(build_dir: Path, posts) -> None:
 
     text = re.sub(r'<a class="post-card[^"]*" href="([^"]+)">(?:(?!</a>).)*</a>',
                   add_date, text, flags=re.S)
-    intro.write_text(text, encoding="utf-8")
+    index.write_text(text, encoding="utf-8")
 
 
 def main() -> None:

@@ -4,6 +4,7 @@
 format: jb-article
 root: index
 sections:
+- file: how-do-we-quantify-information
 - file: monte-carlo-vs-td-partial-observability
 - file: law-of-large-numbers-clt
 - file: how-gradient-variance-shapes-policy-optimization-rewritten

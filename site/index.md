@@ -9,19 +9,24 @@
   </p>
 </div>
 
-<a class="post-card post-card-featured" href="monte-carlo-vs-td-partial-observability.html">
-  <img class="post-thumb" src="_images/mc_td_environment.png" alt="" loading="lazy">
+<a class="post-card post-card-featured" href="typical-sets-and-data-compression.html">
+  <img class="post-thumb" src="_images/typical-sets-banner.png" alt="" loading="lazy">
   <span class="featured-text">
-    <span class="post-tag">Latest &middot; Reinforcement learning</span>
-    <span class="post-title">Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</span>
-    <span class="post-teaser">TD learning bootstraps from its own estimates; Monte Carlo waits for the
-    return. In partially observable environments, that difference decides which one learns the true
-    values &mdash; and which one converges to the wrong answer.</span>
+    <span class="post-tag">Latest &middot; Information theory</span>
+    <span class="post-title">How the Law of Large Numbers Makes Data Compression Possible</span>
+    <span class="post-teaser">Almost every long sequence of coin tosses looks the same: it lands in the
+    &ldquo;typical set.&rdquo; That concentration is the engine behind lossless data compression &mdash;
+    and the reason entropy is measured in bits.</span>
   </span>
 </a>
 
 <h2 class="landing-section">Recent posts</h2>
 <div class="post-grid">
+  <a class="post-card" href="monte-carlo-vs-td-partial-observability.html">
+    <img class="post-thumb" src="_images/mc_td_environment.png" alt="" loading="lazy">
+    <span class="post-tag">Reinforcement learning</span>
+    <span class="post-title">Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</span>
+  </a>
   <a class="post-card" href="law-of-large-numbers-clt.html">
     <img class="post-thumb" src="_images/gaussian-ink.png" alt="" loading="lazy">
     <span class="post-tag">Statistics</span>
@@ -41,11 +46,6 @@
     <img class="post-thumb" src="_images/rtx_4000_ada_system_diagram.png" alt="" loading="lazy">
     <span class="post-tag">JAX &amp; GPU kernels</span>
     <span class="post-title">How to Write a Flash Attention Kernel in Pallas</span>
-  </a>
-  <a class="post-card" href="how-mixture-of-experts-works-part-2.html">
-    <img class="post-thumb" src="_images/token-routing.png" alt="" loading="lazy">
-    <span class="post-tag">Deep learning</span>
-    <span class="post-title">How do Mixture of Experts Layers Work? Part 2</span>
   </a>
 </div>
 <p class="landing-archive-note">Browse the full archive by year in the sidebar.</p>

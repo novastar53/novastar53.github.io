@@ -34,7 +34,7 @@ build:
 	. $(VENV) && python annotate_posts.py site/_build/html  # dates, reading time, prev/next nav
 
 deploy-local:
-	. $(VENV) && python -m http.server 8000 --directory site/_build/html
+	. $(VENV) && python serve_local.py
 
 deploy: build
 	. $(VENV) && cd site && ghp-import -n -p -f _build/html
