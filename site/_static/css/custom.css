@@ -168,7 +168,7 @@ p.caption {
 /* ===================================================================
    Sidebar year groups (unchanged behavior, retouched colors)
    =================================================================== */
-.sphinxsidebarwrapper > .caption {
+.sphinxsidebarwrapper .caption.year-caption {
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -185,11 +185,11 @@ p.caption {
   margin: 0.4rem 0;
 }
 
-.sphinxsidebarwrapper > .caption:hover {
+.sphinxsidebarwrapper .caption.year-caption:hover {
   background-color: var(--accent-soft);
 }
 
-.sphinxsidebarwrapper > .caption::before {
+.sphinxsidebarwrapper .caption.year-caption::before {
   content: "";
   display: inline-block;
   width: 0;
@@ -201,7 +201,7 @@ p.caption {
   transition: transform 0.2s ease;
 }
 
-.sphinxsidebarwrapper > .caption.expanded::before {
+.sphinxsidebarwrapper .caption.year-caption.expanded::before {
   transform: rotate(90deg);
 }
 
@@ -226,6 +226,60 @@ p.caption {
 
 .sphinxsidebarwrapper > section li {
   padding: 0.2rem 0;
+}
+
+/* ===================================================================
+   Sidebar month groups (nested under years)
+   =================================================================== */
+.sphinxsidebarwrapper .caption.month-caption {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  border-radius: var(--radius);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+  margin: 0.1rem 0;
+}
+
+.sphinxsidebarwrapper .caption.month-caption:hover {
+  color: var(--ink-soft);
+  background-color: var(--accent-soft);
+}
+
+.sphinxsidebarwrapper .caption.month-caption::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.45rem;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--ink-faint);
+  transition: transform 0.2s ease;
+}
+
+.sphinxsidebarwrapper .caption.month-caption.expanded::before {
+  transform: rotate(90deg);
+}
+
+/* month sections hidden unless their caption is expanded */
+.sphinxsidebarwrapper section section {
+  display: none;
+  margin-left: 0.75rem;
+}
+
+.sphinxsidebarwrapper .caption.expanded + section {
+  display: block;
+}
+
+.sphinxsidebarwrapper section section li {
+  padding: 0.15rem 0;
+  font-size: 0.9em;
 }
 
 /* ===================================================================

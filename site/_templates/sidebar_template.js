@@ -1,6 +1,8 @@
 (function() {
+  var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
   function initYearGroups() {
-    const yearGroups = YEARGROUPS_PLACEHOLDER;
+    const yearGroups = YEARGROUPS_PLACEHOLDER; // {year: {month: [file, ...]}}
 
     const wrapper = document.querySelector('.sphinxsidebarwrapper');
     if (!wrapper) return;
@@ -15,33 +17,63 @@
 
     const yearSections = {};
 
+    function matchFile(li, groupFiles) {
+      const link = li.querySelector('a.reference');
+      if (!link) return false;
+      const href = link.getAttribute('href') || '';
+      // Sphinx renders the current page's toctree entry as href="#"
+      const fileName = href === '#'
+        ? location.pathname.split('/').pop().replace('.html', '')
+        : href.split('/').pop().replace('.html', '');
+      return groupFiles.includes(fileName);
+    }
+
     years.forEach(function(year) {
       const header = document.createElement('p');
-      header.className = 'caption';
+      header.className = 'caption year-caption';
       header.textContent = year;
       header.setAttribute('data-year', year);
 
       const section = document.createElement('section');
       section.setAttribute('data-year', year);
 
-      const groupFiles = yearGroups[year];
+      // newest month first within the year
+      const months = Object.keys(yearGroups[year]).sort(function(a, b) { return parseInt(b) - parseInt(a); });
 
-      listItems.forEach(function(li) {
-        if (usedItems.has(li)) return;
+      months.forEach(function(month) {
+        const monthKey = year + '-' + ('0' + month).slice(-2);
+        const monthHeader = document.createElement('p');
+        monthHeader.className = 'caption month-caption';
+        monthHeader.textContent = MONTH_NAMES[parseInt(month) - 1];
+        monthHeader.setAttribute('data-month', monthKey);
 
-        const link = li.querySelector('a.reference');
-        if (link) {
-          const href = link.getAttribute('href') || '';
-          // Sphinx renders the current page's toctree entry as href="#"
-          const fileName = href === '#'
-            ? location.pathname.split('/').pop().replace('.html', '')
-            : href.split('/').pop().replace('.html', '');
+        const monthSection = document.createElement('section');
+        monthSection.setAttribute('data-month', monthKey);
 
-          if (groupFiles.includes(fileName)) {
-            section.appendChild(li.cloneNode(true));
+        const groupFiles = yearGroups[year][month];
+
+        listItems.forEach(function(li) {
+          if (usedItems.has(li)) return;
+          if (matchFile(li, groupFiles)) {
+            monthSection.appendChild(li.cloneNode(true));
             li.style.display = 'none';
             usedItems.add(li);
           }
+        });
+
+        if (monthSection.querySelectorAll('li').length > 0) {
+          monthHeader.addEventListener('click', function() {
+            this.classList.toggle('expanded');
+            localStorage.setItem('sidebar_month_' + monthKey, this.classList.contains('expanded'));
+          });
+
+          const stored = localStorage.getItem('sidebar_month_' + monthKey);
+          if (stored === 'true') {
+            monthHeader.classList.add('expanded');
+          }
+
+          section.appendChild(monthHeader);
+          section.appendChild(monthSection);
         }
       });
 
@@ -142,12 +174,19 @@
       // href "#" (or empty after stripping the fragment) means this IS the current page
       if ((href && href === here) || a.getAttribute('href') === '#') {
         a.classList.add('current');
-        // make sure the current post's year group is expanded
-        var section = a.closest('section[data-year]');
-        if (section) {
-          var header = section.previousElementSibling;
-          if (header && header.classList.contains('caption')) {
-            header.classList.add('expanded');
+        // expand the current post's month group and year group
+        var monthSection = a.closest('section[data-month]');
+        if (monthSection) {
+          var monthHeader = monthSection.previousElementSibling;
+          if (monthHeader && monthHeader.classList.contains('caption')) {
+            monthHeader.classList.add('expanded');
+          }
+        }
+        var yearSection = a.closest('section[data-year]');
+        if (yearSection) {
+          var yearHeader = yearSection.previousElementSibling;
+          if (yearHeader && yearHeader.classList.contains('caption')) {
+            yearHeader.classList.add('expanded');
           }
         }
       }

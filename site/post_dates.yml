@@ -1,5 +1,6 @@
 # Publication dates for blog posts, captured from file creation dates.
 # This file is the source of truth for dates (CI checkouts lose birth times).
+how-do-we-quantify-information: 2026-11-19
 monte-carlo-vs-td-partial-observability: 2026-11-14
 law-of-large-numbers-clt: 2026-11-02
 how-gradient-variance-shapes-policy-optimization-rewritten: 2026-10-24
