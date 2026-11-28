@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <link rel="alternate" type="application/rss+xml" title="RSS feed" href="https://blog.vikrampawar.com/feed.xml" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Why Monte Carlo Beats TD Learning in Some Partially Observable Environments" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://blog.vikrampawar.com/monte-carlo-vs-td-partial-observability.html" />
+<meta property="og:site_name" content="Starburst" />
+<meta property="og:description" content="Introduction: Monte Carlo (MC) and temporal-difference (TD) learning are two different approaches to estimating the value function of a policy. MC uses the return observed over an episode, while TD..." />
+<meta property="og:image" content="https://blog.vikrampawar.com/_images/mc_td_environment.png" />
+<meta property="og:image:alt" content="td_environment" />
+<meta name="description" content="Introduction: Monte Carlo (MC) and temporal-difference (TD) learning are two different approaches to estimating the value function of a policy. MC uses the return observed over an episode, while TD..." />
+
+    <title>Why Monte Carlo Beats TD Learning in Some Partially Observable Environments &#8212; Vikram&#39;s Data Science Blog</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=3eba45b5" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="_static/css/fonts.css?v=85143093" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=baf189a6" />
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="_static/design-tabs.js?v=fcb327ea"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/custom.js?v=45fbf3a0"></script>
+    <script src="_static/js/analytics.js?v=6625d482"></script>
+    <link rel="canonical" href="https://blog.vikrampawar.com/monte-carlo-vs-td-partial-observability.html" />
+    <link rel="icon" href="_static/starburst.png"/>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Law of Large Numbers and the Central Limit Theorem" href="law-of-large-numbers-clt.html" />
+    <link rel="prev" title="How Do We Quantify Information?" href="how-do-we-quantify-information.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="why-monte-carlo-beats-td-learning-in-some-partially-observable-environments">
+<h1>Why Monte Carlo Beats TD Learning in Some Partially Observable Environments<a class="headerlink" href="#why-monte-carlo-beats-td-learning-in-some-partially-observable-environments" title="Link to this heading">¶</a></h1><div class="post-meta">Nov 2026 &middot; 4 min read &middot; <a class="colab-link" href="https://colab.research.google.com/github/novastar53/novastar53.github.io/blob/main/site/monte-carlo-vs-td-partial-observability.ipynb" target="_blank" rel="noopener">Open in Colab &#8599;</a></div>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>Monte Carlo (MC) and temporal-difference (TD) learning are two different approaches to estimating the value function of a policy. MC uses the return observed over an episode, while TD uses the reward from the next step and a bootstrapped estimate of the remaining return. MC does not rely on the Markov property, which often leads to different value estimates. In the case of partially observable environments, MC can sometimes produce more accurate results.</p>
+<p>Let’s use a small example to understand why.</p>
+</section>
+<section id="let-s-construct-a-partially-observable-environment">
+<h2>Let’s Construct A Partially Observable Environment<a class="headerlink" href="#let-s-construct-a-partially-observable-environment" title="Link to this heading">¶</a></h2>
+<p>Our environment has two equally likely kinds of episodes. An episode begins at either observation <span class="math notranslate nohighlight">\(A\)</span> or observation <span class="math notranslate nohighlight">\(C\)</span>. Both lead to an observation <span class="math notranslate nohighlight">\(B\)</span>, followed by a terminal reward. The first transition has reward zero. The environment actually contains two different hidden states behind <span class="math notranslate nohighlight">\(B\)</span>: one reached from <span class="math notranslate nohighlight">\(A\)</span> and another reached from <span class="math notranslate nohighlight">\(C\)</span>. The agent cannot distinguish them from the current observation alone.</p>
+<p><img alt="td_environment" src="_images/mc_td_environment.png" /></p>
+<p>We will use an undiscounted return (<span class="math notranslate nohighlight">\(\gamma=1\)</span>), with no actions to choose, since this is a policy-evaluation problem, not a control problem. Each episode starts at <span class="math notranslate nohighlight">\(A\)</span> or <span class="math notranslate nohighlight">\(C\)</span> with probability <span class="math notranslate nohighlight">\(1/2\)</span>.  The value of an observation is the expected return conditioned on it:</p>
+<div class="math notranslate nohighlight">
+\[
+v(o)=\mathbb{E}[G_t\mid O_t=o]
+\]</div>
+<p>The returns from <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(C\)</span> are always <span class="math notranslate nohighlight">\(+1\)</span> and <span class="math notranslate nohighlight">\(-1\)</span> respectively. At <span class="math notranslate nohighlight">\(B\)</span>, the two hidden states occur equally often, so the value  of <span class="math notranslate nohighlight">\(B\)</span> is the mean:</p>
+<div class="math notranslate nohighlight">
+\[
+v(A)=1,\qquad v(B)=0,\qquad v(C)=-1
+\]</div>
+<p>Note that the value of <span class="math notranslate nohighlight">\(B\)</span> really is zero when we condition only on the current observation. Neither method can determine which hidden state it occupies from <span class="math notranslate nohighlight">\(B\)</span> alone.</p>
+</section>
+<section id="what-monte-carlo-learns">
+<h2>What Monte Carlo Learns<a class="headerlink" href="#what-monte-carlo-learns" title="Link to this heading">¶</a></h2>
+<p>MC updates the value estimate using the actual return from the current observation:</p>
+<div class="math notranslate nohighlight">
+\[
+V(O_t) \leftarrow V(O_t)+\alpha\bigl(G_t-V(O_t)\bigr)
+\]</div>
+<p>If we use step-size <span class="math notranslate nohighlight">\(\alpha=1/N(O_t)\)</span>, where <span class="math notranslate nohighlight">\(N(o)\)</span> counts visits to <span class="math notranslate nohighlight">\(o\)</span>, we obtain the sample average of observed returns. MC learns the following values:</p>
+<div class="math notranslate nohighlight">
+\[
+V_{\mathrm{MC}}(A)\to 1,\qquad
+V_{\mathrm{MC}}(B)\to 0,\qquad
+V_{\mathrm{MC}}(C)\to -1
+\]</div>
+<p>The aliasing at <span class="math notranslate nohighlight">\(B\)</span> does not affect the return of <span class="math notranslate nohighlight">\(A\)</span> or <span class="math notranslate nohighlight">\(C\)</span>. MC simply waits until the episode ends and uses the actual reward.</p>
+</section>
+<section id="what-td-learns">
+<h2>What TD Learns<a class="headerlink" href="#what-td-learns" title="Link to this heading">¶</a></h2>
+<p>TD(0) uses the Bellman update with a boostrapped value for the subsequent return:</p>
+<div class="math notranslate nohighlight">
+\[
+V(O_t) \leftarrow V(O_t)+\alpha\bigl(R_{t+1}+\gamma V(O_{t+1})-V(O_t)\bigr)
+\]</div>
+<p>The TD algorithm correctly learns <span class="math notranslate nohighlight">\(V(B)\to 0\)</span>. Now consider the preceding observations. Their immediate reward is zero, and both are followed by <span class="math notranslate nohighlight">\(B\)</span>. Their TD targets are therefore</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+A:\quad &amp;0+V(B)\to 0\\
+C:\quad &amp;0+V(B)\to 0
+\end{aligned}
+\end{split}\]</div>
+<p>TD(0) therefore learns</p>
+<div class="math notranslate nohighlight">
+\[
+V_{\mathrm{TD}}(A)\to 0,\qquad
+V_{\mathrm{TD}}(B)\to 0,\qquad
+V_{\mathrm{TD}}(C)\to 0
+\]</div>
+<p>Both algorithms agree on the value of <span class="math notranslate nohighlight">\(B\)</span>. The problem is when TD uses the averaged value to estimate observations prior to <span class="math notranslate nohighlight">\(B\)</span>.</p>
+</section>
+<section id="let-s-test-our-hypothesis">
+<h2>Let’s Test our Hypothesis<a class="headerlink" href="#let-s-test-our-hypothesis" title="Link to this heading">¶</a></h2>
+<p>Let’s implement both algorithms. The environment and sampled episodes are identical for the two methods. We will generate many independent episodes which sample <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(C\)</span> with equal probability, and use <span class="math notranslate nohighlight">\(\alpha=1/N(o)\)</span> for both. We will run 64 independent trials of 5000 episodes each.</p>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">NUM_RUNS</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">NUM_EPISODES</span> <span class="o">=</span> <span class="mi">5_000</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">42</span>
+
+<span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"C"</span>
+<span class="n">OBSERVATIONS</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+<span class="n">TRUE_VALUES</span> <span class="o">=</span> <span class="p">{</span><span class="n">A</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">B</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">C</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">}</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="n">checkpoints</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="n">NUM_EPISODES</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="p">))</span>
+
+<span class="n">checkpoint_indices</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">episode</span><span class="p">:</span> <span class="n">index</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">episode</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">mc_trace</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">state</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span>
+<span class="p">}</span>
+<span class="n">td_trace</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">state</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">NUM_RUNS</span><span class="p">):</span>
+    <span class="n">mc_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">}</span>
+    <span class="n">td_values</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">}</span>
+
+    <span class="n">mc_visits</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">}</span>
+    <span class="n">td_visits</span> <span class="o">=</span> <span class="p">{</span><span class="n">state</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">episode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">NUM_EPISODES</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">final_reward</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">C</span>
+            <span class="n">final_reward</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">B</span><span class="p">):</span>
+            <span class="n">mc_visits</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">mc_visits</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">final_reward</span> <span class="o">-</span> <span class="n">mc_values</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+
+            <span class="n">mc_values</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">+=</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">error</span>
+
+        <span class="n">td_visits</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">td_visits</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+        <span class="n">td_target</span> <span class="o">=</span> <span class="n">td_values</span><span class="p">[</span><span class="n">B</span><span class="p">]</span>
+        <span class="n">td_error</span> <span class="o">=</span> <span class="n">td_target</span> <span class="o">-</span> <span class="n">td_values</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+
+        <span class="n">td_values</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">+=</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">td_error</span>
+
+        <span class="n">td_visits</span><span class="p">[</span><span class="n">B</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">td_visits</span><span class="p">[</span><span class="n">B</span><span class="p">]</span>
+        <span class="n">td_target</span> <span class="o">=</span> <span class="n">final_reward</span>
+        <span class="n">td_error</span> <span class="o">=</span> <span class="n">td_target</span> <span class="o">-</span> <span class="n">td_values</span><span class="p">[</span><span class="n">B</span><span class="p">]</span>
+
+        <span class="n">td_values</span><span class="p">[</span><span class="n">B</span><span class="p">]</span> <span class="o">+=</span> <span class="n">step_size</span> <span class="o">*</span> <span class="n">td_error</span>
+
+        <span class="k">if</span> <span class="n">episode</span> <span class="ow">in</span> <span class="n">checkpoint_indices</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">checkpoint_indices</span><span class="p">[</span><span class="n">episode</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">:</span>
+                <span class="n">mc_trace</span><span class="p">[</span><span class="n">state</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">+=</span> <span class="n">mc_values</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">/</span> <span class="n">NUM_RUNS</span>
+                <span class="n">td_trace</span><span class="p">[</span><span class="n">state</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">+=</span> <span class="n">td_values</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="o">/</span> <span class="n">NUM_RUNS</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<p>First, let’s see how the estimate of <span class="math notranslate nohighlight">\(A\)</span> develops during training. MC receives a return of <span class="math notranslate nohighlight">\(+1\)</span> from every visit to <span class="math notranslate nohighlight">\(A\)</span>. TD instead bootstraps from its value estimate at <span class="math notranslate nohighlight">\(B\)</span>.</p>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'../mplstyle/blog.mplstyle'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">8.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">))</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">,</span> <span class="n">mc_trace</span><span class="p">[</span><span class="n">A</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Monte Carlo: V(A)"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span> <span class="n">checkpoints</span><span class="p">,</span> <span class="n">td_trace</span><span class="p">[</span><span class="n">A</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"TD(0): V(A)"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">TRUE_VALUES</span><span class="p">[</span><span class="n">A</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"True value of A"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">":"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Episodes"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Estimated value of A"</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s2">"Monte Carlo and TD(0) learning at observation A"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"log"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.30</span><span class="p">,</span> <span class="mf">1.12</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.18</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">frameon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"center right"</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/ipykernel_65954/1754982773.py:15: UserWarning: The figure layout has changed to tight
+  fig.tight_layout()
+</pre></div>
+</div>
+<img alt="_images/000b72b8c90fd01252b8d7fbe94f9503ba1c456289af0aaac6db8c8222bdf363.png" src="_images/000b72b8c90fd01252b8d7fbe94f9503ba1c456289af0aaac6db8c8222bdf363.png" />
+</div>
+</div>
+<p>MC reaches the correct value of <span class="math notranslate nohighlight">\(A\)</span> as soon as it has observed a complete episode from <span class="math notranslate nohighlight">\(A\)</span>. TD, on the other hand, converges toward zero. The same issue occurs at <span class="math notranslate nohighlight">\(C\)</span>, where the true value is <span class="math notranslate nohighlight">\(-1\)</span>.</p>
+<p>The final estimates make the difference clearer.</p>
+<div class="cell tag_hide-input tag_skip-execution docutils container">
+<details class="admonition hide above-input">
+<summary aria-label="Toggle hidden content">
+<p class="collapsed admonition-title">Show code cell source</p>
+<p class="expanded admonition-title">Hide code cell source</p>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">OBSERVATIONS</span><span class="p">))</span>
+<span class="n">width</span> <span class="o">=</span> <span class="mf">0.25</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'../mplstyle/blog.mplstyle'</span><span class="p">)</span>
+
+<span class="n">true_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">TRUE_VALUES</span><span class="p">[</span><span class="n">state</span><span class="p">]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">]</span>
+<span class="n">mc_estimates</span> <span class="o">=</span> <span class="p">[</span><span class="n">mc_trace</span><span class="p">[</span><span class="n">state</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">]</span>
+<span class="n">td_estimates</span> <span class="o">=</span> <span class="p">[</span><span class="n">td_trace</span><span class="p">[</span><span class="n">state</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">OBSERVATIONS</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">width</span><span class="p">,</span> <span class="n">true_values</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"True value"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mc_estimates</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Monte Carlo"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">width</span><span class="p">,</span> <span class="n">td_estimates</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"TD(0)"</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">OBSERVATIONS</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Observation"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Value"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Estimates after 5,000 episodes"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/var/folders/x4/85_9sn3d1ng9q48ff6t3fw340000gn/T/ipykernel_65954/2394775149.py:21: UserWarning: The figure layout has changed to tight
+  fig.tight_layout()
+</pre></div>
+</div>
+<img alt="_images/6fed79c0d006f35025befa34b1483ac8e96f4e2ca07d5bbf5f960ed744e3245a.png" src="_images/6fed79c0d006f35025befa34b1483ac8e96f4e2ca07d5bbf5f960ed744e3245a.png" />
+</div>
+</div>
+</section>
+<section id="so-does-monte-carlo-solve-partial-observability">
+<h2>So Does Monte Carlo Solve Partial Observability?<a class="headerlink" href="#so-does-monte-carlo-solve-partial-observability" title="Link to this heading">¶</a></h2>
+<p>No. Both methods still assign a single value to <span class="math notranslate nohighlight">\(B\)</span>. In this example, MC accurately estimates the values of <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(C\)</span> because it uses complete returns. However, this does not necessarily mean that MC outperforms TD in a partially observable environment. MC often has higher variance, must wait for the episode to end and is unsuitable for infinitely long episodes.</p>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">¶</a></h2>
+<p>MC and TD both calculate the same value for the aliased observation in our example. However, they disagree on the values of observations preceding it. This is because MC uses actual returns, while TD bootstraps from value estimates. Bootstrapping allows the information loss at <span class="math notranslate nohighlight">\(B\)</span> to affect the value estimates of previous observations.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Sutton, R. S., and Barto, A. G. (2018). <em>Reinforcement Learning: An Introduction</em>, 2nd edition. Chapters 5–6.</p></li>
+</ol>
+<script src="https://utteranc.es/client.js"
+        repo="novastar53/novastar53.github.io"
+        issue-term="pathname"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script></section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/starburst_narrow.png" alt="Logo of Starburst"/>
+            </a></p>
+<h1 class="logo"><a href="index.html">Starburst</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="how-do-we-quantify-information.html">How Do We Quantify Information?</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="law-of-large-numbers-clt.html">The Law of Large Numbers and the Central Limit Theorem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-gradient-variance-shapes-policy-optimization-rewritten.html">How Gradient Variance Shapes Policy Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="curse-of-dimensionality.html">The Curse of Dimensionality: Why It Matters Less Than You Think</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-flash-attn.html">How to Write a Flash Attention Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-2.html">How do Mixture of Experts Layers Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-matmul.html">How to Write a Matrix Multiplication Kernel using Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pallas-softmax.html">How to Write a Softmax Kernel in Pallas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-mixture-of-experts-works-part-1.html">How do Mixture of Experts Layers Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works-part-2.html">How Does Batch Normalization Work? Part 2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-positional-embeddings-work.html">How do Positional Embeddings Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-residual-connections-work.html">How Do Residual Connections Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-dropout-works.html">How and Why Does Dropout Work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how-batchnorm-works.html">How Does Batch Normalization Work? Part 1</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nadaraya-watson-kernel-regression.html">Nadaraya-Watson Regression</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="how-do-we-quantify-information.html" title="previous chapter">How Do We Quantify Information?</a></li>
+      <li>Next: <a href="law-of-large-numbers-clt.html" title="next chapter">The Law of Large Numbers and the Central Limit Theorem</a></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="post-nav"><a class="post-nav-link post-nav-prev" href="how-do-we-quantify-information.html">&larr; How Do We Quantify Information?</a><a class="post-nav-link post-nav-next" href="law-of-large-numbers-clt.html">The Law of Large Numbers and the Central Limit Theorem &rarr;</a></div>
+<div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;Vikram Pawar [novastar53.github.io].
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.4.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/monte-carlo-vs-td-partial-observability.ipynb"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

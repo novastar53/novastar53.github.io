@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Vikram's Data Science Blog</title>
+    <link>https://blog.vikrampawar.com/</link>
+    <description>A blog exploring AI and Machine Learning</description>
+    <language>en-us</language>
+    <item>
+      <title>How Do We Quantify Information?</title>
+      <link>https://blog.vikrampawar.com/how-do-we-quantify-information.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-do-we-quantify-information.html</guid>
+      <pubDate>Thu, 19 Nov 2026 00:00:00 +0000</pubDate>
+      <description>By dividing remaining outcomes into two possibilities, it took exactly three yes/no questions to arrive at the correct answer. Now, if we increased the number of outcomes to 16, it turns out that we would need four yes/no questions to arrive at the correct answer. Intuitively, this makes sense; we needed more information to guess a number between 0-15 as compared to one between 0-7. Each new yes/no question elicited an additional quantity of information.</description>
+    </item>
+    <item>
+      <title>Why Monte Carlo Beats TD Learning in Some Partially Observable Environments</title>
+      <link>https://blog.vikrampawar.com/monte-carlo-vs-td-partial-observability.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/monte-carlo-vs-td-partial-observability.html</guid>
+      <pubDate>Sat, 14 Nov 2026 00:00:00 +0000</pubDate>
+      <description>We will use an undiscounted return , with no actions to choose, since this is a policy-evaluation problem, not a control problem. Each episode starts at or with probability . The value of an observation is the expected return conditioned on it: The returns from and are always and respectively. At , the two hidden states occur equally often, so the value of is the mean: Note that the value of really is zero when we condition only on the current observation. Neither method can determine which hidd</description>
+    </item>
+    <item>
+      <title>The Law of Large Numbers and the Central Limit Theorem</title>
+      <link>https://blog.vikrampawar.com/law-of-large-numbers-clt.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/law-of-large-numbers-clt.html</guid>
+      <pubDate>Mon, 02 Nov 2026 00:00:00 +0000</pubDate>
+      <description>Each toss produced a head or a tail, but their average can lie between 0 and 1. We obtained 11 heads from 20 tosses, giving a fraction of 0.55. This fraction is an estimate of the coin&#x27;s heads probability.</description>
+    </item>
+    <item>
+      <title>How Gradient Variance Shapes Policy Optimization</title>
+      <link>https://blog.vikrampawar.com/how-gradient-variance-shapes-policy-optimization-rewritten.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-gradient-variance-shapes-policy-optimization-rewritten.html</guid>
+      <pubDate>Sat, 24 Oct 2026 00:00:00 +0000</pubDate>
+      <description>In this article, we&#x27;ll investigate how reward baselines affect the learning dynamics of policy-gradient algorithms using a simple multi-armed bandit problem. Unlike value-based methods, which estimate the expected reward associated with each action, policy-gradient methods directly optimize the probabilities with which actions are selected. Our objective is to maximize the expected reward under a parameterized policy: Here, denotes the policy parameters. We can optimize this objective using grad</description>
+    </item>
+    <item>
+      <title>The Curse of Dimensionality: Why It Matters Less Than You Think</title>
+      <link>https://blog.vikrampawar.com/curse-of-dimensionality.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/curse-of-dimensionality.html</guid>
+      <pubDate>Sun, 21 Jun 2026 00:00:00 +0000</pubDate>
+      <description>One of the most frequently cited challenges in machine learning is the curse of dimensionality. The phrase sounds ominous, suggesting that high-dimensional data is inherently difficult to learn from. Yet modern machine learning systems routinely work with images containing hundreds of thousands of pixels, text represented by thousands of features, and neural network embeddings with thousands of dimensions. How is this possible? The answer lies in understanding both what the curse of dimensionali</description>
+    </item>
+    <item>
+      <title>How to Write a Flash Attention Kernel in Pallas</title>
+      <link>https://blog.vikrampawar.com/pallas-flash-attn.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/pallas-flash-attn.html</guid>
+      <pubDate>Sat, 07 Feb 2026 00:00:00 +0000</pubDate>
+      <description>In the previous posts in this series, we learnt how to write a matrix multiplication kernelhttps://blog.vikrampawar.com/pallas-matmul.html and a softmax kernelhttps://blog.vikrampawar.com/pallas-softmax.html using Pallas. Building on these, we will design a fused self-attention kernel. Self-attention is a major bottleneck in deep learning architectures. In a naive implementation, materializing the full attention matrix requires memory bandwidth. This creates a severe bottleneck on GPUs, as the t</description>
+    </item>
+    <item>
+      <title>How do Mixture of Experts Layers Work? Part 2</title>
+      <link>https://blog.vikrampawar.com/how-mixture-of-experts-works-part-2.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-mixture-of-experts-works-part-2.html</guid>
+      <pubDate>Wed, 14 Jan 2026 00:00:00 +0000</pubDate>
+      <description>The model was able to successfully overfit on our dataset. This basic design can be used to create and train much larger models. I trained a large scale transformer model with 30 layers and around 400mm paramters on 8GPUs herehttps://github.com/novastar53/tinymoe. We will cover that in our next post on this topic.</description>
+    </item>
+    <item>
+      <title>How to Write a Matrix Multiplication Kernel using Pallas</title>
+      <link>https://blog.vikrampawar.com/pallas-matmul.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/pallas-matmul.html</guid>
+      <pubDate>Fri, 02 Jan 2026 00:00:00 +0000</pubDate>
+      <description>Matrix multiplication is the core operation that lies at the heart of modern machine learning. Libraries like cuBLAS are used under the hood by most deep learning frameworks such as Jax and Torch. These are highly optimized and tuned for NVIDIA GPUs. Programs called kernels are written in a language called CUDA, which extends C/C++. CUDA is designed for the SIMD Single Instruction Multiple Data paradigm, which works very well for massively parallel operations like matrix multiplication. Most ML </description>
+    </item>
+    <item>
+      <title>How to Write a Softmax Kernel in Pallas</title>
+      <link>https://blog.vikrampawar.com/pallas-softmax.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/pallas-softmax.html</guid>
+      <pubDate>Wed, 07 Jan 2026 00:00:00 +0000</pubDate>
+      <description>The softmax function is fundamental to neural network training because it converts raw model outputs logits into valid probability distributions. This is essential for classification tasks where we need to interpret network predictions as probabilities over discrete classes. Additionally, softmax is differentiable, allowing gradients to flow effectively through the network during training, which is why it&#x27;s the standard choice for the output layer in multi-class classification models. In the pre</description>
+    </item>
+    <item>
+      <title>How do Mixture of Experts Layers Work? Part 1</title>
+      <link>https://blog.vikrampawar.com/how-mixture-of-experts-works-part-1.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-mixture-of-experts-works-part-1.html</guid>
+      <pubDate>Fri, 01 Aug 2025 00:00:00 +0000</pubDate>
+      <description>Mixture of Experts layers have become increasingly popular in newer large language models. However, the idea has been around for a while in different flavours. It can be traced to a 1989 paper by Hampshire and Waibel1 which used a gating network to allocate cases to one or more expert networks. A 1990 paper by Jacobs, Jordan, Nowlan and Hinton2 added the idea of making the gating network trainable using a supervised learning approach. By themselves, mixture of experts models are not very useful,</description>
+    </item>
+    <item>
+      <title>How Does Batch Normalization Work? Part 2</title>
+      <link>https://blog.vikrampawar.com/how-batchnorm-works-part-2.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-batchnorm-works-part-2.html</guid>
+      <pubDate>Sun, 13 Apr 2025 00:00:00 +0000</pubDate>
+      <description>In Part 1https://blog.vikrampawar.com/how-batchnorm-works.html, we saw that batch normalization BN can help train neural networks by reducing internal covariate shift ICS and smoothing gradient updates. We measured ICS as distributional shift in layer activations, in line with Ioffe and Szegedy 2015. For a fully-connected network with 4 layers, we observed that the activation distributions with BN were comparatively stable compared to those for the network without BN. We also touched upon the id</description>
+    </item>
+    <item>
+      <title>How do Positional Embeddings Work?</title>
+      <link>https://blog.vikrampawar.com/how-positional-embeddings-work.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-positional-embeddings-work.html</guid>
+      <pubDate>Mon, 14 Oct 2024 00:00:00 +0000</pubDate>
+      <description>In modern transformer-based architectures, token sequences are processed in parallel rather than sequentially as they were done in the older Recursive Neural Network RNN architectures. This provides a great performance boost as parallel operations always do. One key idea that enables this is positional encoding. Positional encodings incorporate position within the embedding. The model can thus learn to extract it and even compare embeddings to obtain the distance between them . A formulation tha</description>
+    </item>
+    <item>
+      <title>How Do Residual Connections Work?</title>
+      <link>https://blog.vikrampawar.com/how-residual-connections-work.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-residual-connections-work.html</guid>
+      <pubDate>Tue, 28 Jan 2025 00:00:00 +0000</pubDate>
+      <description>Residual connections were introduced in the paper Deep Residual Learning for Image Recognition He et al., 2015. Conceptually similar to and mathematically simpler than the gated connections used in highway networks Srivastava et al., 2015, they made it possible to train much deeper neural networks than was previously possible.</description>
+    </item>
+    <item>
+      <title>How and Why Does Dropout Work?</title>
+      <link>https://blog.vikrampawar.com/how-dropout-works.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-dropout-works.html</guid>
+      <pubDate>Sun, 13 Oct 2024 00:00:00 +0000</pubDate>
+      <description>Let&#x27;s look at a few training examples.</description>
+    </item>
+    <item>
+      <title>how-batchnorm-works</title>
+      <link>https://blog.vikrampawar.com/how-batchnorm-works.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/how-batchnorm-works.html</guid>
+      <pubDate>Sun, 13 Apr 2025 00:00:00 +0000</pubDate>
+      <description>Batch normalization is an operation that is usually performed after the linear transformation in a neural network layer but before the activation function.</description>
+    </item>
+    <item>
+      <title>Nadaraya-Watson Regression</title>
+      <link>https://blog.vikrampawar.com/nadaraya-watson-kernel-regression.html</link>
+      <guid isPermaLink="true">https://blog.vikrampawar.com/nadaraya-watson-kernel-regression.html</guid>
+      <pubDate>Wed, 25 Sep 2024 00:00:00 +0000</pubDate>
+      <description>a.k.a Kernel Regression</description>
+    </item>
+  </channel>
+</rss>
