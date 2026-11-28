@@ -1,0 +1,74 @@
+# Editorial blog theme — neutral, opaque PNGs for light and dark pages.
+# Matplotlib hex colors in rc files omit the leading hash.
+
+# Typography
+font.family: serif
+font.serif: Georgia, STIXGeneral, DejaVu Serif
+font.size: 12
+mathtext.fontset: stix
+text.color: 302D29
+axes.labelcolor: 302D29
+axes.labelsize: 12
+axes.titlesize: 14
+axes.titleweight: regular
+axes.titlepad: 12
+axes.labelpad: 7
+xtick.labelsize: 11
+ytick.labelsize: 11
+
+# Canvas
+figure.figsize: 8, 4.5
+figure.dpi: 140
+figure.facecolor: F8F7F4
+figure.edgecolor: F8F7F4
+figure.titlesize: 15
+figure.titleweight: regular
+figure.constrained_layout.use: True
+axes.facecolor: F8F7F4
+axes.edgecolor: AAA59C
+axes.linewidth: 0.8
+axes.spines.top: False
+axes.spines.right: False
+axes.axisbelow: True
+
+# Palette: ordinary Q, Double Q, Gaussian-weighted Q, then other methods.
+axes.prop_cycle: cycler('color', ['32678C', 'B66A39', '50836B', '806692', '64748B', '9B792E'])
+lines.linewidth: 2.1
+lines.markersize: 4.5
+patch.linewidth: 0.8
+
+# Grid and ticks
+axes.grid: True
+axes.grid.axis: y
+axes.grid.which: major
+grid.color: DEDBD5
+grid.linewidth: 0.7
+grid.linestyle: -
+grid.alpha: 0.85
+xtick.color: 57534E
+ytick.color: 57534E
+xtick.direction: out
+ytick.direction: out
+xtick.major.size: 3.5
+ytick.major.size: 3.5
+xtick.major.width: 0.7
+ytick.major.width: 0.7
+xtick.minor.visible: False
+ytick.minor.visible: False
+
+# Legend
+legend.frameon: False
+legend.fontsize: 11
+legend.title_fontsize: 11
+legend.labelspacing: 0.45
+legend.handlelength: 2.2
+legend.handletextpad: 0.7
+
+# Export
+savefig.format: png
+savefig.dpi: 240
+savefig.facecolor: F8F7F4
+savefig.edgecolor: F8F7F4
+savefig.transparent: False
+savefig.bbox: tight
+savefig.pad_inches: 0.12

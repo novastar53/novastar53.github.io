@@ -42,7 +42,7 @@ def get_file_date(file_path: Path, post_dates: dict[str, str], name: str) -> tup
 
 
 def parse_toc(toc_file: Path) -> list[str]:
-    """Parse the TOC file and extract notebook filenames."""
+    """Parse the TOC file and extract post names."""
     notebooks = []
     with open(toc_file) as f:
         for line in f:
@@ -65,9 +65,13 @@ def generate_groups(site_dir: Path, notebooks: list[str]) -> dict[str, dict[int,
         # Skip WIP notebooks
         if notebook.startswith("WIP"):
             continue
-        notebook_path = site_dir / f"{notebook}.ipynb"
-        if notebook_path.exists():
-            year, month = get_file_date(notebook_path, post_dates, notebook)
+        post_path = next(
+            (site_dir / f"{notebook}{suffix}" for suffix in (".ipynb", ".md")
+             if (site_dir / f"{notebook}{suffix}").exists()),
+            None,
+        )
+        if post_path is not None:
+            year, month = get_file_date(post_path, post_dates, notebook)
             groups.setdefault(year, {}).setdefault(month, []).append(notebook)
     return groups
 

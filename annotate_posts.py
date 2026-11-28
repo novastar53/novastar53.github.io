@@ -36,11 +36,11 @@ def load_post_dates() -> dict[str, str]:
     return {}
 
 
-def post_date(name: str, post_dates: dict[str, str]) -> datetime:
+def post_date(name: str, post_dates: dict[str, str], source_path: Path) -> datetime:
     date = post_dates.get(name)
     if date:
         return datetime.fromisoformat(date)
-    ts = (SITE_DIR / f"{name}.ipynb").stat().st_mtime
+    ts = source_path.stat().st_mtime
     return datetime.fromtimestamp(ts)
 
 
@@ -54,25 +54,33 @@ def load_posts():
             continue
         name = s["file"]
         nb_path = SITE_DIR / f"{name}.ipynb"
-        if not nb_path.exists():
+        md_path = SITE_DIR / f"{name}.md"
+        if nb_path.exists():
+            source_path = nb_path
+            nb = json.loads(nb_path.read_text(encoding="utf-8"))
+            markdown_parts = ["".join(cell.get("source", []))
+                              for cell in nb.get("cells", [])
+                              if cell.get("cell_type") == "markdown"]
+        elif md_path.exists():
+            source_path = md_path
+            markdown_parts = [md_path.read_text(encoding="utf-8")]
+        else:
             continue
-        nb = json.loads(nb_path.read_text(encoding="utf-8"))
 
         title, words = name, 0
-        for cell in nb.get("cells", []):
-            src = "".join(cell.get("source", []))
-            if cell.get("cell_type") == "markdown":
-                words += len(re.findall(r"[A-Za-z0-9']+", src))
-                if title == name:
-                    m = re.search(r"^#\s+(.+)$", src, re.M)
-                    if m:
-                        title = m.group(1).strip()
+        for src in markdown_parts:
+            words += len(re.findall(r"[A-Za-z0-9']+", src))
+            if title == name:
+                m = re.search(r"^#\s+(.+)$", src, re.M)
+                if m:
+                    title = m.group(1).strip()
 
         posts.append({
             "name": name,
             "title": title,
-            "date": post_date(name, post_dates).strftime("%b %Y"),
+            "date": post_date(name, post_dates, source_path).strftime("%b %Y"),
             "minutes": max(1, round(words / WORDS_PER_MINUTE)),
+            "is_notebook": source_path.suffix == ".ipynb",
         })
     return posts
 
@@ -82,10 +90,13 @@ def annotate_post_page(html_path: Path, post, prev_post, next_post) -> None:
 
     # Meta line under the h1: date, reading time, Colab link.
     # Replace-by-regex so re-runs upgrade earlier versions of the line.
-    colab = (f'<a class="colab-link" href="https://colab.research.google.com/github/'
-             f'novastar53/novastar53.github.io/blob/main/site/{post["name"]}.ipynb"'
-             f' target="_blank" rel="noopener">Open in Colab &#8599;</a>')
-    meta = f'<div class="post-meta">{post["date"]} &middot; {post["minutes"]} min read &middot; {colab}</div>'
+    meta_content = f'{post["date"]} &middot; {post["minutes"]} min read'
+    if post["is_notebook"]:
+        colab = (f'<a class="colab-link" href="https://colab.research.google.com/github/'
+                 f'novastar53/novastar53.github.io/blob/main/site/{post["name"]}.ipynb"'
+                 f' target="_blank" rel="noopener">Open in Colab &#8599;</a>')
+        meta_content += f' &middot; {colab}'
+    meta = f'<div class="post-meta">{meta_content}</div>'
     existing = re.search(r'<div class="post-meta">.*?</div>', text, re.S)
     if existing:
         text = text[:existing.start()] + meta + text[existing.end():]
